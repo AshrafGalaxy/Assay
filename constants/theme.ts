@@ -52,25 +52,35 @@ export const FONTS = {
 };
 
 export const SHADOWS = {
-  none: {
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0,
-    shadowRadius: 0,
-    elevation: 0,
-  },
-  soft: {
-    shadowColor: '#111827',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  medium: {
-    shadowColor: '#111827',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 2,
-  },
+  none: Platform.select({
+    web: { boxShadow: 'none' },
+    default: {
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
+      elevation: 0,
+    },
+  }),
+  soft: Platform.select({
+    web: { boxShadow: '0 2px 8px rgba(17, 24, 39, 0.04)' },
+    default: {
+      shadowColor: '#111827',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.03,
+      shadowRadius: 8,
+      elevation: 1,
+    },
+  }),
+  medium: Platform.select({
+    web: { boxShadow: '0 4px 14px rgba(17, 24, 39, 0.08)' },
+    default: {
+      shadowColor: '#111827',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.06,
+      shadowRadius: 12,
+      elevation: 2,
+    },
+  }),
 };
+

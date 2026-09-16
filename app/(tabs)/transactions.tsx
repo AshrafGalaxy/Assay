@@ -1,153 +1,180 @@
-import React, { useState } from 'react';
-import { View, ScrollView, StyleSheet, SafeAreaView } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Typography } from '../../components/Typography';
-import { Card } from '../../components/Card';
-import { ScreenHeader } from '../../components/ui/ScreenHeader';
-import { AppInput } from '../../components/ui/AppInput';
-import { AppChip } from '../../components/ui/AppChip';
-import { TransactionRow } from '../../components/ui/TransactionRow';
-import { COLORS, SIZES, SPACING } from '../../constants/theme';
+import { MerchantLogo } from '../../components/ui/MerchantLogo';
+import { COLORS, SIZES } from '../../constants/theme';
+import { Search } from 'lucide-react-native';
 
-const FILTERS = ['All', 'UPI', 'Receipt', 'Cash', 'Card'];
+interface TransactionItemData {
+  id: string;
+  name: string;
+  merchantKey: string;
+  time: string;
+  method: 'UPI' | 'Card' | 'Cash' | 'Wallet';
+  amount: string;
+  category?: string;
+  notes?: string;
+}
+
+interface DateGroup {
+  date: string;
+  items: TransactionItemData[];
+}
+
+const TRANSACTIONS_DATA: DateGroup[] = [
+  {
+    date: 'Today',
+    items: [
+      { id: 'tx-1', name: 'Starbucks', merchantKey: 'starbucks', time: '9:42 AM', method: 'UPI', amount: '₹250', category: 'Food & Dining', notes: 'Morning coffee ☕' },
+      { id: 'tx-2', name: 'Uber', merchantKey: 'uber', time: '8:20 AM', method: 'UPI', amount: '₹120', category: 'Transport', notes: 'Ride to office' },
+    ],
+  },
+  {
+    date: 'Yesterday',
+    items: [
+      { id: 'tx-3', name: 'Amazon', merchantKey: 'amazon', time: '6:10 PM', method: 'Card', amount: '₹899', category: 'Shopping', notes: 'Office electronics' },
+      { id: 'tx-4', name: 'Tea Stall', merchantKey: 'tea', time: '4:30 PM', method: 'Cash', amount: '₹30', category: 'Food & Dining', notes: 'Evening chai' },
+    ],
+  },
+  {
+    date: 'Tue, 25 Jun',
+    items: [
+      { id: 'tx-5', name: 'Swiggy', merchantKey: 'swiggy', time: '8:10 PM', method: 'UPI', amount: '₹430', category: 'Food & Dining', notes: 'Dinner order' },
+      { id: 'tx-6', name: 'BookMyShow', merchantKey: 'bookmyshow', time: '5:12 PM', method: 'UPI', amount: '₹620', category: 'Entertainment', notes: 'Weekend movie' },
+    ],
+  },
+  {
+    date: 'Mon, 24 Jun',
+    items: [
+      { id: 'tx-7', name: 'Metro Card', merchantKey: 'metro', time: '10:02 AM', method: 'Wallet', amount: '₹200', category: 'Transport', notes: 'Metro recharge' },
+    ],
+  },
+];
+
+const FILTERS = ['All', 'UPI', 'Card', 'Cash', 'Wallet'] as const;
 
 export default function TransactionsScreen() {
   const router = useRouter();
-  const [activeFilter, setActiveFilter] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const params = useLocalSearchParams<{ query?: string; filter?: string }>();
+  const [activeFilter, setActiveFilter] = useState<string>(params.filter || 'All');
+  const [searchQuery, setSearchQuery] = useState(params.query || '');
+
+  useEffect(() => {
+    if (params.query) {
+      setSearchQuery(params.query);
+    }
+    if (params.filter) {
+      setActiveFilter(params.filter);
+    }
+  }, [params.query, params.filter]);
+
+  const filteredGroups = TRANSACTIONS_DATA.map((group) => {
+    const items = group.items.filter((item) => {
+      const matchesFilter = activeFilter === 'All' || item.method === activeFilter;
+      const matchesSearch =
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.amount.includes(searchQuery) ||
+        item.method.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesFilter && matchesSearch;
+    });
+    return { ...group, items };
+  }).filter((group) => group.items.length > 0);
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Unified Header */}
-      <ScreenHeader 
-        title="Transactions" 
-        showNotification
-        onNotificationPress={() => router.push('/ai')}
-      />
+      <View style={styles.header}>
+        <Typography variant="pageTitle" style={styles.pageTitle}>
+          Transactions
+        </Typography>
 
-      <View style={styles.filterSection}>
         {/* Search Bar */}
-        <View style={styles.searchWrapper}>
-          <AppInput 
-            placeholder="Search transactions..."
+        <View style={styles.searchBar}>
+          <Search color="#9CA3AF" size={20} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search merchant, amount, category..."
+            placeholderTextColor="#9CA3AF"
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
         </View>
-        
-        {/* Filter Chips */}
+
+        {/* Filter Pills */}
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filtersContent}
+          contentContainerStyle={styles.filterRow}
         >
-          {FILTERS.map((filter) => (
-            <AppChip 
-              key={filter}
-              label={filter}
-              active={activeFilter === filter}
-              onPress={() => setActiveFilter(filter)}
-            />
-          ))}
+          {FILTERS.map((filter) => {
+            const isActive = activeFilter === filter;
+            return (
+              <TouchableOpacity
+                key={filter}
+                style={[styles.filterPill, isActive ? styles.filterPillActive : styles.filterPillInactive]}
+                onPress={() => setActiveFilter(filter)}
+                activeOpacity={0.8}
+              >
+                <Typography
+                  variant="caption"
+                  style={[styles.filterText, isActive ? styles.filterTextActive : styles.filterTextInactive]}
+                >
+                  {filter}
+                </Typography>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
       <ScrollView 
-        showsVerticalScrollIndicator={false} 
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Group 1: Today */}
-        <Typography variant="caption" color={COLORS.textSecondary} style={styles.groupHeader}>
-          TODAY
-        </Typography>
-        <Card variant="list" style={styles.groupCard}>
-          <TransactionRow 
-            name="Starbucks" 
-            category="Food & Dining" 
-            time="10:42 AM" 
-            amount="-₹340" 
-            method="UPI"
-            showDivider
-            onPress={() => router.push('/transaction/1')}
-          />
-          <TransactionRow 
-            name="Salary" 
-            category="Income" 
-            time="09:00 AM" 
-            amount="+₹85,000" 
-            method="Bank"
-            isIncome
-            onPress={() => router.push('/transaction/2')}
-          />
-        </Card>
+        {filteredGroups.map((group) => (
+          <View key={group.date} style={styles.groupContainer}>
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.dateHeader}>
+              {group.date}
+            </Typography>
 
-        {/* Group 2: Yesterday */}
-        <Typography variant="caption" color={COLORS.textSecondary} style={styles.groupHeader}>
-          YESTERDAY
-        </Typography>
-        <Card variant="list" style={styles.groupCard}>
-          <TransactionRow 
-            name="Uber" 
-            category="Transport" 
-            time="6:15 PM" 
-            amount="-₹250" 
-            method="Card"
-            showDivider
-            onPress={() => router.push('/transaction/3')}
-          />
-          <TransactionRow 
-            name="Netflix" 
-            category="Entertainment" 
-            time="1:00 AM" 
-            amount="-₹649" 
-            method="Card"
-            showDivider
-            onPress={() => router.push('/transaction/4')}
-          />
-          <TransactionRow 
-            name="Blinkit" 
-            category="Groceries" 
-            time="4:30 PM" 
-            amount="-₹1,120" 
-            method="UPI"
-            onPress={() => router.push('/transaction/5')}
-          />
-        </Card>
+            {group.items.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.transactionCard}
+                activeOpacity={0.75}
+                onPress={() => router.push({
+                  pathname: `/transaction/${item.id}`,
+                  params: {
+                    name: item.name,
+                    merchantKey: item.merchantKey,
+                    amount: item.amount,
+                    time: item.time,
+                    method: item.method,
+                    category: item.category || 'General',
+                    notes: item.notes || '',
+                  },
+                })}
+              >
+                <MerchantLogo name={item.merchantKey} size={44} style={styles.merchantLogo} />
+                
+                <View style={styles.transactionDetails}>
+                  <Typography variant="bodyBold" style={styles.merchantName}>
+                    {item.name}
+                  </Typography>
+                  <Typography variant="caption" color={COLORS.textSecondary}>
+                    {item.time} • {item.method}
+                  </Typography>
+                </View>
 
-        {/* Group 3: Earlier */}
-        <Typography variant="caption" color={COLORS.textSecondary} style={styles.groupHeader}>
-          EARLIER THIS WEEK
-        </Typography>
-        <Card variant="list" style={styles.groupCard}>
-          <TransactionRow 
-            name="Amazon Fresh" 
-            category="Groceries" 
-            time="8 Jul, 3:15 PM" 
-            amount="-₹2,450" 
-            method="Card"
-            showDivider
-            onPress={() => router.push('/transaction/1')}
-          />
-          <TransactionRow 
-            name="Swiggy Gourmet" 
-            category="Food & Dining" 
-            time="7 Jul, 8:30 PM" 
-            amount="-₹980" 
-            method="UPI"
-            showDivider
-            onPress={() => router.push('/transaction/2')}
-          />
-          <TransactionRow 
-            name="Apollo Pharmacy" 
-            category="Health" 
-            time="6 Jul, 11:20 AM" 
-            amount="-₹540" 
-            method="Cash"
-            onPress={() => router.push('/transaction/3')}
-          />
-        </Card>
-
-        <View style={{ height: 100 }} />
+                <Typography variant="financial" style={styles.amountText}>
+                  {item.amount}
+                </Typography>
+              </TouchableOpacity>
+            ))}
+          </View>
+        ))}
+        <View style={{ height: 110 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -158,31 +185,102 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  filterSection: {
-    backgroundColor: COLORS.background,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-    paddingBottom: 16,
-  },
-  searchWrapper: {
-    paddingHorizontal: SIZES.padding,
-    marginBottom: 12,
-  },
-  filtersContent: {
-    paddingHorizontal: SIZES.padding,
-    gap: 8,
-  },
-  scrollContent: {
-    paddingHorizontal: SIZES.padding,
+  header: {
+    paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: 8,
   },
-  groupHeader: {
-    marginBottom: 8,
-    marginTop: 8,
-    letterSpacing: 0.5,
+  pageTitle: {
+    fontSize: 34,
+    marginBottom: 16,
+    color: COLORS.text,
+  },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+    height: 52,
+    marginBottom: 16,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: COLORS.text,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingBottom: 8,
+  },
+  filterPill: {
+    paddingHorizontal: 22,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterPillActive: {
+    backgroundColor: '#111827',
+    borderColor: '#111827',
+  },
+  filterPillInactive: {
+    backgroundColor: COLORS.surface,
+    borderColor: COLORS.border,
+  },
+  filterText: {
+    fontSize: 14,
     fontWeight: '600',
   },
-  groupCard: {
-    marginBottom: SPACING.lg,
+  filterTextActive: {
+    color: '#FFFFFF',
+  },
+  filterTextInactive: {
+    color: COLORS.text,
+  },
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+  },
+  groupContainer: {
+    marginBottom: 20,
+  },
+  dateHeader: {
+    fontSize: 14,
+    marginBottom: 10,
+    marginLeft: 2,
+  },
+  transactionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    marginBottom: 10,
+  },
+  merchantLogo: {
+    marginRight: 14,
+  },
+  transactionDetails: {
+    flex: 1,
+  },
+  merchantName: {
+    fontSize: 16,
+    marginBottom: 4,
+    color: COLORS.text,
+  },
+  amountText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
   },
 });
