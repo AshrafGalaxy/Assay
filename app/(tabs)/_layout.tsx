@@ -1,12 +1,13 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, View, StyleSheet } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { 
-  LayoutDashboard, 
-  Upload, 
-  ListOrdered, 
-  LineChart, 
+  Home, 
+  Camera, 
+  List, 
+  BarChart2, 
   Settings 
 } from 'lucide-react-native';
 
@@ -16,27 +17,59 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.primary,
-          borderTopWidth: 0,
-          elevation: 0,
-          shadowOpacity: 0,
-          height: Platform.OS === 'ios' ? 88 : 68,
-          paddingTop: 10,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 10,
-          borderTopLeftRadius: SIZES.bottomNavRadius,
-          borderTopRightRadius: SIZES.bottomNavRadius,
+          backgroundColor: '#0F172A',
+          borderTopWidth: 1,
+          borderTopColor: 'rgba(255, 255, 255, 0.08)',
+          borderTopLeftRadius: 28,
+          borderTopRightRadius: 28,
+          borderBottomLeftRadius: 0,
+          borderBottomRightRadius: 0,
           position: 'absolute',
           left: 0,
           right: 0,
           bottom: 0,
+          height: Platform.OS === 'ios' ? 84 : 66,
+          paddingTop: 8,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          overflow: 'hidden',
+          ...Platform.select({
+            web: {
+              boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.35)',
+              backdropFilter: 'blur(20px)',
+              backgroundColor: 'rgba(15, 23, 42, 0.96)',
+            },
+            default: {
+              elevation: 16,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: -4 },
+              shadowOpacity: 0.35,
+              shadowRadius: 10,
+            },
+          }),
         },
+        tabBarBackground: () => (
+          Platform.OS === 'ios' ? (
+            <BlurView
+              intensity={80}
+              tint="dark"
+              style={StyleSheet.absoluteFill}
+            />
+          ) : (
+            <View 
+              style={[
+                StyleSheet.absoluteFill, 
+                { backgroundColor: '#0F172A' }
+              ]} 
+            />
+          )
+        ),
         tabBarActiveTintColor: COLORS.gold,
-        tabBarInactiveTintColor: COLORS.textSecondary,
+        tabBarInactiveTintColor: '#9CA3AF',
         tabBarShowLabel: true,
         tabBarLabelStyle: {
           fontFamily: FONTS.bodyMedium,
-          fontSize: 11,
-          marginTop: 4,
+          fontSize: 10.5,
+          marginTop: 2,
         },
       }}
     >
@@ -45,7 +78,7 @@ export default function TabLayout() {
         options={{
           title: 'Dashboard',
           tabBarIcon: ({ color, focused }) => (
-            <LayoutDashboard color={color} size={22} strokeWidth={focused ? 2.2 : 1.8} />
+            <Home color={color} size={22} strokeWidth={focused ? 2.2 : 1.8} />
           ),
         }}
       />
@@ -54,7 +87,7 @@ export default function TabLayout() {
         options={{
           title: 'Upload',
           tabBarIcon: ({ color, focused }) => (
-            <Upload color={color} size={22} strokeWidth={focused ? 2.2 : 1.8} />
+            <Camera color={color} size={22} strokeWidth={focused ? 2.2 : 1.8} />
           ),
         }}
       />
@@ -63,7 +96,7 @@ export default function TabLayout() {
         options={{
           title: 'Transactions',
           tabBarIcon: ({ color, focused }) => (
-            <ListOrdered color={color} size={22} strokeWidth={focused ? 2.2 : 1.8} />
+            <List color={color} size={22} strokeWidth={focused ? 2.4 : 1.8} />
           ),
         }}
       />
@@ -72,7 +105,7 @@ export default function TabLayout() {
         options={{
           title: 'Insights',
           tabBarIcon: ({ color, focused }) => (
-            <LineChart color={color} size={22} strokeWidth={focused ? 2.2 : 1.8} />
+            <BarChart2 color={color} size={22} strokeWidth={focused ? 2.4 : 1.8} />
           ),
         }}
       />

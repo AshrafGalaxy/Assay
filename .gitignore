@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# local design assets
+Mock UI/
+
+# local agent files
+.agents/

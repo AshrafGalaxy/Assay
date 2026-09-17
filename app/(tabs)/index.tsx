@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, ScrollView, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { Card } from '../../components/Card';
@@ -17,6 +18,12 @@ import {
 
 export default function Dashboard() {
   const router = useRouter();
+  const [hasUnreadNotification, setHasUnreadNotification] = React.useState(true);
+
+  const handleNotificationPress = () => {
+    // Mark as read, canceling redirection to Copilot (/ai)
+    setHasUnreadNotification(false);
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -25,7 +32,8 @@ export default function Dashboard() {
         greeting="Good Morning," 
         userName="Ashish" 
         showNotification
-        onNotificationPress={() => router.push('/ai')}
+        hasUnreadNotification={hasUnreadNotification}
+        onNotificationPress={handleNotificationPress}
       />
 
       <ScrollView 
