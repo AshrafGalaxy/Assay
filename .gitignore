@@ -45,3 +45,4 @@ Mock UI/
 
 # local agent files
 .agents/
+/docs
