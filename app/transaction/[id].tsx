@@ -5,13 +5,13 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { MerchantLogo } from '../../components/ui/MerchantLogo';
 import { COLORS, SIZES } from '../../constants/theme';
-import { 
-  ChevronLeft, 
-  Share2, 
-  MoreVertical, 
-  ArrowUp, 
-  Copy, 
-  Pencil, 
+import {
+  ChevronLeft,
+  Share2,
+  MoreVertical,
+  ArrowUp,
+  Copy,
+  Pencil,
   FileText,
   Check,
   X,
@@ -65,8 +65,8 @@ export default function TransactionDetailScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header Bar */}
       <View style={styles.topHeader}>
-        <TouchableOpacity 
-          style={styles.iconButton} 
+        <TouchableOpacity
+          style={styles.iconButton}
           onPress={() => router.back()}
           activeOpacity={0.7}
         >
@@ -74,16 +74,16 @@ export default function TransactionDetailScreen() {
         </TouchableOpacity>
 
         <View style={styles.rightActions}>
-          <TouchableOpacity 
-            style={styles.iconButton} 
+          <TouchableOpacity
+            style={styles.iconButton}
             onPress={handleShare}
             activeOpacity={0.7}
           >
             <Share2 color={COLORS.text} size={20} />
           </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.iconButton} 
+          <TouchableOpacity
+            style={styles.iconButton}
             activeOpacity={0.7}
           >
             <MoreVertical color={COLORS.text} size={20} />
@@ -96,7 +96,7 @@ export default function TransactionDetailScreen() {
         {/* Merchant Hero */}
         <View style={styles.heroSection}>
           <MerchantLogo name={merchantKey} size={84} style={styles.merchantLogo} />
-          
+
           <Typography variant="h1" style={styles.merchantName}>
             {name}
           </Typography>
@@ -165,8 +165,8 @@ export default function TransactionDetailScreen() {
             <Typography variant="secondary" color={COLORS.textSecondary}>
               Transaction ID
             </Typography>
-            <TouchableOpacity 
-              style={styles.copyRow} 
+            <TouchableOpacity
+              style={styles.copyRow}
               onPress={handleCopy}
               activeOpacity={0.7}
             >
@@ -198,8 +198,8 @@ export default function TransactionDetailScreen() {
         <View style={{ flex: 1 }} />
 
         {/* View Receipt Button */}
-        <TouchableOpacity 
-          style={styles.viewReceiptButton} 
+        <TouchableOpacity
+          style={styles.viewReceiptButton}
           activeOpacity={0.8}
           onPress={() => setReceiptVisible(true)}
         >
@@ -227,7 +227,7 @@ export default function TransactionDetailScreen() {
                 </Typography>
               </View>
 
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.closeBtn}
                 onPress={() => setReceiptVisible(false)}
               >
@@ -264,7 +264,7 @@ export default function TransactionDetailScreen() {
               </View>
             </View>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.uploadScreenBtn}
               onPress={() => {
                 setReceiptVisible(false);

@@ -162,6 +162,18 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Sign Out Action */}
+        <TouchableOpacity
+          style={styles.signOutBtn}
+          activeOpacity={0.7}
+          onPress={() => router.replace('/auth/login')}
+        >
+          <Lock color={COLORS.error} size={18} />
+          <Typography variant="bodySemiBold" color={COLORS.error} style={{ marginLeft: 8 }}>
+            Sign Out of ASSAY
+          </Typography>
+        </TouchableOpacity>
+
         <View style={{ height: 60 }} />
       </ScrollView>
     </SafeAreaView>
@@ -305,5 +317,17 @@ const styles = StyleSheet.create({
     color: '#B45309',
     fontWeight: '700',
     fontSize: 11,
+  },
+  signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: SIZES.radius,
+    paddingVertical: 14,
+    marginTop: 10,
+    marginBottom: 20,
   },
 });

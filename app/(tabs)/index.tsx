@@ -7,13 +7,13 @@ import { Card } from '../../components/Card';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { TransactionRow } from '../../components/ui/TransactionRow';
 import { COLORS, SIZES, SPACING } from '../../constants/theme';
-import { 
-  ScanLine, 
-  Image as ImageIcon, 
-  Users, 
-  PieChart, 
-  TrendingUp, 
-  ArrowUpRight 
+import {
+  ScanLine,
+  Image as ImageIcon,
+  Users,
+  PieChart,
+  TrendingUp,
+  ArrowUpRight
 } from 'lucide-react-native';
 
 export default function Dashboard() {
@@ -28,16 +28,16 @@ export default function Dashboard() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Unified Header */}
-      <ScreenHeader 
-        greeting="Good Morning," 
-        userName="Ashish" 
+      <ScreenHeader
+        greeting="Good Morning,"
+        userName="Ashish"
         showNotification
         hasUnreadNotification={hasUnreadNotification}
         onNotificationPress={handleNotificationPress}
       />
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Monthly Spending Hero Card */}
@@ -45,7 +45,7 @@ export default function Dashboard() {
           <Typography variant="secondary" color={COLORS.textSecondary} style={styles.heroLabel}>
             Total spent this month
           </Typography>
-          
+
           <View style={styles.amountRow}>
             <Typography variant="h1" color={COLORS.white} style={styles.heroAmount}>
               ₹12,450
@@ -70,24 +70,24 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <View style={styles.quickActions}>
-          <ActionItem 
-            icon={<ScanLine color={COLORS.primary} size={22} strokeWidth={1.8} />} 
-            title="Scan Receipt" 
+          <ActionItem
+            icon={<ScanLine color={COLORS.primary} size={22} strokeWidth={1.8} />}
+            title="Scan Receipt"
             onPress={() => router.push('/upload')}
           />
-          <ActionItem 
-            icon={<ImageIcon color={COLORS.primary} size={22} strokeWidth={1.8} />} 
-            title="Upload UPI" 
+          <ActionItem
+            icon={<ImageIcon color={COLORS.primary} size={22} strokeWidth={1.8} />}
+            title="Upload UPI"
             onPress={() => router.push('/upload')}
           />
-          <ActionItem 
-            icon={<Users color={COLORS.primary} size={22} strokeWidth={1.8} />} 
-            title="Split Bill" 
+          <ActionItem
+            icon={<Users color={COLORS.primary} size={22} strokeWidth={1.8} />}
+            title="Split Bill"
             onPress={() => router.push('/split')}
           />
-          <ActionItem 
-            icon={<PieChart color={COLORS.primary} size={22} strokeWidth={1.8} />} 
-            title="Insights" 
+          <ActionItem
+            icon={<PieChart color={COLORS.primary} size={22} strokeWidth={1.8} />}
+            title="Insights"
             onPress={() => router.push('/insights')}
           />
         </View>
@@ -97,7 +97,7 @@ export default function Dashboard() {
           <Typography variant="h3" style={styles.sectionTitle}>
             Spending
           </Typography>
-          
+
           <View style={styles.breakdownRow}>
             {/* Minimalist Donut Chart ring */}
             <View style={styles.donutContainer}>
@@ -112,7 +112,7 @@ export default function Dashboard() {
                 </View>
               </View>
             </View>
-            
+
             <View style={styles.breakdownList}>
               <BreakdownItem color={COLORS.gold} label="Food & Dining" amount="₹4,200" percent="34%" />
               <BreakdownItem color={COLORS.primary} label="Shopping" amount="₹3,100" percent="25%" />
@@ -140,7 +140,7 @@ export default function Dashboard() {
             <LeakItem title="Auto & Quick Cabs" amount="₹250" count="4 short rides" />
             <LeakItem title="Impulse Buys" amount="₹150" count="3 small orders" />
           </View>
-          
+
           <View style={styles.leakFooterBox}>
             <Typography variant="caption" color={COLORS.textSecondary} align="center">
               Small purchases under ₹100 often go unnoticed.
@@ -151,7 +151,7 @@ export default function Dashboard() {
         {/* Recent Transactions */}
         <View style={styles.transactionsHeader}>
           <Typography variant="h3">Recent</Typography>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => router.push('/transactions')}
             activeOpacity={0.7}
             style={styles.viewAllRow}
@@ -164,39 +164,39 @@ export default function Dashboard() {
         </View>
 
         <Card variant="list" style={styles.recentTransactionsCard}>
-          <TransactionRow 
-            name="Starbucks" 
-            category="Food & Dining" 
-            date="Today, 10:42 AM" 
-            amount="-₹340" 
+          <TransactionRow
+            name="Starbucks"
+            category="Food & Dining"
+            date="Today, 10:42 AM"
+            amount="-₹340"
             method="UPI"
             showDivider
             onPress={() => router.push('/transaction/1')}
           />
-          <TransactionRow 
-            name="Salary" 
-            category="Income" 
-            date="Today, 09:00 AM" 
-            amount="+₹85,000" 
+          <TransactionRow
+            name="Salary"
+            category="Income"
+            date="Today, 09:00 AM"
+            amount="+₹85,000"
             method="Bank"
             isIncome
             showDivider
             onPress={() => router.push('/transaction/2')}
           />
-          <TransactionRow 
-            name="Uber" 
-            category="Transport" 
-            date="Yesterday, 6:15 PM" 
-            amount="-₹250" 
+          <TransactionRow
+            name="Uber"
+            category="Transport"
+            date="Yesterday, 6:15 PM"
+            amount="-₹250"
             method="Card"
             showDivider
             onPress={() => router.push('/transaction/3')}
           />
-          <TransactionRow 
-            name="Amazon" 
-            category="Shopping" 
-            date="10 Jul, 2:30 PM" 
-            amount="-₹1,200" 
+          <TransactionRow
+            name="Amazon"
+            category="Shopping"
+            date="10 Jul, 2:30 PM"
+            amount="-₹1,200"
             method="Card"
             onPress={() => router.push('/transaction/5')}
           />
@@ -218,16 +218,16 @@ const ActionItem = ({ icon, title, onPress }: { icon: React.ReactNode; title: st
   </TouchableOpacity>
 );
 
-const BreakdownItem = ({ 
-  color, 
-  label, 
-  amount, 
-  percent 
-}: { 
-  color: string; 
-  label: string; 
-  amount: string; 
-  percent: string; 
+const BreakdownItem = ({
+  color,
+  label,
+  amount,
+  percent
+}: {
+  color: string;
+  label: string;
+  amount: string;
+  percent: string;
 }) => (
   <View style={styles.breakdownItemRow}>
     <View style={styles.breakdownLabelGroup}>

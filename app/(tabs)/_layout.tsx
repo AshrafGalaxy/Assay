@@ -3,12 +3,12 @@ import { Tabs } from 'expo-router';
 import { Platform, View, StyleSheet } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import { 
-  Home, 
-  Camera, 
-  List, 
-  BarChart2, 
-  Settings 
+import {
+  Home,
+  Camera,
+  List,
+  BarChart2,
+  Settings
 } from 'lucide-react-native';
 
 export default function TabLayout() {
@@ -55,11 +55,11 @@ export default function TabLayout() {
               style={StyleSheet.absoluteFill}
             />
           ) : (
-            <View 
+            <View
               style={[
-                StyleSheet.absoluteFill, 
+                StyleSheet.absoluteFill,
                 { backgroundColor: '#0F172A' }
-              ]} 
+              ]}
             />
           )
         ),

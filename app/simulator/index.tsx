@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
-import { 
-  View, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Alert 
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Slider from '@react-native-community/slider';
 import { Typography } from '../../components/Typography';
 import { COLORS } from '../../constants/theme';
-import { 
-  ChevronLeft, 
-  RotateCcw, 
-  Utensils, 
-  Car, 
-  Sparkles, 
-  BarChart2 
+import {
+  ChevronLeft,
+  RotateCcw,
+  Utensils,
+  Car,
+  Sparkles,
+  BarChart2
 } from 'lucide-react-native';
 
 export default function WhatIfSimulatorScreen() {
@@ -56,7 +56,7 @@ export default function WhatIfSimulatorScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backBtn}
           onPress={() => router.back()}
           activeOpacity={0.7}
@@ -73,7 +73,7 @@ export default function WhatIfSimulatorScreen() {
           </Typography>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.resetBtn}
           onPress={handleReset}
           activeOpacity={0.7}
@@ -82,7 +82,7 @@ export default function WhatIfSimulatorScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -287,7 +287,7 @@ export default function WhatIfSimulatorScreen() {
         </View>
 
         {/* Action Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.commitBtn}
           onPress={handleCommit}
           activeOpacity={0.8}

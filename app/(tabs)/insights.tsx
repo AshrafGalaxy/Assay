@@ -1,35 +1,35 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  View, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Dimensions, 
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Dimensions,
   Platform,
   GestureResponderEvent
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Svg, { 
-  Path, 
-  Defs, 
-  LinearGradient, 
-  Stop, 
-  Circle, 
-  Line, 
-  Text as SvgText, 
-  Rect, 
+import Svg, {
+  Path,
+  Defs,
+  LinearGradient,
+  Stop,
+  Circle,
+  Line,
+  Text as SvgText,
+  Rect,
   Polygon,
-  G 
+  G
 } from 'react-native-svg';
 import { Typography } from '../../components/Typography';
 import { Card } from '../../components/Card';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { FloatingCopilotButton } from '../../components/ui/FloatingCopilotButton';
 import { COLORS, SIZES, SPACING } from '../../constants/theme';
-import { 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  TrendingUp,
+  TrendingDown,
   AlertTriangle,
   ArrowRight,
   Calendar,
@@ -112,9 +112,9 @@ export default function InsightsScreen() {
   const { linePath, areaPath } = useMemo(() => {
     if (activeDataSet.length < 2) return { linePath: '', areaPath: '' };
 
-    const points = activeDataSet.map(d => ({ 
-      x: getX(d), 
-      y: getY(d.balance), 
+    const points = activeDataSet.map(d => ({
+      x: getX(d),
+      y: getY(d.balance),
       isTrough: d.balance <= 3500,
       isPeak: d.balance >= 80000
     }));
@@ -197,14 +197,14 @@ export default function InsightsScreen() {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header with clean left title and calendar action on right */}
-      <ScreenHeader 
-        title="Cash-Flow Forecast" 
+      <ScreenHeader
+        title="Cash-Flow Forecast"
         subtitle="Predictive Solvency & Buffer Analytics"
         showNotification={false}
         rightAction={
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.calendarBtn}
-            onPress={() => {}}
+            onPress={() => { }}
             activeOpacity={0.7}
           >
             <Calendar color={COLORS.text} size={18} strokeWidth={1.8} />
@@ -212,8 +212,8 @@ export default function InsightsScreen() {
         }
       />
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
         {/* Timeframe Filter Pills (30 Days, 60 Days, 90 Days) */}
@@ -227,8 +227,8 @@ export default function InsightsScreen() {
                 onPress={() => setTimeframe(tf)}
                 activeOpacity={0.75}
               >
-                <Typography 
-                  variant="caption" 
+                <Typography
+                  variant="caption"
                   style={[styles.tfText, isActive && styles.tfTextActive]}
                 >
                   {tf}
@@ -239,7 +239,7 @@ export default function InsightsScreen() {
         </View>
 
         {/* Hero Cash-Flow Forecast Dark Card */}
-        <View 
+        <View
           style={styles.forecastCard}
           onLayout={(e) => {
             const width = e.nativeEvent.layout.width;
@@ -267,7 +267,7 @@ export default function InsightsScreen() {
 
           {/* Tier 1: View Scale Segmented Track (30-Day vs Trough Zoom) */}
           <View style={styles.segmentedTrackPrimary}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.segmentBtn, viewMode === 'full' && styles.segmentBtnActive]}
               onPress={() => {
                 setViewMode('full');
@@ -275,8 +275,8 @@ export default function InsightsScreen() {
               }}
               activeOpacity={0.75}
             >
-              <Typography 
-                variant="caption" 
+              <Typography
+                variant="caption"
                 numberOfLines={1}
                 style={[styles.segmentText, viewMode === 'full' && styles.segmentTextActive]}
               >
@@ -284,7 +284,7 @@ export default function InsightsScreen() {
               </Typography>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.segmentBtn, viewMode === 'zoom' && styles.segmentBtnActive]}
               onPress={() => {
                 setViewMode('zoom');
@@ -292,8 +292,8 @@ export default function InsightsScreen() {
               }}
               activeOpacity={0.75}
             >
-              <Typography 
-                variant="caption" 
+              <Typography
+                variant="caption"
                 numberOfLines={1}
                 style={[styles.segmentText, viewMode === 'zoom' && styles.segmentTextActive]}
               >
@@ -304,13 +304,13 @@ export default function InsightsScreen() {
 
           {/* Tier 2: Milestone Focus Track (Matching Segmented Design, Zero Bloat) */}
           <View style={styles.segmentedTrackSecondary}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.segmentSubBtn, activeFocus === 'all' && styles.segmentSubBtnActiveGold]}
               onPress={() => setActiveFocus('all')}
               activeOpacity={0.75}
             >
-              <Typography 
-                variant="caption" 
+              <Typography
+                variant="caption"
                 numberOfLines={1}
                 style={[styles.segmentSubText, activeFocus === 'all' && styles.segmentSubTextActiveGold]}
               >
@@ -318,13 +318,13 @@ export default function InsightsScreen() {
               </Typography>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.segmentSubBtn, activeFocus === 'trough' && styles.segmentSubBtnActiveRed]}
               onPress={() => setActiveFocus('trough')}
               activeOpacity={0.75}
             >
-              <Typography 
-                variant="caption" 
+              <Typography
+                variant="caption"
                 numberOfLines={1}
                 style={[styles.segmentSubText, activeFocus === 'trough' && styles.segmentSubTextActiveRed]}
               >
@@ -332,13 +332,13 @@ export default function InsightsScreen() {
               </Typography>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.segmentSubBtn, activeFocus === 'salary' && styles.segmentSubBtnActiveGreen]}
               onPress={() => setActiveFocus('salary')}
               activeOpacity={0.75}
             >
-              <Typography 
-                variant="caption" 
+              <Typography
+                variant="caption"
                 numberOfLines={1}
                 style={[styles.segmentSubText, activeFocus === 'salary' && styles.segmentSubTextActiveGreen]}
               >
@@ -359,11 +359,11 @@ export default function InsightsScreen() {
           )}
 
           {/* Pure, Clamped SVG Canvas */}
-          <View 
+          <View
             style={styles.svgWrapper}
             onTouchStart={handleTouch}
             onTouchMove={handleTouch}
-            onTouchEnd={() => {}}
+            onTouchEnd={() => { }}
           >
             <Svg width={actualWidth} height={chartHeight}>
               <Defs>
@@ -381,12 +381,12 @@ export default function InsightsScreen() {
 
                 return (
                   <G key={`ytick-${val}`}>
-                    <Line 
-                      x1={paddingLeft} 
-                      y1={yPos} 
-                      x2={actualWidth - paddingRight} 
-                      y2={yPos} 
-                      stroke={isZero ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)'} 
+                    <Line
+                      x1={paddingLeft}
+                      y1={yPos}
+                      x2={actualWidth - paddingRight}
+                      y2={yPos}
+                      stroke={isZero ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)'}
                       strokeDasharray={isZero ? undefined : '3 3'}
                       strokeWidth={isZero ? 1.2 : 1}
                     />
@@ -411,13 +411,13 @@ export default function InsightsScreen() {
 
               {/* Spline Line */}
               {linePath ? (
-                <Path 
-                  d={linePath} 
-                  fill="none" 
-                  stroke="#D6A928" 
-                  strokeWidth="2.5" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
+                <Path
+                  d={linePath}
+                  fill="none"
+                  stroke="#D6A928"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 />
               ) : null}
 
@@ -446,11 +446,11 @@ export default function InsightsScreen() {
               {/* 1 Sep Starting Point */}
               {startPoint && (
                 <G>
-                  <Circle 
-                    cx={getX(startPoint)} 
-                    cy={getY(startPoint.balance)} 
-                    r="4" 
-                    fill="#D6A928" 
+                  <Circle
+                    cx={getX(startPoint)}
+                    cy={getY(startPoint.balance)}
+                    r="4"
+                    fill="#D6A928"
                   />
                   <SvgText
                     x={getX(startPoint) + 6}
@@ -468,46 +468,46 @@ export default function InsightsScreen() {
               {troughPoint && (activeFocus === 'all' || activeFocus === 'trough') && (
                 <G>
                   {/* Vertical Guide Line */}
-                  <Line 
-                    x1={getX(troughPoint)} 
-                    y1={getY(3200) - 10} 
-                    x2={getX(troughPoint)} 
-                    y2={bottomZeroY} 
-                    stroke="#EF4444" 
-                    strokeDasharray="2 2" 
-                    strokeWidth="1.2" 
+                  <Line
+                    x1={getX(troughPoint)}
+                    y1={getY(3200) - 10}
+                    x2={getX(troughPoint)}
+                    y2={bottomZeroY}
+                    stroke="#EF4444"
+                    strokeDasharray="2 2"
+                    strokeWidth="1.2"
                   />
 
                   {/* Red Callout Tooltip Badge */}
                   <G transform={`translate(${getX(troughPoint) - 38}, ${getY(3200) - 40})`}>
-                    <Rect 
-                      x="0" 
-                      y="0" 
-                      width="76" 
-                      height="26" 
-                      rx="5" 
-                      fill="#DC2626" 
+                    <Rect
+                      x="0"
+                      y="0"
+                      width="76"
+                      height="26"
+                      rx="5"
+                      fill="#DC2626"
                     />
-                    <Polygon 
-                      points="33,26 43,26 38,30" 
-                      fill="#DC2626" 
+                    <Polygon
+                      points="33,26 43,26 38,30"
+                      fill="#DC2626"
                     />
-                    <SvgText 
-                      x="38" 
-                      y="11" 
-                      fill="#FFFFFF" 
-                      fontSize="7.5" 
-                      fontWeight="700" 
+                    <SvgText
+                      x="38"
+                      y="11"
+                      fill="#FFFFFF"
+                      fontSize="7.5"
+                      fontWeight="700"
                       textAnchor="middle"
                     >
                       Lowest: ₹3,200
                     </SvgText>
-                    <SvgText 
-                      x="38" 
-                      y="20" 
-                      fill="rgba(255,255,255,0.85)" 
-                      fontSize="7" 
-                      fontWeight="600" 
+                    <SvgText
+                      x="38"
+                      y="20"
+                      fill="rgba(255,255,255,0.85)"
+                      fontSize="7"
+                      fontWeight="600"
                       textAnchor="middle"
                     >
                       25 Sep
@@ -515,19 +515,19 @@ export default function InsightsScreen() {
                   </G>
 
                   {/* Red Trough Marker */}
-                  <Circle 
-                    cx={getX(troughPoint)} 
-                    cy={getY(3200)} 
-                    r="7" 
-                    fill="rgba(239, 68, 68, 0.25)" 
+                  <Circle
+                    cx={getX(troughPoint)}
+                    cy={getY(3200)}
+                    r="7"
+                    fill="rgba(239, 68, 68, 0.25)"
                   />
-                  <Circle 
-                    cx={getX(troughPoint)} 
-                    cy={getY(3200)} 
-                    r="4.5" 
-                    fill="#EF4444" 
-                    stroke="#FFFFFF" 
-                    strokeWidth="1.5" 
+                  <Circle
+                    cx={getX(troughPoint)}
+                    cy={getY(3200)}
+                    r="4.5"
+                    fill="#EF4444"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
                   />
                 </G>
               )}
@@ -536,46 +536,46 @@ export default function InsightsScreen() {
               {salaryPoint && (activeFocus === 'all' || activeFocus === 'salary') && (
                 <G>
                   {/* Vertical Guide Line */}
-                  <Line 
-                    x1={getX(salaryPoint)} 
-                    y1={getY(88200) + 8} 
-                    x2={getX(salaryPoint)} 
-                    y2={bottomZeroY} 
-                    stroke="#22C55E" 
-                    strokeDasharray="2 2" 
-                    strokeWidth="1.2" 
+                  <Line
+                    x1={getX(salaryPoint)}
+                    y1={getY(88200) + 8}
+                    x2={getX(salaryPoint)}
+                    y2={bottomZeroY}
+                    stroke="#22C55E"
+                    strokeDasharray="2 2"
+                    strokeWidth="1.2"
                   />
 
                   {/* Green Callout Tooltip Badge */}
                   <G transform={`translate(${Math.min(getX(salaryPoint) - 38, actualWidth - paddingRight - 80)}, ${Math.max(getY(88200) - 32, 2)})`}>
-                    <Rect 
-                      x="0" 
-                      y="0" 
-                      width="80" 
-                      height="26" 
-                      rx="5" 
-                      fill="#16A34A" 
+                    <Rect
+                      x="0"
+                      y="0"
+                      width="80"
+                      height="26"
+                      rx="5"
+                      fill="#16A34A"
                     />
-                    <Polygon 
-                      points="35,26 45,26 40,30" 
-                      fill="#16A34A" 
+                    <Polygon
+                      points="35,26 45,26 40,30"
+                      fill="#16A34A"
                     />
-                    <SvgText 
-                      x="40" 
-                      y="11" 
-                      fill="#FFFFFF" 
-                      fontSize="7.5" 
-                      fontWeight="700" 
+                    <SvgText
+                      x="40"
+                      y="11"
+                      fill="#FFFFFF"
+                      fontSize="7.5"
+                      fontWeight="700"
                       textAnchor="middle"
                     >
                       Salary: ₹88,200
                     </SvgText>
-                    <SvgText 
-                      x="40" 
-                      y="20" 
-                      fill="rgba(255,255,255,0.85)" 
-                      fontSize="7" 
-                      fontWeight="600" 
+                    <SvgText
+                      x="40"
+                      y="20"
+                      fill="rgba(255,255,255,0.85)"
+                      fontSize="7"
+                      fontWeight="600"
                       textAnchor="middle"
                     >
                       28 Sep Inflow
@@ -583,19 +583,19 @@ export default function InsightsScreen() {
                   </G>
 
                   {/* Green Salary Marker */}
-                  <Circle 
-                    cx={getX(salaryPoint)} 
-                    cy={getY(88200)} 
-                    r="7" 
-                    fill="rgba(34, 197, 94, 0.25)" 
+                  <Circle
+                    cx={getX(salaryPoint)}
+                    cy={getY(88200)}
+                    r="7"
+                    fill="rgba(34, 197, 94, 0.25)"
                   />
-                  <Circle 
-                    cx={getX(salaryPoint)} 
-                    cy={getY(88200)} 
-                    r="4.5" 
-                    fill="#22C55E" 
-                    stroke="#FFFFFF" 
-                    strokeWidth="1.5" 
+                  <Circle
+                    cx={getX(salaryPoint)}
+                    cy={getY(88200)}
+                    r="4.5"
+                    fill="#22C55E"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
                   />
                 </G>
               )}
@@ -603,22 +603,22 @@ export default function InsightsScreen() {
               {/* Scrubber Cursor */}
               {activeScrubPoint && (
                 <G>
-                  <Line 
-                    x1={getX(activeScrubPoint)} 
-                    y1={paddingTop} 
-                    x2={getX(activeScrubPoint)} 
-                    y2={bottomZeroY} 
-                    stroke="#D6A928" 
-                    strokeWidth="1.5" 
-                    strokeDasharray="2 2" 
+                  <Line
+                    x1={getX(activeScrubPoint)}
+                    y1={paddingTop}
+                    x2={getX(activeScrubPoint)}
+                    y2={bottomZeroY}
+                    stroke="#D6A928"
+                    strokeWidth="1.5"
+                    strokeDasharray="2 2"
                   />
-                  <Circle 
-                    cx={getX(activeScrubPoint)} 
-                    cy={getY(activeScrubPoint.balance)} 
-                    r="5.5" 
-                    fill="#D6A928" 
-                    stroke="#0F172A" 
-                    strokeWidth="2" 
+                  <Circle
+                    cx={getX(activeScrubPoint)}
+                    cy={getY(activeScrubPoint.balance)}
+                    r="5.5"
+                    fill="#D6A928"
+                    stroke="#0F172A"
+                    strokeWidth="2"
                   />
                 </G>
               )}
@@ -635,7 +635,7 @@ export default function InsightsScreen() {
             <Typography variant="body" color="#92400E" style={styles.warningText}>
               <Typography variant="bodyBold" color="#92400E">Solvency Warning:</Typography> Account dips to <Typography variant="bodyBold" color="#92400E">₹3,200</Typography> on 25 Sep after your ₹8,400 Car Loan EMI auto-debits, leaving a razor-thin buffer before payday on 28 Sep.
             </Typography>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.warningActionBtn}
               onPress={() => router.push('/simulator')}
               activeOpacity={0.8}
@@ -654,7 +654,7 @@ export default function InsightsScreen() {
 
         <View style={styles.obligationsList}>
           {/* Axis Car Loan EMI */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.obligationCard}
             onPress={() => router.push('/debt')}
             activeOpacity={0.75}
@@ -743,8 +743,8 @@ export default function InsightsScreen() {
           Financial Intelligence Hub
         </Typography>
 
-        <TouchableOpacity 
-          style={styles.hubCard} 
+        <TouchableOpacity
+          style={styles.hubCard}
           onPress={() => router.push('/debt')}
           activeOpacity={0.75}
         >
@@ -760,8 +760,8 @@ export default function InsightsScreen() {
           <ArrowRight color={COLORS.textSecondary} size={18} />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.hubCard} 
+        <TouchableOpacity
+          style={styles.hubCard}
           onPress={() => router.push('/simulator')}
           activeOpacity={0.75}
         >
@@ -777,8 +777,8 @@ export default function InsightsScreen() {
           <ArrowRight color={COLORS.textSecondary} size={18} />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.hubCard} 
+        <TouchableOpacity
+          style={styles.hubCard}
           onPress={() => router.push('/copilot/affordability')}
           activeOpacity={0.75}
         >
@@ -794,8 +794,8 @@ export default function InsightsScreen() {
           <ArrowRight color={COLORS.textSecondary} size={18} />
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.hubCard} 
+        <TouchableOpacity
+          style={styles.hubCard}
           onPress={() => router.push('/copilot/analysis')}
           activeOpacity={0.75}
         >

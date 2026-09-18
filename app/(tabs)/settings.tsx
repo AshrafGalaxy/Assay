@@ -109,8 +109,9 @@ export default function SettingsScreen() {
           <SettingRow
             icon={<CreditCard color={COLORS.text} size={20} strokeWidth={1.8} />}
             label="Payment Methods & AA Consents"
+            value="Sandbox Active"
             showDivider
-            onPress={() => router.push('/debt')}
+            onPress={() => router.push('/connect')}
           />
           <SettingRow
             icon={<Bell color={COLORS.text} size={20} strokeWidth={1.8} />}

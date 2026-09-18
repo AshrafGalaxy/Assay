@@ -41,12 +41,12 @@ export default function WelcomeScreen() {
         <Button 
           title="Get Started" 
           variant="gold" 
-          onPress={() => router.replace('/(tabs)')}
+          onPress={() => router.push('/auth/signup')}
         />
         <Button 
           title="I already have an account" 
           variant="secondary" 
-          onPress={() => router.replace('/(tabs)')}
+          onPress={() => router.push('/auth/login')}
         />
       </View>
     </SafeAreaView>

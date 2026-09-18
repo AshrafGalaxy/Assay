@@ -65,6 +65,10 @@ export default function RootLayout() {
       }}
     >
       <Stack.Screen name="index" />
+      <Stack.Screen name="auth/login" options={{ presentation: 'card' }} />
+      <Stack.Screen name="auth/signup" options={{ presentation: 'card' }} />
+      <Stack.Screen name="auth/forgot-password" options={{ presentation: 'card' }} />
+      <Stack.Screen name="connect/index" options={{ presentation: 'card' }} />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="transaction/[id]" options={{ presentation: 'card' }} />
       <Stack.Screen name="split/index" options={{ presentation: 'modal' }} />

@@ -50,6 +50,18 @@ export function MerchantLogo({ name, size = 42, style }: MerchantLogoProps) {
     );
   }
 
+  // State Bank of India (SBI)
+  if (normalized.includes('sbi') || normalized.includes('state bank')) {
+    return (
+      <View style={[styles.container, { width: size, height: size, borderRadius: size / 2, backgroundColor: '#EFF6FF', borderColor: '#BFDBFE' }, style]}>
+        <View style={{ width: size * 0.6, height: size * 0.6, borderRadius: size * 0.3, backgroundColor: '#0284C7', justifyContent: 'center', alignItems: 'center' }}>
+          <View style={{ width: size * 0.2, height: size * 0.2, borderRadius: size * 0.1, backgroundColor: '#FFFFFF' }} />
+          <View style={{ position: 'absolute', bottom: 2, width: size * 0.08, height: size * 0.22, backgroundColor: '#FFFFFF' }} />
+        </View>
+      </View>
+    );
+  }
+
   // Starbucks
   if (normalized.includes('starbucks')) {
     return (

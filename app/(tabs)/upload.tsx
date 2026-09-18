@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Typography } from '../../components/Typography';
-import { COLORS, SIZES } from '../../constants/theme';
+import { COLORS, SIZES, FONTS } from '../../constants/theme';
 import { 
   Camera, 
   Image as ImageIcon
@@ -116,6 +116,28 @@ export default function UploadScreen() {
             </Typography>
           </TouchableOpacity>
         </View>
+
+        {/* Live Bank Sync via Account Aggregator */}
+        <TouchableOpacity
+          style={styles.aaBanner}
+          activeOpacity={0.8}
+          onPress={() => router.push('/connect')}
+        >
+          <View style={styles.aaBannerLeft}>
+            <Typography variant="caption" color={COLORS.gold} style={{ fontFamily: FONTS.bodyBold, letterSpacing: 0.8 }}>
+              RBI ACCOUNT AGGREGATOR
+            </Typography>
+            <Typography variant="bodyBold" color={COLORS.primary} style={{ marginTop: 2 }}>
+              Sync Live Bank Accounts
+            </Typography>
+            <Typography variant="secondary" color={COLORS.textSecondary} style={{ marginTop: 2 }}>
+              Automate statements with consent-based data access.
+            </Typography>
+          </View>
+          <Typography variant="caption" color={COLORS.primary} style={{ fontFamily: FONTS.bodySemiBold }}>
+            Connect →
+          </Typography>
+        </TouchableOpacity>
 
         {/* Recent Uploads Section */}
         <View style={styles.recentSectionHeader}>
@@ -323,5 +345,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
     marginLeft: 12,
+  },
+  aaBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#FCFAF5',
+    borderWidth: 1,
+    borderColor: 'rgba(214, 169, 40, 0.35)',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 24,
+  },
+  aaBannerLeft: {
+    flex: 1,
+    paddingRight: 10,
   },
 });
