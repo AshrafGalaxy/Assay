@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm --prefix frontend start",
     "dev:frontend": "npm --prefix frontend start",
-    "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8000",
+    "dev:backend": "cd backend && (../.venv/bin/uvicorn app.main:app --reload --port 8000 || uvicorn app.main:app --reload --port 8000)",
     "ios": "npm --prefix frontend run ios",
     "android": "npm --prefix frontend run android",
     "web": "npm --prefix frontend run web"
