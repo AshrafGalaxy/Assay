@@ -132,7 +132,7 @@ export default function CashFlowDetailScreen() {
           <ArrowLeft color={COLORS.text} size={20} strokeWidth={2} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Typography variant="heading" style={styles.headerTitle}>Cash Flow Forecast</Typography>
+          <Typography variant="pageTitle" style={styles.headerTitle}>Cash Flow Forecast</Typography>
           <Typography variant="caption" color={COLORS.textSecondary} style={styles.headerSub}>
             Understand how your balance may move over the next 30 days.
           </Typography>

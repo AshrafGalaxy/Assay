@@ -1,14 +1,37 @@
-import React from 'react';
-import { View, StyleSheet, StatusBar } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, StyleSheet, StatusBar, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Typography } from '../components/Typography';
 import { Button } from '../components/Button';
 import { COLORS, SIZES, SPACING } from '../constants/theme';
 import { LayoutDashboard, Sparkles } from 'lucide-react-native';
+import { hasActiveSession } from '../services/auth';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const [checking, setChecking] = useState(true);
+
+  // On mount: if the user already has a session, skip straight to home.
+  // This prevents the back-swipe to "Get Started" after login.
+  useEffect(() => {
+    hasActiveSession().then((loggedIn) => {
+      if (loggedIn) {
+        router.replace('/(tabs)');
+      } else {
+        setChecking(false);
+      }
+    });
+  }, []);
+
+  // Show a blank loader while checking — prevents flash of welcome screen
+  if (checking) {
+    return (
+      <View style={styles.loader}>
+        <ActivityIndicator color={COLORS.gold} size="small" />
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -54,6 +77,12 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  loader: {
+    flex: 1,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   container: {
     flex: 1,
     backgroundColor: COLORS.primary,
@@ -104,3 +133,4 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 });
+

@@ -1,3 +1,43 @@
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+// ── Lightweight session persistence ──────────────────────────────────────────
+// Stores a flag so the app can skip the welcome screen after login.
+const SESSION_KEY = 'assay_session_v1';
+
+export async function setSessionFlag(): Promise<void> {
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(SESSION_KEY, '1');
+    }
+    await AsyncStorage.setItem(SESSION_KEY, '1');
+  } catch (_) {}
+}
+
+export async function clearSessionFlag(): Promise<void> {
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.removeItem(SESSION_KEY);
+    }
+    await AsyncStorage.removeItem(SESSION_KEY);
+  } catch (_) {}
+}
+
+export async function hasActiveSession(): Promise<boolean> {
+  try {
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
+      const val = window.localStorage.getItem(SESSION_KEY);
+      if (val === '1') return true;
+    }
+    const val = await AsyncStorage.getItem(SESSION_KEY);
+    return val === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
+
+
 export interface User {
   id: string;
   name: string;

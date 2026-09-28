@@ -65,11 +65,11 @@ export default function RootLayout() {
       }}
     >
       <Stack.Screen name="index" />
-      <Stack.Screen name="auth/login" options={{ presentation: 'card' }} />
-      <Stack.Screen name="auth/signup" options={{ presentation: 'card' }} />
+      <Stack.Screen name="auth/login" options={{ presentation: 'card', gestureEnabled: false }} />
+      <Stack.Screen name="auth/signup" options={{ presentation: 'card', gestureEnabled: false }} />
       <Stack.Screen name="auth/forgot-password" options={{ presentation: 'card' }} />
-      <Stack.Screen name="connect/index" options={{ presentation: 'card' }} />
-      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="connect/index" options={{ presentation: 'card', gestureEnabled: false }} />
+      <Stack.Screen name="(tabs)" options={{ gestureEnabled: false, headerBackVisible: false }} />
       <Stack.Screen name="transaction/[id]" options={{ presentation: 'card' }} />
       <Stack.Screen name="split/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="ai/index" options={{ presentation: 'card' }} />
