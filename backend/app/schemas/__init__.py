@@ -11,3 +11,13 @@ from app.schemas.financial_health import (
     RecommendationSimulateResponse,
     RecommendationOut,
 )
+from app.schemas.receipt import (
+    LineItem,
+    FieldConfidence,
+    ReceiptFieldConfidences,
+    ParsedReceipt,
+    ReceiptOCRInfo,
+    ReceiptOCRResponse,
+    ReceiptConfirmRequest,
+    ReceiptConfirmResponse,
+)
