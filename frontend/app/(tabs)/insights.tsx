@@ -5,8 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Dimensions,
-  Platform,
-  GestureResponderEvent
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,15 +16,12 @@ import Svg, {
   Circle,
   Line,
   Text as SvgText,
-  Rect,
-  Polygon,
-  G
+  G,
 } from 'react-native-svg';
 import { Typography } from '../../components/Typography';
-import { Card } from '../../components/Card';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { MerchantLogo } from '../../components/ui/MerchantLogo';
-import { COLORS, SIZES, SPACING } from '../../constants/theme';
+import { COLORS, SPACING } from '../../constants/theme';
 import {
   TrendingUp,
   TrendingDown,
@@ -34,7 +29,8 @@ import {
   ArrowRight,
   Calendar,
   Zap,
-  ArrowUpRight
+  ArrowUpRight,
+  ChevronRight,
 } from 'lucide-react-native';
 
 const TIMEFRAMES = ['30 Days', '60 Days', '90 Days'];
@@ -43,160 +39,79 @@ interface DayDataPoint {
   day: number;
   label: string;
   balance: number;
-  pctX: number; // Visual distribution percentage matching Mock UI 7
-  event?: string;
-  eventType?: 'debit' | 'credit' | 'trough';
+  pctX: number;
 }
 
-// 30-Day Data Model matching Mock UI 7.png milestone distribution
+// Full 30-day dataset — underlying data preserved, only presentation changes
 const FULL_MONTH_DATA: DayDataPoint[] = [
-  { day: 1, label: '1 Sep', balance: 42850, pctX: 0.0 },
-  { day: 7, label: '7 Sep', balance: 37400, pctX: 0.17 },
+  { day: 1,  label: '1 Sep',  balance: 42850, pctX: 0.0  },
+  { day: 7,  label: '7 Sep',  balance: 37400, pctX: 0.17 },
   { day: 14, label: '14 Sep', balance: 31000, pctX: 0.35 },
   { day: 21, label: '21 Sep', balance: 24000, pctX: 0.52 },
-  { day: 22, label: '22 Sep', balance: 15600, pctX: 0.58, event: 'Axis Car Loan EMI (-₹8,400)', eventType: 'debit' },
-  { day: 25, label: '25 Sep', balance: 3200, pctX: 0.70, event: 'Critical Minimum Liquidity Trough', eventType: 'trough' },
-  { day: 28, label: '28 Sep', balance: 88200, pctX: 0.86, event: 'Monthly Salary Deposit (+₹85,000)', eventType: 'credit' },
-  { day: 30, label: '30 Sep', balance: 82400, pctX: 1.0 },
-];
-
-// Zoomed Trough View (20-30 Sep)
-const ZOOMED_DATA: DayDataPoint[] = [
-  { day: 20, label: '20 Sep', balance: 25200, pctX: 0.0 },
-  { day: 22, label: '22 Sep', balance: 15600, pctX: 0.22, event: 'Axis Car Loan EMI (-₹8,400)', eventType: 'debit' },
-  { day: 24, label: '24 Sep', balance: 13000, pctX: 0.40, event: 'Adani Electricity (-₹2,100)', eventType: 'debit' },
-  { day: 25, label: '25 Sep', balance: 3200, pctX: 0.56, event: 'Critical Trough (Lowest Balance)', eventType: 'trough' },
-  { day: 28, label: '28 Sep', balance: 88200, pctX: 0.82, event: 'Monthly Salary Deposit (+₹85,000)', eventType: 'credit' },
-  { day: 30, label: '30 Sep', balance: 82400, pctX: 1.0 },
+  { day: 22, label: '22 Sep', balance: 15600, pctX: 0.58 },
+  { day: 25, label: '25 Sep', balance: 3200,  pctX: 0.70 },
+  { day: 28, label: '28 Sep', balance: 88200, pctX: 0.86 },
+  { day: 30, label: '30 Sep', balance: 82400, pctX: 1.0  },
 ];
 
 export default function InsightsScreen() {
   const router = useRouter();
   const [timeframe, setTimeframe] = useState('30 Days');
-  const [viewMode, setViewMode] = useState<'full' | 'zoom'>('full');
-  const [activeFocus, setActiveFocus] = useState<'all' | 'trough' | 'salary'>('all');
   const [cardWidth, setCardWidth] = useState<number>(0);
-  const [activeScrubPoint, setActiveScrubPoint] = useState<DayDataPoint | null>(null);
 
   const screenWidth = Dimensions.get('window').width;
   const fallbackWidth = Math.min(screenWidth - 40, 420);
   const actualWidth = cardWidth > 0 ? cardWidth : fallbackWidth;
 
-  const chartHeight = 205;
-  const paddingLeft = 40; // Compact Y-axis margin saving 12px for chart curve
-  const paddingRight = 16;
-  const paddingTop = 32;
-  const paddingBottom = 24;
+  // Compact summary chart — intentionally small and calm
+  const chartH    = 130;
+  const padL      = 0;
+  const padR      = 0;
+  const padTop    = 10;
+  const padBottom = 10;
+  const plotW     = Math.max(actualWidth - padL - padR, 120);
+  const plotH     = chartH - padTop - padBottom;
+  const baseY     = padTop + plotH;
+  const maxVal    = 100000;
 
-  const plotWidth = Math.max(actualWidth - paddingLeft - paddingRight, 160);
-  const plotHeight = chartHeight - paddingTop - paddingBottom;
-  const bottomZeroY = paddingTop + plotHeight;
-
-  const activeDataSet = viewMode === 'full' ? FULL_MONTH_DATA : ZOOMED_DATA;
-  const maxVal = 100000;
-
-  // Coordinate mapping using milestone visual distribution
-  const getX = (d: DayDataPoint) => {
-    return paddingLeft + d.pctX * plotWidth;
-  };
-
+  // Compact summary chart — correct coordinate functions using padL/baseY/plotW
+  const getX = (d: DayDataPoint) => padL + d.pctX * plotW;
   const getY = (val: number) => {
-    const fraction = Math.max(0, Math.min(val / maxVal, 1));
-    // Enforce at least 8px above bottomZeroY so line NEVER touches or dips below X-axis
-    const maxAllowedY = bottomZeroY - 8;
-    const computedY = paddingTop + (1 - fraction) * plotHeight;
-    return Math.min(computedY, maxAllowedY);
+    const frac = Math.max(0, Math.min(val / maxVal, 1));
+    return Math.min(padTop + (1 - frac) * plotH, baseY - 6);
   };
 
-  // Monotonic cubic spline calculation with strict zero-overshoot clamp
-  const { linePath, areaPath } = useMemo(() => {
-    if (activeDataSet.length < 2) return { linePath: '', areaPath: '' };
+  const troughPoint = FULL_MONTH_DATA.find(d => d.day === 25)!;
 
-    const points = activeDataSet.map(d => ({
-      x: getX(d),
-      y: getY(d.balance),
+  const { linePath, areaPath } = useMemo(() => {
+    const pts = FULL_MONTH_DATA.map(d => ({
+      x: getX(d), y: getY(d.balance),
       isTrough: d.balance <= 3500,
-      isPeak: d.balance >= 80000
+      isPeak:   d.balance >= 80000,
     }));
 
-    let path = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
-
-    for (let i = 0; i < points.length - 1; i++) {
-      const p1 = points[i];
-      const p2 = points[i + 1];
-
+    let path = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p1 = pts[i], p2 = pts[i + 1];
       const dx = p2.x - p1.x;
-      let cp1x = p1.x + dx * 0.38;
-      let cp1y = p1.y;
-      let cp2x = p2.x - dx * 0.38;
-      let cp2y = p2.y;
-
-      // When approaching or leaving the local minimum (Trough at 25 Sep), force tangent to be strictly horizontal
-      // This mathematically prevents cubic overshoot below the minimum and X-axis
-      if (p2.isTrough) {
-        cp2y = p2.y; // Flat tangent approaching minimum
-        cp1y = p1.y + (p2.y - p1.y) * 0.3;
-      } else if (p1.isTrough) {
-        cp1y = p1.y; // Flat tangent leaving minimum
-        cp2y = p2.y - (p2.y - p1.y) * 0.2;
-      } else if (p2.isPeak) {
-        cp2y = p2.y; // Flat tangent approaching peak
-        cp1y = p1.y + (p2.y - p1.y) * 0.5;
-      } else {
-        cp1y = p1.y + (p2.y - p1.y) * 0.25;
-        cp2y = p2.y - (p2.y - p1.y) * 0.25;
-      }
-
-      // Hard clamp on control points: strictly above bottom zero axis
-      cp1y = Math.min(cp1y, bottomZeroY - 6);
-      cp2y = Math.min(cp2y, bottomZeroY - 6);
-
+      let cp1x = p1.x + dx * 0.38, cp1y = p1.y;
+      let cp2x = p2.x - dx * 0.38, cp2y = p2.y;
+      if (p2.isTrough)      { cp2y = p2.y; cp1y = p1.y + (p2.y - p1.y) * 0.3; }
+      else if (p1.isTrough) { cp1y = p1.y; cp2y = p2.y - (p2.y - p1.y) * 0.2; }
+      else if (p2.isPeak)   { cp2y = p2.y; cp1y = p1.y + (p2.y - p1.y) * 0.5; }
+      else { cp1y = p1.y + (p2.y - p1.y) * 0.25; cp2y = p2.y - (p2.y - p1.y) * 0.25; }
+      cp1y = Math.min(cp1y, baseY - 5); cp2y = Math.min(cp2y, baseY - 5);
       path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
     }
-
-    const firstPt = points[0];
-    const lastPt = points[points.length - 1];
-    const bottomYStr = bottomZeroY.toFixed(1);
-
-    const area = `${path} L ${lastPt.x.toFixed(1)} ${bottomYStr} L ${firstPt.x.toFixed(1)} ${bottomYStr} Z`;
-
+    const fp = pts[0], lp = pts[pts.length - 1];
+    const area = `${path} L ${lp.x.toFixed(1)} ${baseY.toFixed(1)} L ${fp.x.toFixed(1)} ${baseY.toFixed(1)} Z`;
     return { linePath: path, areaPath: area };
-  }, [activeDataSet, actualWidth]);
+  }, [actualWidth]);
 
-  // Touch scrubber along chart
-  const handleTouch = (evt: GestureResponderEvent) => {
-    const touchX = evt.nativeEvent.locationX;
-    let closestPt = activeDataSet[0];
-    let minDiff = Infinity;
 
-    activeDataSet.forEach((pt) => {
-      const px = getX(pt);
-      const diff = Math.abs(px - touchX);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestPt = pt;
-      }
-    });
-
-    setActiveScrubPoint(closestPt);
-  };
-
-  // Milestone points
-  const troughPoint = activeDataSet.find(d => d.day === 25);
-  const salaryPoint = activeDataSet.find(d => d.day === 28);
-  const startPoint = activeDataSet.find(d => d.day === (viewMode === 'full' ? 1 : 20));
-
-  const yTicks = [
-    { val: 100000, label: '₹100k' },
-    { val: 75000, label: '₹75k' },
-    { val: 50000, label: '₹50k' },
-    { val: 25000, label: '₹25k' },
-    { val: 0, label: '₹0' },
-  ];
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header with clean left title and calendar action on right */}
       <ScreenHeader
         title="Cash-Flow Forecast"
         subtitle="Predictive Solvency & Buffer Analytics"
@@ -204,7 +119,7 @@ export default function InsightsScreen() {
         rightAction={
           <TouchableOpacity
             style={styles.calendarBtn}
-            onPress={() => { }}
+            onPress={() => {}}
             activeOpacity={0.7}
           >
             <Calendar color={COLORS.text} size={18} strokeWidth={1.8} />
@@ -216,7 +131,7 @@ export default function InsightsScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Timeframe Filter Pills (30 Days, 60 Days, 90 Days) */}
+        {/* Timeframe Pills */}
         <View style={styles.timeframeRow}>
           {TIMEFRAMES.map((tf) => {
             const isActive = timeframe === tf;
@@ -238,410 +153,105 @@ export default function InsightsScreen() {
           })}
         </View>
 
-        {/* Hero Cash-Flow Forecast Dark Card */}
-        <View
+        {/* ── SUMMARY CARD — entire card is tappable, navigates to detail ── */}
+        <TouchableOpacity
           style={styles.forecastCard}
+          activeOpacity={0.93}
+          onPress={() => router.push('/cashflow-detail')}
           onLayout={(e) => {
-            const width = e.nativeEvent.layout.width;
-            if (width > 0 && Math.abs(width - cardWidth) > 2) {
-              setCardWidth(width);
-            }
+            const w = e.nativeEvent.layout.width;
+            if (w > 0 && Math.abs(w - cardWidth) > 2) setCardWidth(w);
           }}
         >
-          {/* Card Top Row: Title never truncated + Compact Floor Tag */}
-          <View style={styles.forecastHeader}>
-            <View style={styles.titleRow}>
-              <Typography variant="bodyBold" color="#FFFFFF" style={styles.cardTitle}>
-                Projected Minimum Liquidity
-              </Typography>
-              <View style={styles.floorMiniTag}>
-                <Typography variant="caption" style={styles.floorMiniTagText}>
-                  ₹3,200 Floor
-                </Typography>
-              </View>
+          {/* 3-column metric summary */}
+          <View style={styles.summaryMetricRow}>
+            <View style={styles.summaryMetric}>
+              <Typography variant="caption" style={styles.metricLabel}>Current</Typography>
+              <Typography variant="financial" style={styles.metricValueNeutral}>₹42,850</Typography>
             </View>
-            <Typography variant="caption" color="rgba(255, 255, 255, 0.55)" style={styles.cardSubtitle}>
-              Trajectory hits lowest buffer on 25 Sep after ₹8,400 Car EMI
-            </Typography>
-          </View>
-
-          {/* Tier 1: View Scale Segmented Track (30-Day vs Trough Zoom) */}
-          <View style={styles.segmentedTrackPrimary}>
-            <TouchableOpacity
-              style={[styles.segmentBtn, viewMode === 'full' && styles.segmentBtnActive]}
-              onPress={() => {
-                setViewMode('full');
-                setActiveScrubPoint(null);
-              }}
-              activeOpacity={0.75}
-            >
-              <Typography
-                variant="caption"
-                numberOfLines={1}
-                style={[styles.segmentText, viewMode === 'full' && styles.segmentTextActive]}
-              >
-                30-Day Trajectory
-              </Typography>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.segmentBtn, viewMode === 'zoom' && styles.segmentBtnActive]}
-              onPress={() => {
-                setViewMode('zoom');
-                setActiveScrubPoint(null);
-              }}
-              activeOpacity={0.75}
-            >
-              <Typography
-                variant="caption"
-                numberOfLines={1}
-                style={[styles.segmentText, viewMode === 'zoom' && styles.segmentTextActive]}
-              >
-                Trough Zoom (10D)
-              </Typography>
-            </TouchableOpacity>
-          </View>
-
-          {/* Tier 2: Milestone Focus Track (Matching Segmented Design, Zero Bloat) */}
-          <View style={styles.segmentedTrackSecondary}>
-            <TouchableOpacity
-              style={[styles.segmentSubBtn, activeFocus === 'all' && styles.segmentSubBtnActiveGold]}
-              onPress={() => setActiveFocus('all')}
-              activeOpacity={0.75}
-            >
-              <Typography
-                variant="caption"
-                numberOfLines={1}
-                style={[styles.segmentSubText, activeFocus === 'all' && styles.segmentSubTextActiveGold]}
-              >
-                All Milestones
-              </Typography>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.segmentSubBtn, activeFocus === 'trough' && styles.segmentSubBtnActiveRed]}
-              onPress={() => setActiveFocus('trough')}
-              activeOpacity={0.75}
-            >
-              <Typography
-                variant="caption"
-                numberOfLines={1}
-                style={[styles.segmentSubText, activeFocus === 'trough' && styles.segmentSubTextActiveRed]}
-              >
-                Lowest (₹3.2k)
-              </Typography>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.segmentSubBtn, activeFocus === 'salary' && styles.segmentSubBtnActiveGreen]}
-              onPress={() => setActiveFocus('salary')}
-              activeOpacity={0.75}
-            >
-              <Typography
-                variant="caption"
-                numberOfLines={1}
-                style={[styles.segmentSubText, activeFocus === 'salary' && styles.segmentSubTextActiveGreen]}
-              >
-                Salary (₹88.2k)
-              </Typography>
-            </TouchableOpacity>
-          </View>
-
-          {/* Live Scrubber Inspection Banner */}
-          {activeScrubPoint && (
-            <View style={styles.activeScrubBanner}>
-              <View style={styles.scrubIndicatorDot} />
-              <Typography variant="caption" color="#FFFFFF" style={{ fontWeight: '600', fontSize: 11 }}>
-                {activeScrubPoint.label}: <Typography variant="caption" color="#D6A928" style={{ fontWeight: '700' }}>₹{activeScrubPoint.balance.toLocaleString('en-IN')}</Typography>
-                {activeScrubPoint.event ? ` • ${activeScrubPoint.event}` : ''}
-              </Typography>
+            <View style={[styles.summaryMetric, { alignItems: 'center' }]}>
+              <Typography variant="caption" style={styles.metricLabel}>Min Projected</Typography>
+              <Typography variant="financial" style={styles.metricValueAlert}>₹3,200</Typography>
             </View>
-          )}
+            <View style={[styles.summaryMetric, { alignItems: 'flex-end' }]}>
+              <Typography variant="caption" style={styles.metricLabel}>End of Period</Typography>
+              <Typography variant="financial" style={styles.metricValueGood}>₹82,400</Typography>
+            </View>
+          </View>
 
-          {/* Pure, Clamped SVG Canvas */}
-          <View
-            style={styles.svgWrapper}
-            onTouchStart={handleTouch}
-            onTouchMove={handleTouch}
-            onTouchEnd={() => { }}
-          >
-            <Svg width={actualWidth} height={chartHeight}>
+          <Typography variant="caption" style={styles.summarySubLabel}>
+            Lowest balance on 25 Sep — after ₹8,400 Car EMI
+          </Typography>
+
+          {/* Minimal line chart — NO controls, NO annotations, ONE marker */}
+          <View style={styles.svgWrapper}>
+            <Svg width={actualWidth} height={chartH}>
               <Defs>
-                <LinearGradient id="assayGoldGradient" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#D6A928" stopOpacity="0.4" />
-                  <Stop offset="65%" stopColor="#D6A928" stopOpacity="0.1" />
-                  <Stop offset="100%" stopColor="#D6A928" stopOpacity="0.0" />
+                <LinearGradient id="summaryGrad" x1="0" y1="0" x2="0" y2="1">
+                  <Stop offset="0%"   stopColor="#D6A928" stopOpacity="0.25" />
+                  <Stop offset="80%"  stopColor="#D6A928" stopOpacity="0.05" />
+                  <Stop offset="100%" stopColor="#D6A928" stopOpacity="0.0"  />
                 </LinearGradient>
               </Defs>
 
-              {/* Horizontal Reference Gridlines & Y-Axis Labels */}
-              {yTicks.map(({ val, label }) => {
-                const yPos = getY(val);
-                const isZero = val === 0;
+              {/* Subtle base line */}
+              <Line x1={0} y1={baseY} x2={actualWidth} y2={baseY}
+                stroke="rgba(255,255,255,0.10)" strokeWidth="1" />
 
-                return (
-                  <G key={`ytick-${val}`}>
-                    <Line
-                      x1={paddingLeft}
-                      y1={yPos}
-                      x2={actualWidth - paddingRight}
-                      y2={yPos}
-                      stroke={isZero ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.07)'}
-                      strokeDasharray={isZero ? undefined : '3 3'}
-                      strokeWidth={isZero ? 1.2 : 1}
-                    />
-                    <SvgText
-                      x={paddingLeft - 6}
-                      y={yPos + 3.5}
-                      fill="rgba(255, 255, 255, 0.45)"
-                      fontSize="8.5"
-                      fontWeight="500"
-                      textAnchor="end"
-                    >
-                      {label}
-                    </SvgText>
-                  </G>
-                );
-              })}
-
-              {/* Area Fill */}
-              {areaPath ? (
-                <Path d={areaPath} fill="url(#assayGoldGradient)" />
-              ) : null}
-
-              {/* Spline Line */}
+              {/* Area + line */}
+              {areaPath ? <Path d={areaPath} fill="url(#summaryGrad)" /> : null}
               {linePath ? (
-                <Path
-                  d={linePath}
-                  fill="none"
-                  stroke="#D6A928"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+                <Path d={linePath} fill="none" stroke="#D6A928"
+                  strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               ) : null}
 
-              {/* X-Axis Date Labels aligned under milestone points */}
-              {activeDataSet.map((pt) => {
-                const xPos = getX(pt);
-                const yPos = bottomZeroY + 16;
-                const isTrough = pt.day === 25;
-                const isSalary = pt.day === 28;
-
-                return (
-                  <SvgText
-                    key={`xtick-${pt.day}`}
-                    x={xPos}
-                    y={yPos}
-                    fill={isTrough ? '#FCA5A5' : isSalary ? '#86EFAC' : 'rgba(255,255,255,0.45)'}
-                    fontSize={isTrough || isSalary ? '9' : '8'}
-                    fontWeight={isTrough || isSalary ? '700' : '500'}
-                    textAnchor="middle"
-                  >
-                    {pt.label}
-                  </SvgText>
-                );
-              })}
-
-              {/* 1 Sep Starting Point */}
-              {startPoint && (
-                <G>
-                  <Circle
-                    cx={getX(startPoint)}
-                    cy={getY(startPoint.balance)}
-                    r="4"
-                    fill="#D6A928"
-                  />
-                  <SvgText
-                    x={getX(startPoint) + 6}
-                    y={getY(startPoint.balance) - 8}
-                    fill="#FFFFFF"
-                    fontSize="9.5"
-                    fontWeight="700"
-                  >
-                    ₹42,850
-                  </SvgText>
-                </G>
-              )}
-
-              {/* 25 Sep Trough Callout Badge - Strictly separated, self-contained, no overlapping text */}
-              {troughPoint && (activeFocus === 'all' || activeFocus === 'trough') && (
-                <G>
-                  {/* Vertical Guide Line */}
-                  <Line
-                    x1={getX(troughPoint)}
-                    y1={getY(3200) - 10}
-                    x2={getX(troughPoint)}
-                    y2={bottomZeroY}
-                    stroke="#EF4444"
-                    strokeDasharray="2 2"
-                    strokeWidth="1.2"
-                  />
-
-                  {/* Red Callout Tooltip Badge */}
-                  <G transform={`translate(${getX(troughPoint) - 38}, ${getY(3200) - 40})`}>
-                    <Rect
-                      x="0"
-                      y="0"
-                      width="76"
-                      height="26"
-                      rx="5"
-                      fill="#DC2626"
-                    />
-                    <Polygon
-                      points="33,26 43,26 38,30"
-                      fill="#DC2626"
-                    />
-                    <SvgText
-                      x="38"
-                      y="11"
-                      fill="#FFFFFF"
-                      fontSize="7.5"
-                      fontWeight="700"
-                      textAnchor="middle"
-                    >
-                      Lowest: ₹3,200
-                    </SvgText>
-                    <SvgText
-                      x="38"
-                      y="20"
-                      fill="rgba(255,255,255,0.85)"
-                      fontSize="7"
-                      fontWeight="600"
-                      textAnchor="middle"
-                    >
-                      25 Sep
-                    </SvgText>
-                  </G>
-
-                  {/* Red Trough Marker */}
-                  <Circle
-                    cx={getX(troughPoint)}
-                    cy={getY(3200)}
-                    r="7"
-                    fill="rgba(239, 68, 68, 0.25)"
-                  />
-                  <Circle
-                    cx={getX(troughPoint)}
-                    cy={getY(3200)}
-                    r="4.5"
-                    fill="#EF4444"
-                    stroke="#FFFFFF"
-                    strokeWidth="1.5"
-                  />
-                </G>
-              )}
-
-              {/* 28 Sep Salary Callout Badge - Positioned in the upper quadrant, zero collision */}
-              {salaryPoint && (activeFocus === 'all' || activeFocus === 'salary') && (
-                <G>
-                  {/* Vertical Guide Line */}
-                  <Line
-                    x1={getX(salaryPoint)}
-                    y1={getY(88200) + 8}
-                    x2={getX(salaryPoint)}
-                    y2={bottomZeroY}
-                    stroke="#22C55E"
-                    strokeDasharray="2 2"
-                    strokeWidth="1.2"
-                  />
-
-                  {/* Green Callout Tooltip Badge */}
-                  <G transform={`translate(${Math.min(getX(salaryPoint) - 38, actualWidth - paddingRight - 80)}, ${Math.max(getY(88200) - 32, 2)})`}>
-                    <Rect
-                      x="0"
-                      y="0"
-                      width="80"
-                      height="26"
-                      rx="5"
-                      fill="#16A34A"
-                    />
-                    <Polygon
-                      points="35,26 45,26 40,30"
-                      fill="#16A34A"
-                    />
-                    <SvgText
-                      x="40"
-                      y="11"
-                      fill="#FFFFFF"
-                      fontSize="7.5"
-                      fontWeight="700"
-                      textAnchor="middle"
-                    >
-                      Salary: ₹88,200
-                    </SvgText>
-                    <SvgText
-                      x="40"
-                      y="20"
-                      fill="rgba(255,255,255,0.85)"
-                      fontSize="7"
-                      fontWeight="600"
-                      textAnchor="middle"
-                    >
-                      28 Sep Inflow
-                    </SvgText>
-                  </G>
-
-                  {/* Green Salary Marker */}
-                  <Circle
-                    cx={getX(salaryPoint)}
-                    cy={getY(88200)}
-                    r="7"
-                    fill="rgba(34, 197, 94, 0.25)"
-                  />
-                  <Circle
-                    cx={getX(salaryPoint)}
-                    cy={getY(88200)}
-                    r="4.5"
-                    fill="#22C55E"
-                    stroke="#FFFFFF"
-                    strokeWidth="1.5"
-                  />
-                </G>
-              )}
-
-              {/* Scrubber Cursor */}
-              {activeScrubPoint && (
-                <G>
-                  <Line
-                    x1={getX(activeScrubPoint)}
-                    y1={paddingTop}
-                    x2={getX(activeScrubPoint)}
-                    y2={bottomZeroY}
-                    stroke="#D6A928"
-                    strokeWidth="1.5"
-                    strokeDasharray="2 2"
-                  />
-                  <Circle
-                    cx={getX(activeScrubPoint)}
-                    cy={getY(activeScrubPoint.balance)}
-                    r="5.5"
-                    fill="#D6A928"
-                    stroke="#0F172A"
-                    strokeWidth="2"
-                  />
-                </G>
-              )}
+              {/* Single minimum marker — the ONLY annotation */}
+              <G>
+                <Circle cx={getX(troughPoint)} cy={getY(troughPoint.balance)}
+                  r="8" fill="rgba(239,68,68,0.18)" />
+                <Circle cx={getX(troughPoint)} cy={getY(troughPoint.balance)}
+                  r="4" fill="#EF4444" stroke="#0F172A" strokeWidth="1.5" />
+                <SvgText x={getX(troughPoint)} y={getY(troughPoint.balance) - 11}
+                  fill="#FCA5A5" fontSize="8" fontWeight="600" textAnchor="middle">
+                  ₹3,200
+                </SvgText>
+              </G>
             </Svg>
           </View>
-        </View>
 
-        {/* Solvency Warning Alert Card */}
+          {/* Tap affordance */}
+          <View style={styles.tapAffordance}>
+            <Typography variant="caption" style={styles.tapHint}>
+              Balance projected to reach a low of{' '}
+              <Typography variant="caption" style={{ color: '#EF4444', fontWeight: '700' }}>₹3,200</Typography>
+              {' '}on 25 Sep
+            </Typography>
+            <View style={styles.tapCTA}>
+              <Typography variant="caption" style={styles.tapCTAText}>View detailed forecast</Typography>
+              <ChevronRight color="#D6A928" size={14} strokeWidth={2.5} />
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* Solvency Warning Card */}
         <View style={styles.warningCard}>
           <View style={styles.warningIconWrapper}>
-            <AlertTriangle color="#D97706" size={24} />
+            <AlertTriangle color="#D97706" size={22} />
           </View>
           <View style={{ flex: 1 }}>
             <Typography variant="body" color="#92400E" style={styles.warningText}>
-              <Typography variant="bodyBold" color="#92400E">Solvency Warning:</Typography> Account dips to <Typography variant="bodyBold" color="#92400E">₹3,200</Typography> on 25 Sep after your ₹8,400 Car Loan EMI auto-debits, leaving a razor-thin buffer before payday on 28 Sep.
+              <Typography variant="bodyBold" color="#92400E">Solvency Warning: </Typography>
+              Account dips to{' '}
+              <Typography variant="bodyBold" color="#92400E">₹3,200</Typography>
+              {' '}on 25 Sep after your ₹8,400 Car Loan EMI.
             </Typography>
             <TouchableOpacity
               style={styles.warningActionBtn}
-              onPress={() => router.push('/simulator')}
+              onPress={() => router.push('/cashflow-detail')}
               activeOpacity={0.8}
             >
               <Typography variant="caption" style={styles.warningActionText}>
-                Simulate in What-If to Prevent Trough →
+                See detailed forecast & what-if options →
               </Typography>
             </TouchableOpacity>
           </View>
@@ -817,6 +427,66 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+
+  // ── Summary chart card extras ──
+  summaryMetricRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  summaryMetric: {
+    flex: 1,
+  },
+  metricLabel: {
+    fontSize: 9.5,
+    color: 'rgba(255,255,255,0.42)',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 2,
+  },
+  metricValueNeutral: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+  metricValueAlert: {
+    fontSize: 16,
+    color: '#EF4444',
+    fontWeight: '700',
+  },
+  metricValueGood: {
+    fontSize: 16,
+    color: '#4ADE80',
+    fontWeight: '700',
+  },
+  summarySubLabel: {
+    color: 'rgba(255,255,255,0.38)',
+    fontSize: 11,
+    marginBottom: 6,
+    lineHeight: 16,
+  },
+  tapAffordance: {
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.07)',
+    marginTop: 2,
+  },
+  tapHint: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 11,
+    lineHeight: 16,
+    marginBottom: 5,
+  },
+  tapCTA: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+  },
+  tapCTAText: {
+    color: '#D6A928',
+    fontWeight: '700',
+    fontSize: 12,
   },
   scrollContent: {
     paddingHorizontal: 20,
