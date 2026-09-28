@@ -17,7 +17,7 @@ import { Button } from '../../components/Button';
 import { AuthInput } from '../../components/auth/AuthInput';
 import { AuthErrorBanner } from '../../components/auth/AuthErrorBanner';
 import { COLORS, SIZES, SPACING, FONTS } from '../../constants/theme';
-import { loginUser, validateEmail, AuthError, AuthErrorType } from '../../services/auth';
+import { loginUser, validateEmail, AuthError, AuthErrorType, setSessionFlag } from '../../services/auth';
 import { AAService } from '../../services/aaState';
 
 export default function LoginScreen() {
@@ -69,7 +69,8 @@ export default function LoginScreen() {
           setGeneralError(result.error);
         }
       } else if (result.user) {
-        // If returning user has completed onboarding, go directly to Dashboard
+        // Persist session so back-navigation to welcome is impossible
+        await setSessionFlag();
         const state = AAService.getState();
         if (state.aa_onboarding_completed) {
           router.replace('/(tabs)');

@@ -24,6 +24,7 @@ import {
   evaluatePasswordStrength,
   AuthError,
   AuthErrorType,
+  setSessionFlag,
 } from '../../services/auth';
 import { AAService } from '../../services/aaState';
 
@@ -107,7 +108,8 @@ export default function SignUpScreen() {
           setGeneralError(result.error);
         }
       } else if (result.user) {
-        // Check if user has already completed AA onboarding
+        // Persist session so back-navigation to welcome is impossible
+        await setSessionFlag();
         const state = AAService.getState();
         if (state.aa_onboarding_completed) {
           router.replace('/(tabs)');
