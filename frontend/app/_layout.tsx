@@ -86,6 +86,7 @@ export default function RootLayout() {
       <Stack.Screen name="settings/language" options={{ presentation: 'card' }} />
       <Stack.Screen name="settings/help" options={{ presentation: 'card' }} />
       <Stack.Screen name="settings/feedback" options={{ presentation: 'card' }} />
+      <Stack.Screen name="cashflow-detail/index" options={{ presentation: 'card' }} />
     </Stack>
   );
 }
