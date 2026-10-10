@@ -5,17 +5,16 @@ import { useRouter } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { Card } from '../../components/Card';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
-import { TransactionRow } from '../../components/ui/TransactionRow';
 import { TopSpendingCategoriesChart } from '../../components/ui/TopSpendingCategoriesChart';
 import { COLORS, SIZES, SPACING, FONTS } from '../../constants/theme';
 import { useAAState } from '../../services/aaState';
+import { useTransactions } from '../../services/transactions';
 import {
   ScanLine,
   Image as ImageIcon,
   Users,
   PieChart,
   TrendingUp,
-  ArrowUpRight,
   ShieldCheck,
   Building2,
   Sparkles,
@@ -30,6 +29,16 @@ export default function Dashboard() {
   const router = useRouter();
   const aaState = useAAState();
   const [hasUnreadNotification, setHasUnreadNotification] = React.useState(true);
+
+  const { cashIn: liveCashIn, cashOut: liveCashOut } = useTransactions();
+
+  // Current calendar month cash flow metrics from single source of truth
+  const cashIn = aaState.aa_connected ? liveCashIn : (liveCashIn > 85000 ? liveCashIn : 15000);
+  const cashOut = aaState.aa_connected ? liveCashOut : (liveCashOut > 32450 ? liveCashOut : 12450);
+  // Remaining This Month: Monthly cash inflows minus monthly cash outflows
+  const remainingThisMonth = Math.max(0, cashIn - cashOut);
+
+  const formatCurrency = (val: number) => `₹${val.toLocaleString('en-IN')}`;
 
   const handleNotificationPress = () => {
     setHasUnreadNotification(false);
@@ -107,32 +116,38 @@ export default function Dashboard() {
             </View>
           </View>
 
-          {/* Key Financial Health Ratios (Payoff) */}
+          {/* Key Monthly Cash Flow Metrics: Cash In, Cash Out, Remaining This Month */}
           <View style={styles.heroMetricsGrid}>
             <View style={styles.heroMetricCol}>
-              <Typography variant="caption" color={COLORS.textSecondary}>
-                Monthly Income
-              </Typography>
-              <Typography variant="bodyBold" color={COLORS.white} style={{ marginTop: 2 }}>
-                ₹85,000
-              </Typography>
-            </View>
-
-            <View style={styles.heroMetricCol}>
-              <Typography variant="caption" color={COLORS.textSecondary}>
-                Monthly Spending
-              </Typography>
-              <Typography variant="bodyBold" color={COLORS.white} style={{ marginTop: 2 }}>
-                ₹32,450
+              <View style={styles.metricLabelContainer}>
+                <Typography variant="caption" style={styles.metricLabel} numberOfLines={1}>
+                  Cash In
+                </Typography>
+              </View>
+              <Typography variant="bodyBold" color={COLORS.white} style={styles.metricValue} numberOfLines={1}>
+                {formatCurrency(cashIn)}
               </Typography>
             </View>
 
-            <View style={styles.heroMetricCol}>
-              <Typography variant="caption" color={COLORS.textSecondary}>
-                Savings Rate
+            <View style={[styles.heroMetricCol, styles.heroMetricColCenter]}>
+              <View style={styles.metricLabelContainer}>
+                <Typography variant="caption" style={styles.metricLabel} numberOfLines={1}>
+                  Cash Out
+                </Typography>
+              </View>
+              <Typography variant="bodyBold" color={COLORS.white} style={styles.metricValue} numberOfLines={1}>
+                {formatCurrency(cashOut)}
               </Typography>
-              <Typography variant="bodyBold" color={COLORS.gold} style={{ marginTop: 2 }}>
-                61.8%
+            </View>
+
+            <View style={[styles.heroMetricCol, styles.heroMetricColRight]}>
+              <View style={[styles.metricLabelContainer, styles.metricLabelContainerRight]}>
+                <Typography variant="caption" style={[styles.metricLabel, styles.metricLabelRight]} numberOfLines={2}>
+                  Remaining This Month
+                </Typography>
+              </View>
+              <Typography variant="bodyBold" color={COLORS.gold} style={[styles.metricValue, styles.metricValueRight]} numberOfLines={1}>
+                {formatCurrency(remainingThisMonth)}
               </Typography>
             </View>
           </View>
@@ -256,62 +271,6 @@ export default function Dashboard() {
               Small purchases under ₹100 often go unnoticed.
             </Typography>
           </View>
-        </Card>
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            RECENT TRANSACTIONS
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <View style={styles.transactionsHeader}>
-          <Typography variant="h3">Recent Transactions</Typography>
-          <TouchableOpacity
-            onPress={() => router.push('/transactions')}
-            activeOpacity={0.7}
-            style={styles.viewAllRow}
-          >
-            <Typography variant="secondary" color={COLORS.textSecondary}>
-              View All
-            </Typography>
-            <ArrowUpRight color={COLORS.textSecondary} size={16} strokeWidth={1.8} />
-          </TouchableOpacity>
-        </View>
-
-        <Card variant="list" style={styles.recentTransactionsCard}>
-          <TransactionRow
-            name="Starbucks"
-            category="Food & Dining"
-            date="Today, 10:42 AM"
-            amount="-₹340"
-            method="UPI"
-            showDivider
-            onPress={() => router.push('/transaction/1')}
-          />
-          <TransactionRow
-            name="Salary"
-            category="Income"
-            date="Today, 09:00 AM"
-            amount="+₹85,000"
-            method="Bank"
-            isIncome
-            showDivider
-            onPress={() => router.push('/transaction/2')}
-          />
-          <TransactionRow
-            name="Uber"
-            category="Transport"
-            date="Yesterday, 6:15 PM"
-            amount="-₹250"
-            method="Card"
-            showDivider
-            onPress={() => router.push('/transaction/3')}
-          />
-          <TransactionRow
-            name="Amazon"
-            category="Shopping"
-            date="10 Jul, 2:30 PM"
-            amount="-₹1,200"
-            method="Card"
-            onPress={() => router.push('/transaction/5')}
-          />
         </Card>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -478,13 +437,50 @@ const styles = StyleSheet.create({
   },
   heroMetricsGrid: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: 'rgba(255, 255, 255, 0.12)',
-    paddingTop: 14,
+    paddingTop: 18,
+    paddingBottom: 4,
+    marginTop: 2,
   },
   heroMetricCol: {
-    gap: 2,
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  heroMetricColCenter: {
+    paddingHorizontal: 6,
+    alignItems: 'flex-start',
+  },
+  heroMetricColRight: {
+    flex: 1.18,
+    alignItems: 'flex-end',
+  },
+  metricLabelContainer: {
+    minHeight: 28,
+    justifyContent: 'flex-end',
+    marginBottom: 4,
+  },
+  metricLabelContainerRight: {
+    alignItems: 'flex-end',
+  },
+  metricLabel: {
+    fontSize: 11,
+    fontFamily: FONTS.bodyMedium,
+    color: 'rgba(255, 255, 255, 0.65)',
+    lineHeight: 14,
+  },
+  metricLabelRight: {
+    textAlign: 'right',
+  },
+  metricValue: {
+    fontSize: 16.5,
+    lineHeight: 22,
+    fontFamily: FONTS.bodyBold,
+  },
+  metricValueRight: {
+    textAlign: 'right',
   },
   quickActions: {
     flexDirection: 'row',
@@ -654,19 +650,5 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingTop: 12,
-  },
-  transactionsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  viewAllRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  recentTransactionsCard: {
-    marginBottom: SPACING.xl,
   },
 });

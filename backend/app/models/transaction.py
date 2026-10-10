@@ -16,6 +16,7 @@ class Transaction(Base):
     merchant_name = Column(String, nullable=False)
     description = Column(String, nullable=True)
     transaction_date = Column(String, nullable=False)
+    payment_method = Column(String, default="UPI", nullable=True)
     is_recurring = Column(Boolean, default=False)
     is_fixed = Column(Boolean, default=False)
     is_discretionary = Column(Boolean, default=True)

@@ -48,7 +48,7 @@ const resolvedBaseUrl = process.env.EXPO_PUBLIC_API_URL || getDefaultBaseUrl();
 
 export const api = axios.create({
   baseURL: resolvedBaseUrl,
-  timeout: 10000,
+  timeout: 3500,
   headers: {
     'Content-Type': 'application/json',
   },

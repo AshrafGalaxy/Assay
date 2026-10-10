@@ -1,21 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { MerchantLogo } from '../../components/ui/MerchantLogo';
-import { COLORS, SIZES } from '../../constants/theme';
+import { COLORS, SIZES, FONTS } from '../../constants/theme';
 import { Search } from 'lucide-react-native';
+import { useTransactions, Transaction } from '../../services/transactions';
 
 interface TransactionItemData {
   id: string;
   name: string;
   merchantKey: string;
   time: string;
-  method: 'UPI' | 'Card' | 'Cash' | 'Wallet';
+  method: string;
   amount: string;
+  isIncome?: boolean;
   category?: string;
   notes?: string;
+  sourceType?: string;
 }
 
 interface DateGroup {
@@ -23,45 +26,71 @@ interface DateGroup {
   items: TransactionItemData[];
 }
 
-const TRANSACTIONS_DATA: DateGroup[] = [
-  {
-    date: 'Today',
-    items: [
-      { id: 'tx-1', name: 'Starbucks', merchantKey: 'starbucks', time: '9:42 AM', method: 'UPI', amount: '₹250', category: 'Food & Dining', notes: 'Morning coffee ☕' },
-      { id: 'tx-2', name: 'Uber', merchantKey: 'uber', time: '8:20 AM', method: 'UPI', amount: '₹120', category: 'Transport', notes: 'Ride to office' },
-      { id: 'tx-8', name: 'Blinkit', merchantKey: 'blinkit', time: '7:45 AM', method: 'UPI', amount: '₹340', category: 'Groceries', notes: 'Breakfast supplies' },
-    ],
-  },
-  {
-    date: 'Yesterday',
-    items: [
-      { id: 'tx-3', name: 'Amazon', merchantKey: 'amazon', time: '6:10 PM', method: 'Card', amount: '₹899', category: 'Shopping', notes: 'Office electronics' },
-      { id: 'tx-4', name: 'Tea Stall', merchantKey: 'tea', time: '4:30 PM', method: 'Cash', amount: '₹30', category: 'Food & Dining', notes: 'Evening chai' },
-      { id: 'tx-9', name: 'Netflix', merchantKey: 'netflix', time: '1:15 PM', method: 'Card', amount: '₹649', category: 'Entertainment', notes: 'Monthly 4K plan' },
-    ],
-  },
-  {
-    date: 'Tue, 25 Jun',
-    items: [
-      { id: 'tx-5', name: 'Swiggy', merchantKey: 'swiggy', time: '8:10 PM', method: 'UPI', amount: '₹430', category: 'Food & Dining', notes: 'Dinner order' },
-      { id: 'tx-6', name: 'BookMyShow', merchantKey: 'bookmyshow', time: '5:12 PM', method: 'UPI', amount: '₹620', category: 'Entertainment', notes: 'Weekend movie' },
-      { id: 'tx-10', name: 'Zomato', merchantKey: 'zomato', time: '1:30 PM', method: 'UPI', amount: '₹280', category: 'Food & Dining', notes: 'Lunch order' },
-    ],
-  },
-  {
-    date: 'Mon, 24 Jun',
-    items: [
-      { id: 'tx-7', name: 'Metro Card', merchantKey: 'metro', time: '10:02 AM', method: 'Wallet', amount: '₹200', category: 'Transport', notes: 'Metro recharge' },
-      { id: 'tx-11', name: 'Spotify', merchantKey: 'spotify', time: '9:00 AM', method: 'Card', amount: '₹119', category: 'Entertainment', notes: 'Premium individual' },
-    ],
-  },
-];
+const FILTERS = ['All', 'UPI', 'Card', 'Cash', 'Bank', 'Wallet'] as const;
 
-const FILTERS = ['All', 'UPI', 'Card', 'Cash', 'Wallet'] as const;
+function groupTransactionsByDate(txList: Transaction[]): DateGroup[] {
+  const groups: Record<string, TransactionItemData[]> = {};
+  const order: string[] = [];
+
+  for (const tx of txList) {
+    let dateLabel = 'Today';
+    let timeLabel = tx.transaction_date;
+
+    if (tx.transaction_date.includes('Today')) {
+      dateLabel = 'Today';
+      timeLabel = tx.transaction_date.replace('Today,', '').trim();
+    } else if (tx.transaction_date.includes('Yesterday')) {
+      dateLabel = 'Yesterday';
+      timeLabel = tx.transaction_date.replace('Yesterday,', '').trim();
+    } else if (tx.transaction_date.includes('-')) {
+      const d = new Date(tx.transaction_date);
+      if (!isNaN(d.getTime())) {
+        const today = new Date();
+        if (d.toDateString() === today.toDateString()) {
+          dateLabel = 'Today';
+        } else {
+          dateLabel = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        }
+        timeLabel = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    } else {
+      dateLabel = tx.transaction_date.split(',')[0] || 'Recent';
+      timeLabel = tx.transaction_date.split(',')[1]?.trim() || '';
+    }
+
+    if (!groups[dateLabel]) {
+      groups[dateLabel] = [];
+      order.push(dateLabel);
+    }
+
+    const isCredit = tx.type === 'credit';
+    const amountStr = `${isCredit ? '+' : '-'}₹${Number(tx.amount).toLocaleString('en-IN')}`;
+
+    groups[dateLabel].push({
+      id: tx.id,
+      name: tx.merchant_name,
+      merchantKey: tx.merchant_name.toLowerCase().replace(/[^a-z0-9]/g, ''),
+      time: timeLabel || 'Recent',
+      method: tx.payment_method || 'UPI',
+      amount: amountStr,
+      isIncome: isCredit,
+      category: tx.category,
+      notes: tx.description,
+      sourceType: tx.source_type,
+    });
+  }
+
+  return order.map((date) => ({
+    date,
+    items: groups[date],
+  }));
+}
 
 export default function TransactionsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ query?: string; filter?: string }>();
+  const { transactions } = useTransactions();
+
   const [activeFilter, setActiveFilter] = useState<string>(params.filter || 'All');
   const [searchQuery, setSearchQuery] = useState(params.query || '');
 
@@ -74,17 +103,28 @@ export default function TransactionsScreen() {
     }
   }, [params.query, params.filter]);
 
-  const filteredGroups = TRANSACTIONS_DATA.map((group) => {
-    const items = group.items.filter((item) => {
-      const matchesFilter = activeFilter === 'All' || item.method === activeFilter;
-      const matchesSearch =
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.amount.includes(searchQuery) ||
-        item.method.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesFilter && matchesSearch;
-    });
-    return { ...group, items };
-  }).filter((group) => group.items.length > 0);
+  const rawGroups = useMemo(() => groupTransactionsByDate(transactions), [transactions]);
+
+  const filteredGroups = useMemo(() => {
+    return rawGroups
+      .map((group) => {
+        const items = group.items.filter((item) => {
+          const matchesFilter =
+            activeFilter === 'All' ||
+            item.method.toLowerCase() === activeFilter.toLowerCase();
+          const query = searchQuery.toLowerCase();
+          const matchesSearch =
+            !query ||
+            item.name.toLowerCase().includes(query) ||
+            item.amount.includes(query) ||
+            item.method.toLowerCase().includes(query) ||
+            (item.category && item.category.toLowerCase().includes(query));
+          return matchesFilter && matchesSearch;
+        });
+        return { ...group, items };
+      })
+      .filter((group) => group.items.length > 0);
+  }, [rawGroups, activeFilter, searchQuery]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -106,23 +146,29 @@ export default function TransactionsScreen() {
         </View>
 
         {/* Filter Pills */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterRow}
         >
           {FILTERS.map((filter) => {
-            const isActive = activeFilter === filter;
+            const isActive = activeFilter.toLowerCase() === filter.toLowerCase();
             return (
               <TouchableOpacity
                 key={filter}
-                style={[styles.filterPill, isActive ? styles.filterPillActive : styles.filterPillInactive]}
+                style={[
+                  styles.filterPill,
+                  isActive ? styles.filterPillActive : styles.filterPillInactive,
+                ]}
                 onPress={() => setActiveFilter(filter)}
                 activeOpacity={0.8}
               >
                 <Typography
                   variant="caption"
-                  style={[styles.filterText, isActive ? styles.filterTextActive : styles.filterTextInactive]}
+                  style={[
+                    styles.filterText,
+                    isActive ? styles.filterTextActive : styles.filterTextInactive,
+                  ]}
                 >
                   {filter}
                 </Typography>
@@ -132,10 +178,18 @@ export default function TransactionsScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
+        {filteredGroups.length === 0 ? (
+          <View style={styles.emptyContainer}>
+            <Typography variant="bodyMedium" color={COLORS.textSecondary}>
+              No transactions match your search.
+            </Typography>
+          </View>
+        ) : null}
+
         {filteredGroups.map((group) => (
           <View key={group.date} style={styles.groupContainer}>
             <Typography variant="caption" color={COLORS.textSecondary} style={styles.dateHeader}>
@@ -147,33 +201,53 @@ export default function TransactionsScreen() {
                 key={item.id}
                 style={styles.transactionCard}
                 activeOpacity={0.75}
-                onPress={() => router.push({
-                  pathname: `/transaction/${item.id}`,
-                  params: {
-                    name: item.name,
-                    merchantKey: item.merchantKey,
-                    amount: item.amount,
-                    time: item.time,
-                    method: item.method,
-                    category: item.category || 'General',
-                    notes: item.notes || '',
-                  },
-                })}
+                onPress={() =>
+                  router.push({
+                    pathname: `/transaction/${item.id}`,
+                    params: {
+                      name: item.name,
+                      merchantKey: item.merchantKey,
+                      amount: item.amount,
+                      time: item.time,
+                      method: item.method,
+                      category: item.category || 'General',
+                      notes: item.notes || '',
+                    },
+                  })
+                }
               >
                 <MerchantLogo name={item.merchantKey} size={44} style={styles.merchantLogo} />
-                
+
                 <View style={styles.transactionDetails}>
-                  <Typography variant="bodyBold" style={styles.merchantName}>
+                  <Typography
+                    variant="bodyBold"
+                    style={styles.merchantName}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
                     {item.name}
                   </Typography>
-                  <Typography variant="caption" color={COLORS.textSecondary}>
-                    {item.time} • {item.method}
+                  <Typography
+                    variant="caption"
+                    color={COLORS.textSecondary}
+                    numberOfLines={1}
+                    ellipsizeMode="tail"
+                  >
+                    {item.time} • {item.method} • {item.category}
                   </Typography>
                 </View>
 
-                <Typography variant="financial" style={styles.amountText}>
-                  {item.amount}
-                </Typography>
+                <View style={styles.amountContainer}>
+                  <Typography
+                    variant="financial"
+                    style={[
+                      styles.amountText,
+                      item.isIncome ? styles.amountTextIncome : null,
+                    ]}
+                  >
+                    {item.amount}
+                  </Typography>
+                </View>
               </TouchableOpacity>
             ))}
           </View>
@@ -224,7 +298,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   filterPill: {
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
@@ -273,18 +347,36 @@ const styles = StyleSheet.create({
   },
   merchantLogo: {
     marginRight: 14,
+    flexShrink: 0,
   },
   transactionDetails: {
     flex: 1,
+    minWidth: 0,
+    marginRight: 10,
   },
   merchantName: {
-    fontSize: 16,
-    marginBottom: 4,
+    fontSize: 15,
+    fontFamily: FONTS.bodyBold,
     color: COLORS.text,
+    marginBottom: 4,
+  },
+  amountContainer: {
+    flexShrink: 0,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minWidth: 70,
   },
   amountText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: COLORS.text,
+    textAlign: 'right',
+  },
+  amountTextIncome: {
+    color: '#16A34A',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
   },
 });
