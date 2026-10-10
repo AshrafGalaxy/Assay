@@ -1,90 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { MerchantLogo } from '../../components/ui/MerchantLogo';
-import { COLORS, SIZES } from '../../constants/theme';
+import { COLORS } from '../../constants/theme';
+import { API_BASE_URL } from '../../services/api';
+import {
+  ApiTransaction,
+  fetchTransactions,
+  formatSignedINR,
+  groupTransactionsByDate,
+} from '../../services/finance';
 import { Search } from 'lucide-react-native';
 
-interface TransactionItemData {
-  id: string;
-  name: string;
-  merchantKey: string;
-  time: string;
-  method: 'UPI' | 'Card' | 'Cash' | 'Wallet';
-  amount: string;
-  category?: string;
-  notes?: string;
-}
-
-interface DateGroup {
-  date: string;
-  items: TransactionItemData[];
-}
-
-const TRANSACTIONS_DATA: DateGroup[] = [
-  {
-    date: 'Today',
-    items: [
-      { id: 'tx-1', name: 'Starbucks', merchantKey: 'starbucks', time: '9:42 AM', method: 'UPI', amount: '₹250', category: 'Food & Dining', notes: 'Morning coffee ☕' },
-      { id: 'tx-2', name: 'Uber', merchantKey: 'uber', time: '8:20 AM', method: 'UPI', amount: '₹120', category: 'Transport', notes: 'Ride to office' },
-      { id: 'tx-8', name: 'Blinkit', merchantKey: 'blinkit', time: '7:45 AM', method: 'UPI', amount: '₹340', category: 'Groceries', notes: 'Breakfast supplies' },
-    ],
-  },
-  {
-    date: 'Yesterday',
-    items: [
-      { id: 'tx-3', name: 'Amazon', merchantKey: 'amazon', time: '6:10 PM', method: 'Card', amount: '₹899', category: 'Shopping', notes: 'Office electronics' },
-      { id: 'tx-4', name: 'Tea Stall', merchantKey: 'tea', time: '4:30 PM', method: 'Cash', amount: '₹30', category: 'Food & Dining', notes: 'Evening chai' },
-      { id: 'tx-9', name: 'Netflix', merchantKey: 'netflix', time: '1:15 PM', method: 'Card', amount: '₹649', category: 'Entertainment', notes: 'Monthly 4K plan' },
-    ],
-  },
-  {
-    date: 'Tue, 25 Jun',
-    items: [
-      { id: 'tx-5', name: 'Swiggy', merchantKey: 'swiggy', time: '8:10 PM', method: 'UPI', amount: '₹430', category: 'Food & Dining', notes: 'Dinner order' },
-      { id: 'tx-6', name: 'BookMyShow', merchantKey: 'bookmyshow', time: '5:12 PM', method: 'UPI', amount: '₹620', category: 'Entertainment', notes: 'Weekend movie' },
-      { id: 'tx-10', name: 'Zomato', merchantKey: 'zomato', time: '1:30 PM', method: 'UPI', amount: '₹280', category: 'Food & Dining', notes: 'Lunch order' },
-    ],
-  },
-  {
-    date: 'Mon, 24 Jun',
-    items: [
-      { id: 'tx-7', name: 'Metro Card', merchantKey: 'metro', time: '10:02 AM', method: 'Wallet', amount: '₹200', category: 'Transport', notes: 'Metro recharge' },
-      { id: 'tx-11', name: 'Spotify', merchantKey: 'spotify', time: '9:00 AM', method: 'Card', amount: '₹119', category: 'Entertainment', notes: 'Premium individual' },
-    ],
-  },
-];
-
-const FILTERS = ['All', 'UPI', 'Card', 'Cash', 'Wallet'] as const;
+const FILTERS = ['All', 'Income', 'Debit', 'Recurring'] as const;
 
 export default function TransactionsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ query?: string; filter?: string }>();
   const [activeFilter, setActiveFilter] = useState<string>(params.filter || 'All');
   const [searchQuery, setSearchQuery] = useState(params.query || '');
+  const [items, setItems] = useState<ApiTransaction[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await fetchTransactions(100);
+      setItems(data.items);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load transactions';
+      setError(`${message} (API: ${API_BASE_URL})`);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
 
   useEffect(() => {
-    if (params.query) {
-      setSearchQuery(params.query);
-    }
-    if (params.filter) {
-      setActiveFilter(params.filter);
-    }
+    void load();
+  }, [load]);
+
+  useEffect(() => {
+    if (params.query) setSearchQuery(params.query);
+    if (params.filter) setActiveFilter(params.filter);
   }, [params.query, params.filter]);
 
-  const filteredGroups = TRANSACTIONS_DATA.map((group) => {
-    const items = group.items.filter((item) => {
-      const matchesFilter = activeFilter === 'All' || item.method === activeFilter;
-      const matchesSearch =
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.amount.includes(searchQuery) ||
-        item.method.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredGroups = useMemo(() => {
+    const filtered = items.filter((item) => {
+      const isIncome = item.type === 'credit';
+      const matchesFilter =
+        activeFilter === 'All' ||
+        (activeFilter === 'Income' && isIncome) ||
+        (activeFilter === 'Debit' && !isIncome) ||
+        (activeFilter === 'Recurring' && item.is_recurring);
+      const haystack = `${item.merchant_name} ${item.category} ${item.description || ''} ${item.amount}`.toLowerCase();
+      const matchesSearch = haystack.includes(searchQuery.toLowerCase());
       return matchesFilter && matchesSearch;
     });
-    return { ...group, items };
-  }).filter((group) => group.items.length > 0);
+    return groupTransactionsByDate(filtered);
+  }, [items, activeFilter, searchQuery]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -93,7 +79,6 @@ export default function TransactionsScreen() {
           Transactions
         </Typography>
 
-        {/* Search Bar */}
         <View style={styles.searchBar}>
           <Search color="#9CA3AF" size={20} style={styles.searchIcon} />
           <TextInput
@@ -105,9 +90,8 @@ export default function TransactionsScreen() {
           />
         </View>
 
-        {/* Filter Pills */}
-        <ScrollView 
-          horizontal 
+        <ScrollView
+          horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filterRow}
         >
@@ -132,50 +116,91 @@ export default function TransactionsScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void load();
+            }}
+          />
+        }
       >
+        {loading && (
+          <View style={styles.statusRow}>
+            <ActivityIndicator color={COLORS.primary} />
+            <Typography variant="caption" color={COLORS.textSecondary}>
+              Loading synthetic ledger…
+            </Typography>
+          </View>
+        )}
+
+        {error && (
+          <Typography variant="caption" color={COLORS.error} style={styles.errorText}>
+            {error}
+          </Typography>
+        )}
+
+        {!loading && !error && filteredGroups.length === 0 && (
+          <Typography variant="secondary" color={COLORS.textSecondary}>
+            No transactions match this filter.
+          </Typography>
+        )}
+
         {filteredGroups.map((group) => (
           <View key={group.date} style={styles.groupContainer}>
             <Typography variant="caption" color={COLORS.textSecondary} style={styles.dateHeader}>
-              {group.date}
+              {group.label}
             </Typography>
 
-            {group.items.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.transactionCard}
-                activeOpacity={0.75}
-                onPress={() => router.push({
-                  pathname: `/transaction/${item.id}`,
-                  params: {
-                    name: item.name,
-                    merchantKey: item.merchantKey,
-                    amount: item.amount,
-                    time: item.time,
-                    method: item.method,
-                    category: item.category || 'General',
-                    notes: item.notes || '',
-                  },
-                })}
-              >
-                <MerchantLogo name={item.merchantKey} size={44} style={styles.merchantLogo} />
-                
-                <View style={styles.transactionDetails}>
-                  <Typography variant="bodyBold" style={styles.merchantName}>
-                    {item.name}
-                  </Typography>
-                  <Typography variant="caption" color={COLORS.textSecondary}>
-                    {item.time} • {item.method}
-                  </Typography>
-                </View>
+            {group.items.map((item) => {
+              const isIncome = item.type === 'credit';
+              const amount = formatSignedINR(item.amount, isIncome);
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.transactionCard}
+                  activeOpacity={0.75}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/transaction/[id]',
+                      params: {
+                        id: item.id,
+                        name: item.merchant_name || item.category,
+                        merchantKey: 'receipt',
+                        amount,
+                        time: item.transaction_date,
+                        method: isIncome ? 'Bank' : 'UPI',
+                        category: item.category,
+                        notes: item.description || item.source_type,
+                      },
+                    })
+                  }
+                >
+                  <MerchantLogo name={item.category} size={44} style={styles.merchantLogo} />
 
-                <Typography variant="financial" style={styles.amountText}>
-                  {item.amount}
-                </Typography>
-              </TouchableOpacity>
-            ))}
+                  <View style={styles.transactionDetails}>
+                    <Typography variant="bodyBold" style={styles.merchantName}>
+                      {item.merchant_name || item.category}
+                    </Typography>
+                    <Typography variant="caption" color={COLORS.textSecondary}>
+                      {item.category}
+                      {item.is_recurring ? ' • Recurring' : ''}
+                    </Typography>
+                  </View>
+
+                  <Typography
+                    variant="financial"
+                    style={[styles.amountText, isIncome && { color: COLORS.success }]}
+                  >
+                    {amount}
+                  </Typography>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         ))}
         <View style={{ height: 110 }} />
@@ -252,6 +277,15 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  errorText: {
+    marginBottom: 12,
   },
   groupContainer: {
     marginBottom: 20,

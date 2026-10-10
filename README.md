@@ -1,118 +1,277 @@
 # Assay
 
-Assay is a mobile-first financial health copilot that turns financial history into clear, explainable actions.
+Assay is a mobile-first **financial health copilot**. It turns income, spending, obligations, and receipts into clear, explainable next actions — not just another expense list.
 
-The product goes beyond tracking expenses. It consolidates transactions, income, recurring obligations, debt pressure, savings behaviour, and cash-flow patterns, then helps users understand what is happening and what they can do next.
-
-> The project documentation also refers to the product as **Spendify**. The current Expo app package is named `assay`.
-
-## Product Loop
+> Docs and some specs also use the name **Spendify**. The Expo app package is `assay`.
 
 ```text
-Financial data
-  -> Normalize
-  -> Categorize
-  -> Financial health
-  -> Prediction
-  -> Recommendation
-  -> Impact simulation
-  -> Action
-  -> Recalculate
+Financial data → Normalize → Categorize → Financial health
+  → Prediction → Recommendation → Impact simulation → Action → Recalculate
 ```
 
-Assay is designed to keep four kinds of information distinct:
+Assay keeps four kinds of information distinct:
 
-- **Observed**: directly supported by the user's data.
-- **Predicted**: calculated or estimated future outcomes.
-- **Recommended**: an action Assay suggests considering.
-- **Impact**: the expected change if an assumption is applied.
+| Kind | Meaning |
+|------|---------|
+| **Observed** | Supported directly by the user’s data |
+| **Predicted** | Calculated or estimated future outcomes |
+| **Recommended** | An action Assay suggests considering |
+| **Impact** | Expected change if an assumption is applied |
 
-## What It Includes
+Financial math is **deterministic and backend-owned**. An LLM may explain results; it must not invent the numbers.
 
-### Mobile experience
+---
 
-The Expo Router application currently includes screens and flows for:
+## Repository map
 
-- Financial dashboard
-- Spending insights and analytics
-- Transactions and transaction details
-- Receipt or UPI upload flows
-- Settings and account preferences
-- Financial copilot
-- Affordability analysis
-- Debt and obligation views
-- Smart split flows
-- Simulator flows
+```text
+assay/
+├── frontend/          # Expo React Native app (primary mobile client)
+├── backend/           # FastAPI financial intelligence + OCR API
+├── supabase/          # SQL migrations / hosted DB schema (when used)
+├── app/               # Legacy Expo screen prototypes (not the active app)
+├── package.json       # Monorepo scripts (dev:frontend, dev:backend)
+├── AGENTS.md          # Agent note: use Expo versioned docs
+└── README.md          # This file
+```
 
-### Planned financial intelligence
+| Path | Purpose |
+|------|---------|
+| `frontend/` | Active Expo SDK 57 app users run in Expo Go / simulators |
+| `backend/` | FastAPI service: health, transactions, OCR, recommendations, copilot |
+| `supabase/` | Database migrations for Supabase-hosted Postgres |
+| `app/` | Older / exploratory Expo Router screens kept for reference; **prefer `frontend/app/`** |
+| Root `package.json` | Orchestrates `npm run dev:frontend` and `npm run dev:backend` |
 
-The product architecture defines services for:
+---
 
-- Mock financial-account data for the prototype
-- Transaction normalization and categorization
-- Financial health metrics
-- Cash-flow forecasting
-- Recurring-obligation detection
-- Recommendations based on observed data
-- Recommendation impact simulation
-- Natural-language copilot answers grounded in structured calculations
-- Receipt and UPI screenshot processing through OCR
+## What we have built
 
-The LLM should explain structured financial results; it must not be the source of truth for financial calculations.
+Status of major product pieces as of the current codebase:
 
-## Technology
+| Area | Status | Where it lives |
+|------|--------|----------------|
+| Mobile shell (tabs, navigation, theme) | **Built** | `frontend/app`, `frontend/components`, `frontend/constants` |
+| Auth UI (login / signup / forgot) | **Built (UI)** | `frontend/app/auth` + `frontend/services/auth.ts` |
+| Dashboard, insights, transactions UI | **Built** | `frontend/app/(tabs)/*` |
+| Receipt / gallery upload → OCR → category | **Built** | `frontend` upload flow + `backend` OCR + categorizer |
+| Device-safe API base URL | **Built** | `frontend/services/api.ts` + `frontend/.env` |
+| Deterministic financial engine | **Built** | `backend/app/services/financial_intelligence/` |
+| Synthetic finance dataset + API ledger | **Built** | `synthetic_finance_generator.py` → CSVs → `ledger.py` → financial-health / transactions / recommendations |
+| Mock Account Aggregator provider | **Built** | `backend/app/providers/aa/` + connect UI |
+| Copilot API (structured explain wrapper) | **Partial** | `backend/.../copilot.py` + LLM provider base; still uses placeholder balances |
+| Settings, split, debt, simulator screens | **Built (mostly UI)** | `frontend/app/settings`, `split`, `debt`, `simulator`, `copilot` |
+| Supabase schema / live user data | **In progress** | `supabase/migrations`, `backend/app/core/database.py` |
+| Production bank AA | **Not built** | Interface exists; mock only |
+| CSV / Kaggle importer | **Not built** | Planned data source for the engine |
+| Docs folder / formal API markdown | **Missing in-repo** | Spec referenced historically; regenerate as needed |
 
-### Current mobile app
+---
 
-- Expo SDK 57
-- React Native 0.86
-- TypeScript
-- Expo Router
-- React Native Reanimated
-- React Query
-- Axios
-- Lucide React Native
-- Expo Blur
-- DM Sans and Antic Didone fonts
+## Frontend (`frontend/`)
 
-### Target backend architecture
+**Stack:** Expo SDK 57 · React Native · TypeScript · Expo Router · Axios · React Query · Reanimated · Lucide
 
-The documented backend architecture uses:
+### Purpose
 
-- FastAPI
-- PostgreSQL
-- SQLAlchemy
-- A provider abstraction for financial data
-- A mock Account Aggregator provider for the prototype
-- A separate LLM provider for copilot explanations
+The client people open: scan receipts, browse money, review health signals, and confirm OCR results. It talks to the backend over `/api/v1`.
 
-Production Account Aggregator access is intentionally not a prerequisite for the prototype.
+### Layout
 
-## Getting Started
+```text
+frontend/
+├── app/                 # Expo Router file-based screens
+│   ├── (tabs)/          # Main tab bar: Dashboard, Upload, Transactions, Insights, Settings
+│   ├── auth/            # Login, signup, forgot password
+│   ├── connect/         # Account Aggregator onboarding (sandbox UX)
+│   ├── copilot/         # Analysis & affordability flows
+│   ├── debt/            # Debt / obligation views
+│   ├── simulator/       # What-if / impact simulation UI
+│   ├── split/           # Smart split flow
+│   ├── transaction/     # Transaction detail
+│   ├── settings/        # Profile, categories, privacy, accounts, etc.
+│   ├── cashflow-detail/ # Cash-flow drill-down
+│   └── ai/              # Copilot chat-style surface
+├── components/          # Shared UI (auth, AA, dashboard, profile, design system)
+├── constants/           # Theme, colors, typography, spacing, mock data, logos
+├── services/            # API client, auth, AA state, upload/OCR, transactions
+├── types/               # Domain TypeScript types (e.g. AA)
+├── utils/               # Helpers
+├── assets/              # Fonts, avatars, merchant/bank logos
+├── .env.example         # EXPO_PUBLIC_* template (copy to .env)
+└── package.json
+```
+
+### Tab screens (`app/(tabs)/`)
+
+| Screen | Purpose |
+|--------|---------|
+| `index` | Financial dashboard home |
+| `upload` | Gallery / camera receipt scan, OCR review, confirm transaction |
+| `transactions` | Transaction list and filters |
+| `insights` | Spending insights / analytics presentation |
+| `settings` | Preferences and links into settings sub-screens |
+
+### Services (`services/`)
+
+| File | Purpose |
+|------|---------|
+| `api.ts` | Axios client; resolves `EXPO_PUBLIC_API_URL` or Expo LAN host (device-safe) |
+| `upload.ts` | JPEG normalize → `POST /uploads/receipt` → confirm with category |
+| `auth.ts` | Auth helpers for login / session |
+| `aaState.ts` | Account Aggregator onboarding state |
+| `transactions.ts` | Transaction fetch helpers |
+| `avatarStorage.ts` | Local avatar persistence |
+
+### Design system
+
+- Tokens in `constants/theme.ts`, `colors.ts`, `typography.ts`, `spacing.ts`
+- Shared primitives under `components/ui/` (cards, chips, gauges, charts, tab bar)
+- Antic Didone for editorial titles; DM Sans for interface / financial figures
+
+---
+
+## Backend (`backend/`)
+
+**Stack:** FastAPI · SQLAlchemy · Pydantic · OpenCV + Tesseract (local OCR) · Pytest
+
+### Purpose
+
+Own the truth for money math, OCR extraction, categorization, and API contracts the mobile app consumes.
+
+### Layout
+
+```text
+backend/
+├── app/
+│   ├── main.py                 # FastAPI app, CORS, /health, mounts /api/v1
+│   ├── core/                   # Config, DB engine, JWT security
+│   ├── api/v1/
+│   │   ├── router.py           # Registers all versioned routers
+│   │   └── routes/             # HTTP endpoints (thin handlers)
+│   ├── models/                 # SQLAlchemy: User, Account, Transaction
+│   ├── schemas/                # Pydantic request/response models
+│   ├── services/
+│   │   ├── financial_intelligence/  # Pure finance calculations + demo ledger
+│   │   ├── ocr/                     # Preprocess → Tesseract → receipt parse
+│   │   └── categorization/          # Keyword category rules
+│   ├── providers/
+│   │   ├── aa/                 # Account Aggregator interface + mock
+│   │   └── llm/                # LLM provider interface for explanations
+│   └── utils/                  # Image upload validation
+├── tests/                      # API, OCR, financial engine tests
+├── requirements.txt
+├── pyproject.toml
+└── README.md                   # Backend-focused setup notes
+```
+
+### API routes (`app/api/v1/routes/`)
+
+| Router | Purpose |
+|--------|---------|
+| `auth.py` | Register / login / refresh |
+| `accounts.py` | Connected accounts + demo AA connect / sync |
+| `transactions.py` | List / filter / create transactions (demo ledger aware) |
+| `financial_health.py` | Health score, cash-flow, obligations, spending analytics |
+| `recommendations.py` | Rules-based recommendations + what-if simulate |
+| `copilot.py` | Natural-language question → structured affordability explanation |
+| `uploads.py` | Receipt / UPI image upload, OCR pipeline, confirm → transaction |
+
+Docs when the server is running: `http://localhost:8000/api/v1/docs`
+
+### Financial intelligence (`services/financial_intelligence/`)
+
+| Module | Purpose |
+|--------|---------|
+| `engine.py` | Pure functions: health, cash flow, obligations, spending, recommendations, simulate |
+| `ledger.py` | Loads synthetic CSVs for API financial endpoints (historical months) |
+
+The engine takes **normalised transaction dicts**. Swapping the data source should not require rewriting the math.
+
+### OCR pipeline (`services/ocr/`)
+
+```text
+Image bytes
+  → validate (JPEG/PNG/WEBP, size, dimensions)
+  → OpenCV preprocess
+  → Tesseract extract text + boxes
+  → ReceiptParser (merchant, total, tax, date, payment, line items)
+  → Categorizer (merchant + line items + raw text → category)
+  → Review payload (no DB write until confirm)
+```
+
+| Module | Purpose |
+|--------|---------|
+| `preprocessing.py` | Non-destructive image cleanup for OCR |
+| `tesseract_service.py` | Local Tesseract only (no cloud OCR) |
+| `receipt_parser.py` | Deterministic field extraction |
+| `ocr_pipeline.py` | Orchestrates the full receipt flow |
+| `easyocr_service.py` | Legacy / unused by the live path |
+
+### Categorization (`services/categorization/`)
+
+Keyword rules map merchants and OCR text to categories such as Food & Dining, Groceries, Shopping, Healthcare, Transportation, Utilities, Entertainment, Services, Other.
+
+### Providers
+
+| Provider | Purpose |
+|----------|---------|
+| `providers/aa/` | Account Aggregator abstraction; `MockAAProvider` returns sandbox banks / txs |
+| `providers/llm/` | Explanation layer over structured metrics (not the calculator) |
+
+### Data layer
+
+| Piece | Purpose |
+|-------|---------|
+| `core/config.py` | Settings from env (DB URL, secrets, CORS, schema mode) |
+| `core/database.py` | Engine / sessions; SQLite fallback for local demos & tests |
+| `models/` | `User`, `Account`, `Transaction` ORM models |
+| `supabase/migrations/` | Hosted Postgres schema when using Supabase |
+
+---
+
+## Cross-cutting flows (built)
+
+### Receipt from gallery
+
+1. User picks an image in **Upload**
+2. App converts to JPEG (`expo-image-manipulator`) and posts to `/uploads/receipt`
+3. Backend OCR + parse + suggest category
+4. User reviews / edits merchant, amount, category
+5. Confirm creates a transaction (`source_type=receipt_ocr`)
+
+### Financial snapshot (demo)
+
+1. Client calls financial-health / cash-flow / obligations / spending
+2. Routes load the synthetic ledger (or DB when wired)
+3. `financial_intelligence.engine` returns explainable metrics and signals
+
+### Device ↔ backend networking
+
+- Prefer `EXPO_PUBLIC_API_URL` in `frontend/.env` when overriding
+- Otherwise use Expo/Metro LAN host so **Expo Go / physical devices** work
+- Backend must bind `--host 0.0.0.0` for LAN access
+
+---
+
+## Getting started
 
 ### Prerequisites
 
-- Node.js (v18+) & npm
-- Python (v3.10+)
-- Expo-compatible development environment
-- iOS Simulator, Android emulator, or Expo Go for device testing
+- Node.js 18+ and npm  
+- Python 3.10+  
+- [Tesseract](https://github.com/tesseract-ocr/tesseract) on the host (`brew install tesseract`)  
+- Expo Go or iOS/Android simulator  
 
-### Monorepo Scripts (Root)
+### Root scripts
 
 ```bash
-# Start frontend mobile app
-npm run dev:frontend
-
-# Start backend FastAPI server
-npm run dev:backend
-
-# Platform shortcuts
-npm run ios
-npm run android
-npm run web
+npm run dev:frontend   # Expo app
+npm run dev:backend    # FastAPI on 0.0.0.0:8000
+npm run ios | android | web
 ```
 
-### Frontend (Expo Mobile App)
+### Frontend
 
 ```bash
 cd frontend
@@ -121,18 +280,9 @@ cp .env.example .env
 npm start
 ```
 
-Expo loads `EXPO_PUBLIC_*` variables from `frontend/.env` (not `_env`). Copy `.env.example` and fill in values as needed.
+Expo loads `EXPO_PUBLIC_*` from `.env` (not `_env`). For a phone on the same Wi‑Fi, leave `EXPO_PUBLIC_API_URL` unset (auto LAN) or set `http://YOUR_LAN_IP:8000/api/v1`.
 
-**API base URL on device vs simulator**
-
-- Prefer setting `EXPO_PUBLIC_API_URL` in `frontend/.env` when you want an explicit override (must include `/api/v1`).
-- If unset, the app uses the Expo/Metro LAN host so Expo Go and physical devices can reach the backend on your machine.
-- Simulator / web fall back to `localhost` (Android emulator: `10.0.2.2`).
-- For a physical device, either leave `EXPO_PUBLIC_API_URL` unset, or set it to `http://YOUR_LAN_IP:8000/api/v1` (same Wi‑Fi as the backend). Restart Expo after changing `.env`.
-
-Expo native modules should be installed or repaired with `npx expo install` so their versions stay compatible with the Expo SDK.
-
-### Backend (FastAPI Service)
+### Backend
 
 ```bash
 cd backend
@@ -143,110 +293,79 @@ cp .env.example .env
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Bind with `--host 0.0.0.0` so phones on your LAN can reach the API (default `127.0.0.1` only works on the host / simulators).
+- Health: `http://localhost:8000/health`  
+- OpenAPI: `http://localhost:8000/api/v1/docs`  
+- Tests: `pytest`
 
-- Swagger API Docs: `http://localhost:8000/api/v1/docs`
-- Health Check: `http://localhost:8000/health`
+---
 
-## Project Structure
+## Development principles
 
-```text
-assay/
-├── frontend/             # Expo React Native mobile application
-│   ├── app/              # Expo Router screens and route layouts
-│   ├── components/       # Reusable UI, auth, aa, and feature components
-│   ├── constants/        # Theme, color, typography, and spacing tokens
-│   ├── hooks/            # Reusable React hooks
-│   ├── services/         # API, authentication, and state services
-│   ├── types/            # Shared TypeScript domain types
-│   ├── utils/            # Currency, date, and parsing helpers
-│   ├── assets/           # Fonts, avatars, and image assets
-│   └── package.json      # Frontend package configuration
-│
-├── backend/              # FastAPI Python backend service
-│   ├── app/
-│   │   ├── main.py       # FastAPI application entrypoint
-│   │   ├── core/         # Config, security (JWT), and database setup
-│   │   ├── api/v1/       # Versioned API routes (auth, accounts, copilot, etc.)
-│   │   ├── models/       # SQLAlchemy database models
-│   │   ├── schemas/      # Pydantic data validation schemas
-│   │   ├── services/     # Financial health, forecasting, categorization logic
-│   │   └── providers/    # Account Aggregator & LLM provider interfaces
-│   ├── tests/            # Pytest test suite
-│   ├── requirements.txt  # Python package dependencies
-│   └── pyproject.toml    # Python project configuration
-│
-├── docs/                 # Architecture, API specification, and design blueprints
-└── package.json          # Root orchestration scripts
-```
+- Keep important financial calculations **deterministic and backend-owned**
+- Preserve **provenance / confidence** where the product defines them
+- Keep external systems behind **provider interfaces** (AA, LLM)
+- Never ship LLM or private API secrets in the mobile app
+- Do not commit `.env` files or real financial PII
+- Keep route handlers thin: validate → service → respond
+- Prefer the smallest architecture that proves: data → understanding → prediction → recommendation → impact
 
-The main navigation areas are organized under `app/(tabs)`. Detail and focused workflows live in route groups such as `app/copilot`, `app/debt`, `app/simulator`, `app/split`, and `app/transaction`.
+---
 
-## Design Direction
+## Further process — what we are going to build
 
-Assay is intended to feel like a quiet, premium financial analysis product rather than a generic expense tracker.
+Ordered from near-term product value to later platform work.
 
-- Use shared theme tokens instead of component-level colour decisions.
-- Follow the 8-point spacing system.
-- Prefer clarity and evidence over decoration.
-- Keep financial values prominent, readable, and on one line.
-- Use Antic Didone for editorial headings and DM Sans for the financial interface.
-- Provide loading, empty, error, partial-data, and success states for data-driven screens.
-- Make analytics lead to an understandable action.
+### Near term (finish the prototype loop)
 
-## API Contract
+1. **Wire dashboard / insights / transactions UI to live API responses** instead of remaining mock-only presentation where still hardcoded  
+2. **Ground the copilot** in `financial_intelligence` outputs (remove placeholder balances in `copilot.py`)  
+3. **Persist OCR confirms reliably** into the same store the financial engine reads (SQLite → Supabase)  
+4. **Editable recent uploads** backed by `GET /transactions` filtered by `source_type=receipt_ocr`  
+5. **Manual entry** via `POST /transactions` (replace local demo toast entries)  
+6. **Improve receipt parser** merchant isolation (less noise from payment lines in merchant field)  
+7. **Restore / add API + architecture docs** under `docs/` (OpenAPI export + short system design)
 
-The documented API is versioned under `/api/v1` and covers:
+### Mid term (real data in, richer advice out)
 
-- Authentication
-- Connected accounts and synchronization
-- Transactions
-- Financial health
-- Cash-flow analytics
-- Obligations
-- Recommendations and impact simulation
-- Copilot queries
-- Receipt and UPI uploads
-- Spending and leak analytics
+8. **CSV / Kaggle (or statement) importer** feeding the same normalised transaction shape the engine already expects (synthetic generator: `backend/docs/SYNTHETIC_FINANCE_DATASET.md`)  
+9. **Supabase repositories** replacing the file-backed synthetic ledger without rewriting engine math  
+10. **Stronger recurring-obligation detection** and obligation-aware recommendations  
+11. **Impact simulation UX** fully driven by `POST /recommendations/{id}/simulate`  
+12. **UPI-specific parsing heuristics** (today UPI uses the receipt pipeline)  
+13. **Confidence & provenance** surfaced clearly in the mobile UI  
 
-See [docs/Spendify API Spec.md](docs/Spendify%20API%20Spec.md) for the endpoint contract and example payloads.
+### Later (production readiness)
 
-## Development Principles
+14. **Production Account Aggregator** behind the existing AA provider interface  
+15. **Auth end-to-end** (secure sessions, refresh, protected routes) with real user isolation  
+16. **RAG / retrieval** for copilot over the user’s own structured facts only  
+17. **Smart Split** and advanced analytics beyond the current screens  
+18. **Custom ML models** only where rules are insufficient (categorization edge cases, anomaly detection)  
+19. Retire or archive the root **`app/` legacy prototypes** once parity is confirmed in `frontend/`
 
-- Keep important financial calculations deterministic and backend-owned.
-- Preserve provenance for financial facts and confidence where it has a defined meaning.
-- Keep external providers behind interfaces.
-- Do not expose LLM or API secrets in the mobile app.
-- Do not commit `.env` files or sensitive financial data.
-- Keep route handlers thin when implementing the backend: validate, authenticate, call services, and return responses.
-- Build the smallest architecture that demonstrates data flowing into understanding, prediction, recommendation, and impact.
+### Explicitly out of scope for the prototype
 
-## Roadmap
+- Production bank login / automated payments  
+- Full investment management or tax filing  
+- Cloud OCR as a hard dependency (local Tesseract is intentional)
 
-### P0
+---
 
-- Mock or sandbox financial data
-- Transaction normalization and categorization
-- Financial health engine
-- Cash-flow projection
-- Dashboard
-- Grounded natural-language copilot
-- Recommendation engine
-- Impact simulation
-- Confidence and provenance presentation
+## Technology summary
 
-### P1
+| Layer | Choices |
+|-------|---------|
+| Mobile | Expo 57, React Native, TypeScript, Expo Router |
+| API | FastAPI, Pydantic, SQLAlchemy |
+| Intelligence | Pure Python financial engine + keyword categorizer |
+| OCR | OpenCV preprocess + local Tesseract |
+| Data (prototype) | Synthetic ledger; SQLite / Supabase path started |
+| Integrations | Mock AA provider; LLM provider interface for explanations |
 
-- Receipt OCR
-- UPI screenshot parser
-- Improved recurring-payment detection
-- Advanced analytics and charts
+---
 
-### P2
+## Related files
 
-- Smart Split improvements
-- Retrieval-augmented generation
-- Custom machine-learning models
-- Production Account Aggregator integration
-
-The prototype explicitly does not depend on production bank onboarding, direct bank login, automated payments, investment management, full accounting, or complex tax filing.
+- `backend/README.md` — backend setup, OCR prerequisite, core financial endpoints  
+- `frontend/.env.example` — public Expo env template  
+- `AGENTS.md` — use [Expo versioned docs](https://docs.expo.dev/versions/v54.0.0/) when changing native modules (verify against the app’s actual SDK in `frontend/package.json`)

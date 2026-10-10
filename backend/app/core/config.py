@@ -22,6 +22,19 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "mock"
     AA_PROVIDER: str = "mock"
 
+    # Synthetic personal-finance dataset (API ledger source)
+    SYNTHETIC_DATA_DIR: str = "data/synthetic_finance"
+    SYNTHETIC_USER_ID: str = ""  # empty => auto-pick a stable_income user
+    SYNTHETIC_SEED: int = 42
+    SYNTHETIC_BOOTSTRAP_USERS: int = 10
+    SYNTHETIC_START_MONTH: str = "2023-01"
+    SYNTHETIC_HISTORICAL_MONTHS: int = 12
+    SYNTHETIC_FORECAST_HORIZON: int = 6
+
+    # Forecasting / ML seam ("run_rate" today; set "ml" when a model artefact exists)
+    FORECAST_PROVIDER: str = "run_rate"  # run_rate | ml
+    FORECAST_MODEL_PATH: str = ""
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def normalize_postgres_url(cls, value: str) -> str:

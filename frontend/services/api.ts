@@ -46,9 +46,12 @@ function getDefaultBaseUrl(): string {
 
 const resolvedBaseUrl = process.env.EXPO_PUBLIC_API_URL || getDefaultBaseUrl();
 
+/** Resolved backend base URL (useful for debugging Expo Go / LAN connectivity). */
+export const API_BASE_URL = resolvedBaseUrl;
+
 export const api = axios.create({
   baseURL: resolvedBaseUrl,
-  timeout: 10000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -73,6 +76,7 @@ export const endpoints = {
   financialHealth: {
     summary: '/financial-health',
     cashFlow: '/analytics/cash-flow',
+    cashFlowDaily: '/analytics/cash-flow/daily',
     obligations: '/analytics/obligations',
     spending: '/analytics/spending',
   },
@@ -82,6 +86,9 @@ export const endpoints = {
   recommendations: {
     list: '/recommendations',
     simulate: (id: string) => `/recommendations/${id}/simulate`,
+  },
+  simulator: {
+    whatIf: '/simulator/what-if',
   },
   uploads: {
     receipt: '/uploads/receipt',

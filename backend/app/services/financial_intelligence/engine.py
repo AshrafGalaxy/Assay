@@ -215,3 +215,397 @@ def simulate_reduction(transactions: list[dict[str, Any]], *, category: str, mon
         "confidence": 0.8 if observed_category_spend else 0.4,
         "assumption": f"{category} spending is reduced by ₹{applied_reduction:,.0f} per month.",
     }
+
+
+def _baseline_run_rate(transactions: list[dict[str, Any]]) -> dict[str, float]:
+    """Derive monthly run-rates from observed ledger history (does not mutate records)."""
+    if not transactions:
+        return {
+            "income": 0.0, "essential": 0.0, "discretionary": 0.0,
+            "emi": 0.0, "savings": 0.0, "opening": 0.0,
+        }
+    cash = build_cash_flow(transactions, months=6)
+    months = cash["monthly_summary"] or []
+    n = max(1, len(months))
+    income = sum(item["inflow"] for item in months) / n
+
+    essential = 0.0
+    discretionary = 0.0
+    emi = 0.0
+    savings = 0.0
+    for tx in transactions:
+        if tx["type"] != "debit":
+            continue
+        amount = float(tx["amount"])
+        category = str(tx.get("category", ""))
+        if category in {"Debt & EMI", "Debt"}:
+            emi += amount
+        elif category == "Savings Transfer":
+            savings += amount
+        elif tx.get("is_discretionary"):
+            discretionary += amount
+        else:
+            essential += amount
+
+    # Average across distinct months present in the ledger.
+    month_count = len({_month_key(_date(tx["transaction_date"])) for tx in transactions}) or 1
+    health = build_financial_health(transactions)
+    return {
+        "income": _money(income),
+        "essential": _money(essential / month_count),
+        "discretionary": _money(discretionary / month_count),
+        "emi": _money(emi / month_count),
+        "savings": _money(savings / month_count),
+        "opening": _money(health["projected_month_end_balance"]),
+    }
+
+
+def _project_plan_path(
+    *,
+    opening: float,
+    income: float,
+    essential: float,
+    discretionary: float,
+    emi: float,
+    savings: float,
+    extra_debt: float,
+    essential_shock: float,
+    minimum_reserve: float,
+    horizon: int,
+    income_volatility: float,
+) -> dict[str, Any]:
+    """Project month-by-month closing balances for one action plan."""
+    periods: list[dict[str, Any]] = []
+    balance = opening
+    cumulative_savings = 0.0
+    cumulative_extra_debt = 0.0
+    debt_remaining = _money(emi * horizon * 1.5)  # opaque outstanding proxy when loan terms absent
+    violations: list[dict[str, Any]] = []
+
+    for index in range(horizon):
+        period_essential = essential + (essential_shock if index == 0 else 0.0)
+        period_emi = emi
+        period_extra = max(0.0, extra_debt)
+        period_disc = max(0.0, discretionary)
+        planned_savings = max(0.0, savings)
+
+        required = period_essential + period_emi
+        available_after_required = balance + income - required
+        # Hard constraint: mandatory obligations are always paid (may drive balance negative).
+        cash_before_flex = _money(available_after_required - period_disc - period_extra)
+        realized_savings = _money(min(planned_savings, max(0.0, cash_before_flex)))
+        closing = _money(
+            balance + income - period_essential - period_disc - period_emi - period_extra - realized_savings
+        )
+
+        reserve_violated = closing < minimum_reserve
+        headroom = _money(closing - minimum_reserve)
+        if reserve_violated:
+            violations.append({
+                "period_index": index + 1,
+                "period_label": f"M{index + 1}",
+                "type": "reserve_breach",
+                "severity": "critical",
+                "required_cash": minimum_reserve,
+                "available_cash": closing,
+                "deficit": _money(minimum_reserve - closing),
+                "reason": (
+                    f"Closing cash {closing:,.2f} falls below minimum reserve "
+                    f"{minimum_reserve:,.2f} after mandatory payments."
+                ),
+                "corrective_actions": [
+                    "Reduce discretionary spending further",
+                    "Lower additional debt repayment",
+                    "Reduce planned savings contribution",
+                    "Increase eligible income",
+                ],
+            })
+
+        if available_after_required < 0:
+            violations.append({
+                "period_index": index + 1,
+                "period_label": f"M{index + 1}",
+                "type": "mandatory_shortfall",
+                "severity": "critical",
+                "required_cash": required,
+                "available_cash": _money(balance + income),
+                "deficit": _money(abs(available_after_required)),
+                "reason": "Income plus opening cash cannot cover essential expenses and mandatory EMI.",
+                "corrective_actions": [
+                    "Increase income",
+                    "Reduce essential non-mandatory costs if possible",
+                    "Restructure debt outside this simulator",
+                ],
+            })
+
+        band = _money(income * max(0.0, income_volatility))
+        cumulative_savings = _money(cumulative_savings + realized_savings)
+        cumulative_extra_debt = _money(cumulative_extra_debt + period_extra)
+        debt_remaining = _money(max(0.0, debt_remaining - period_emi - period_extra))
+
+        periods.append({
+            "period_index": index + 1,
+            "period_label": f"M{index + 1}",
+            "opening_balance": _money(balance),
+            "income": _money(income),
+            "essential_expenses": _money(period_essential),
+            "mandatory_debt": _money(period_emi),
+            "additional_debt_repayment": _money(period_extra),
+            "discretionary_spending": _money(period_disc),
+            "savings_contribution": realized_savings,
+            "planned_savings": _money(planned_savings),
+            "closing_balance": closing,
+            "minimum_reserve": _money(minimum_reserve),
+            "reserve_violated": reserve_violated,
+            "reserve_headroom": headroom,
+            # Transparent volatility band (not a calibrated ML interval).
+            "balance_low": _money(closing - band),
+            "balance_high": _money(closing + band),
+            "debt_remaining": debt_remaining,
+        })
+        balance = closing
+
+    closings = [p["closing_balance"] for p in periods]
+    breach_count = sum(1 for p in periods if p["reserve_violated"])
+    # Documented metric: share of projected periods below reserve (not a Bayesian probability).
+    reserve_breach_rate = breach_count / horizon if horizon else 0.0
+    infeasible = any(v["type"] == "mandatory_shortfall" for v in violations)
+
+    return {
+        "periods": periods,
+        "ending_balance": closings[-1] if closings else opening,
+        "minimum_balance": min(closings) if closings else opening,
+        "reserve_breach_rate": round(reserve_breach_rate, 4),
+        "periods_below_reserve": breach_count,
+        "cumulative_savings": cumulative_savings,
+        "cumulative_extra_debt": cumulative_extra_debt,
+        "debt_remaining": debt_remaining,
+        "violations": violations,
+        "feasible": not infeasible,
+        "interest_saved_estimate": None,  # requires loan APR terms not present in ledger
+    }
+
+
+def simulate_what_if(
+    transactions: list[dict[str, Any]],
+    *,
+    assumptions: dict[str, Any],
+    profile: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compare baseline vs Protect Liquidity vs Accelerate Debt under scenario assumptions.
+
+    Does not mutate the underlying transaction ledger. Shortfall risk is reported as the
+    share of projected periods with closing cash below the minimum reserve — a transparent
+    period-count metric, not a calibrated probabilistic model.
+    """
+    horizon = int(assumptions.get("horizon_months") or 6)
+    if horizon not in {1, 3, 6}:
+        raise ValueError("horizon_months must be 1, 3, or 6")
+
+    disc_reduction_pct = float(assumptions.get("discretionary_reduction_pct") or 0.0)
+    if not 0 <= disc_reduction_pct <= 90:
+        raise ValueError("discretionary_reduction_pct must be between 0 and 90")
+
+    extra_debt = max(0.0, float(assumptions.get("extra_debt_payment") or 0.0))
+    savings_delta = float(assumptions.get("savings_contribution_delta") or 0.0)
+    income_change_pct = float(assumptions.get("income_change_pct") or 0.0)
+    if not -50 <= income_change_pct <= 50:
+        raise ValueError("income_change_pct must be between -50 and 50")
+    essential_shock = max(0.0, float(assumptions.get("essential_expense_shock") or 0.0))
+
+    profile = profile or {}
+    run_rate = _baseline_run_rate(transactions)
+    minimum_reserve = float(
+        assumptions["minimum_reserve"]
+        if assumptions.get("minimum_reserve") is not None
+        else profile.get("minimum_reserve", max(10000.0, run_rate["income"] * 0.25))
+    )
+    savings_target = float(
+        assumptions["savings_target"]
+        if assumptions.get("savings_target") is not None
+        else profile.get("savings_target", run_rate["savings"] * horizon)
+    )
+    income_volatility = float(profile.get("income_volatility") or 0.05)
+    opening = run_rate["opening"]
+
+    base_income = _money(run_rate["income"] * (1.0 + income_change_pct / 100.0))
+    base_essential = run_rate["essential"]
+    base_disc = run_rate["discretionary"]
+    base_emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 0.0)
+    base_savings = max(0.0, run_rate["savings"] + savings_delta)
+
+    reduced_disc = _money(base_disc * (1.0 - disc_reduction_pct / 100.0))
+
+    # Baseline: current trajectory with scenario income/shock/reserve, no strategy tweaks.
+    baseline = _project_plan_path(
+        opening=opening,
+        income=base_income,
+        essential=base_essential,
+        discretionary=base_disc,
+        emi=base_emi,
+        savings=base_savings,
+        extra_debt=0.0,
+        essential_shock=essential_shock,
+        minimum_reserve=minimum_reserve,
+        horizon=horizon,
+        income_volatility=income_volatility,
+    )
+    baseline.update({
+        "id": "baseline",
+        "name": "Current trajectory",
+        "summary": "Continue observed discretionary, savings, and mandatory debt patterns under the scenario assumptions.",
+        "trade_offs": ["No additional discipline beyond current habits", "Higher shortfall exposure if shocks persist"],
+    })
+
+    # Plan A — Protect Liquidity
+    plan_a_savings = _money(max(base_savings, reduced_disc * 0.25))
+    plan_a = _project_plan_path(
+        opening=opening,
+        income=base_income,
+        essential=base_essential,
+        discretionary=reduced_disc,
+        emi=base_emi,
+        savings=plan_a_savings,
+        extra_debt=0.0,
+        essential_shock=essential_shock,
+        minimum_reserve=minimum_reserve,
+        horizon=horizon,
+        income_volatility=income_volatility,
+    )
+    plan_a.update({
+        "id": "plan_a",
+        "name": "Protect Liquidity",
+        "summary": (
+            f"Cut discretionary spending by {disc_reduction_pct:.0f}% , preserve mandatory EMI, "
+            "and prioritise cash reserve before aggressive debt prepayment."
+        ),
+        "trade_offs": [
+            "Slower debt payoff than Plan B",
+            "Lifestyle spend is constrained",
+            "Savings continue when cash allows",
+        ],
+    })
+
+    # Plan B — Accelerate Debt Repayment
+    plan_b_extra = _money(extra_debt if extra_debt > 0 else max(1000.0, reduced_disc * 0.35))
+    plan_b_savings = _money(max(0.0, base_savings * 0.5))
+    plan_b = _project_plan_path(
+        opening=opening,
+        income=base_income,
+        essential=base_essential,
+        discretionary=reduced_disc,
+        emi=base_emi,
+        savings=plan_b_savings,
+        extra_debt=plan_b_extra,
+        essential_shock=essential_shock,
+        minimum_reserve=minimum_reserve,
+        horizon=horizon,
+        income_volatility=income_volatility,
+    )
+    plan_b.update({
+        "id": "plan_b",
+        "name": "Accelerate Debt Repayment",
+        "summary": (
+            f"Apply about ₹{plan_b_extra:,.0f}/mo extra toward debt while keeping a reduced discretionary budget. "
+            "Savings contributions are tempered to fund repayment."
+        ),
+        "trade_offs": [
+            "Higher liquidity risk vs Plan A",
+            "Lower near-term savings progress",
+            "Faster debt balance reduction",
+        ],
+    })
+
+    # Savings-target feasibility under Plan A constraints (Disc already reduced, extra debt 0).
+    max_feasible_savings = plan_a["cumulative_savings"]
+    target_feasible = max_feasible_savings + 1e-9 >= savings_target
+    if not target_feasible:
+        plan_a["violations"] = list(plan_a["violations"]) + [{
+            "period_index": horizon,
+            "period_label": f"M{horizon}",
+            "type": "savings_target_infeasible",
+            "severity": "warning",
+            "required_cash": savings_target,
+            "available_cash": max_feasible_savings,
+            "deficit": _money(savings_target - max_feasible_savings),
+            "reason": "Savings target exceeds cumulative contributions feasible while holding the reserve.",
+            "corrective_actions": [
+                "Lower the savings target",
+                "Extend the target timeline",
+                "Increase income or reduce essentials",
+            ],
+        }]
+
+    candidates = [plan_a, plan_b]
+    # Prefer feasible plans with lower reserve breach rate, then higher ending balance.
+    def _score(plan: dict[str, Any]) -> tuple:
+        return (
+            1 if plan["feasible"] else 0,
+            -plan["reserve_breach_rate"],
+            plan["minimum_balance"],
+            plan["ending_balance"],
+        )
+
+    recommended = max(candidates, key=_score)
+    preference_reason = (
+        f"{recommended['name']} is preferred because it is "
+        f"{'feasible' if recommended['feasible'] else 'the least infeasible'}, "
+        f"with a reserve-breach period share of {recommended['reserve_breach_rate'] * 100:.1f}% "
+        f"and a minimum projected balance of ₹{recommended['minimum_balance']:,.0f}."
+    )
+
+    what_changed: list[str] = []
+    if income_change_pct:
+        what_changed.append(f"Income assumption adjusted by {income_change_pct:+.1f}%.")
+    if disc_reduction_pct:
+        what_changed.append(f"Discretionary spend reduced by {disc_reduction_pct:.0f}% in both plans.")
+    if essential_shock:
+        what_changed.append(f"One-time essential shock of ₹{essential_shock:,.0f} applied in month 1.")
+    if extra_debt:
+        what_changed.append(f"Extra debt repayment lever set to ₹{extra_debt:,.0f}/mo (Plan B uses at least this).")
+    if savings_delta:
+        what_changed.append(f"Planned savings contribution changed by ₹{savings_delta:,.0f}/mo.")
+    if assumptions.get("minimum_reserve") is not None:
+        what_changed.append(f"Minimum reserve set to ₹{minimum_reserve:,.0f}.")
+    if not what_changed:
+        what_changed.append("No scenario deltas beyond strategy defaults; comparing plan behaviours on current run-rates.")
+
+    limitations = [
+        "Projections use observed monthly run-rates from the synthetic ledger; they are not a calibrated ML forecast.",
+        "reserve_breach_rate is the share of projected periods below the reserve — not a Bayesian default probability.",
+        "balance_low/balance_high apply a simple income-volatility band from the user profile.",
+        "Interest saved is unavailable without loan APR / tenure terms in the ledger.",
+        "Historical transactions are never mutated by this simulation.",
+    ]
+
+    return {
+        "forecast_updated_at": date.today().isoformat(),
+        "horizon_months": horizon,
+        "minimum_reserve": _money(minimum_reserve),
+        "savings_target": _money(savings_target),
+        "savings_target_feasible": target_feasible,
+        "income_volatility": income_volatility,
+        "opening_balance": _money(opening),
+        "baseline_run_rate": run_rate,
+        "assumptions": {
+            "horizon_months": horizon,
+            "discretionary_reduction_pct": disc_reduction_pct,
+            "extra_debt_payment": _money(extra_debt),
+            "savings_contribution_delta": _money(savings_delta),
+            "income_change_pct": income_change_pct,
+            "essential_expense_shock": _money(essential_shock),
+            "minimum_reserve": _money(minimum_reserve),
+            "savings_target": _money(savings_target),
+        },
+        "baseline": baseline,
+        "plans": [plan_a, plan_b],
+        "recommended_plan_id": recommended["id"],
+        "preference_reason": preference_reason,
+        "what_changed": what_changed,
+        "limitations": limitations,
+        "data_quality": {
+            "transaction_count": len(transactions),
+            "sufficient_history": len(transactions) >= 12,
+            "opening_below_reserve": opening < minimum_reserve,
+        },
+    }

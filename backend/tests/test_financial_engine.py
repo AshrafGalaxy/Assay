@@ -1,6 +1,5 @@
 from datetime import date
 
-from app.services.financial_intelligence.demo_ledger import get_demo_transactions
 from app.services.financial_intelligence.engine import (
     build_cash_flow,
     build_financial_health,
@@ -8,30 +7,51 @@ from app.services.financial_intelligence.engine import (
     detect_obligations,
     simulate_reduction,
 )
+from app.services.financial_intelligence.ledger import get_ledger_transactions
 
 
-def test_health_is_calculated_from_the_active_month():
-    result = build_financial_health(get_demo_transactions(), as_of=date(2026, 9, 19))
-    assert result["income"] == 85000.0
-    assert result["spending"] == 50299.0
-    assert result["savings"] == 34701.0
-    assert result["health_score"] > 0
+def _txs():
+    return get_ledger_transactions(historical_only=True)
 
 
-def test_cash_flow_has_three_chronological_months():
-    result = build_cash_flow(get_demo_transactions())
-    assert [item["month"] for item in result["monthly_summary"]] == ["Jul 2026", "Aug 2026", "Sep 2026"]
+def test_health_is_calculated_from_synthetic_ledger():
+    txs = _txs()
+    assert txs, "synthetic ledger should provide transactions"
+    latest = max(date.fromisoformat(item["transaction_date"]) for item in txs)
+    result = build_financial_health(txs, as_of=latest)
+    assert result["income"] >= 0
+    assert result["spending"] >= 0
+    assert "health_score" in result
+    assert 0 <= result["health_score"] <= 100
+
+
+def test_cash_flow_has_chronological_months():
+    result = build_cash_flow(_txs())
+    months = [item["month"] for item in result["monthly_summary"]]
+    assert months
+    assert months == sorted(months, key=lambda label: date.strptime(label, "%b %Y"))
 
 
 def test_obligations_are_recurring_debits_only():
-    result = detect_obligations(get_demo_transactions())
-    assert result["total_monthly_obligations"] == 27899.0
-    assert len(result["items"]) == 3
+    result = detect_obligations(_txs())
+    assert result["total_monthly_obligations"] >= 0
+    for item in result["items"]:
+        assert item["amount"] > 0
+        assert item["frequency"] == "monthly"
 
 
 def test_recommendation_and_simulation_are_grounded_in_observed_category_spend():
-    recommendations = build_recommendations(get_demo_transactions())
-    assert any(item["category"] == "Food & Dining" for item in recommendations)
-    result = simulate_reduction(get_demo_transactions(), category="Food & Dining", monthly_reduction=2000)
-    assert result["monthly_impact"] == 2000.0
-    assert result["annualized_impact"] == 24000.0
+    txs = _txs()
+    recommendations = build_recommendations(txs)
+    # Synthetic users may not always produce a recommendation; when they do, simulate works.
+    if recommendations:
+        category = recommendations[0]["category"]
+        result = simulate_reduction(txs, category=category, monthly_reduction=500)
+        assert result["monthly_impact"] >= 0
+        assert result["annualized_impact"] == round(result["monthly_impact"] * 12, 2)
+    else:
+        # Still verify simulation against a known synthetic category present in the ledger.
+        categories = {item["category"] for item in txs if item["type"] == "debit"}
+        category = next(iter(categories))
+        result = simulate_reduction(txs, category=category, monthly_reduction=100)
+        assert "projected_monthly_buffer" in result

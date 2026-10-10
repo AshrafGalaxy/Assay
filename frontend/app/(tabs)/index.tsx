@@ -1,5 +1,13 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  Text,
+  ActivityIndicator,
+  RefreshControl,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Typography } from '../../components/Typography';
@@ -9,6 +17,19 @@ import { TransactionRow } from '../../components/ui/TransactionRow';
 import { TopSpendingCategoriesChart } from '../../components/ui/TopSpendingCategoriesChart';
 import { COLORS, SIZES, SPACING, FONTS } from '../../constants/theme';
 import { useAAState } from '../../services/aaState';
+import { API_BASE_URL } from '../../services/api';
+import {
+  ApiTransaction,
+  FinancialHealth,
+  ObligationItem,
+  SpendingCategory,
+  fetchFinancialHealth,
+  fetchObligations,
+  fetchSpendingBreakdown,
+  fetchTransactions,
+  formatINR,
+  formatSignedINR,
+} from '../../services/finance';
 import {
   ScanLine,
   Image as ImageIcon,
@@ -16,24 +37,55 @@ import {
   PieChart,
   TrendingUp,
   ArrowUpRight,
-  ShieldCheck,
-  Building2,
   Sparkles,
   Calendar,
   AlertCircle,
-  TrendingDown,
-  ArrowRight,
-  Layers,
 } from 'lucide-react-native';
 
 export default function Dashboard() {
   const router = useRouter();
   const aaState = useAAState();
-  const [hasUnreadNotification, setHasUnreadNotification] = React.useState(true);
+  const [hasUnreadNotification, setHasUnreadNotification] = useState(true);
+  const [health, setHealth] = useState<FinancialHealth | null>(null);
+  const [recentTxs, setRecentTxs] = useState<ApiTransaction[]>([]);
+  const [spending, setSpending] = useState<SpendingCategory[]>([]);
+  const [obligations, setObligations] = useState<ObligationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const loadDashboard = useCallback(async () => {
+    try {
+      setError(null);
+      const [healthData, txData, spendingData, obligationsData] = await Promise.all([
+        fetchFinancialHealth(),
+        fetchTransactions(8),
+        fetchSpendingBreakdown(),
+        fetchObligations(),
+      ]);
+      setHealth(healthData);
+      setRecentTxs(txData.items);
+      setSpending(spendingData);
+      setObligations(obligationsData.items.slice(0, 3));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load ledger';
+      setError(`${message} (API: ${API_BASE_URL})`);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadDashboard();
+  }, [loadDashboard]);
 
   const handleNotificationPress = () => {
     setHasUnreadNotification(false);
   };
+
+  const savingsRatePct = health ? Math.round(health.savings_rate * 1000) / 10 : 0;
+  const primarySignal = health?.signals?.[0]?.description;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -49,7 +101,33 @@ export default function Dashboard() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              void loadDashboard();
+            }}
+          />
+        }
       >
+        {loading && (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={COLORS.primary} />
+            <Typography variant="caption" color={COLORS.textSecondary}>
+              Loading synthetic ledger…
+            </Typography>
+          </View>
+        )}
+
+        {error && (
+          <View style={styles.errorBanner}>
+            <Typography variant="caption" color={COLORS.error}>
+              {error}
+            </Typography>
+          </View>
+        )}
+
         {/* Subtle limited insights banner if user chose Set Up Later or disconnected */}
         {!aaState.aa_connected && (
           <View style={styles.limitedBanner}>
@@ -97,12 +175,18 @@ export default function Dashboard() {
 
           <View style={styles.amountRow}>
             <Typography variant="h1" color={COLORS.white} style={styles.heroAmount}>
-              {aaState.aa_connected ? '₹1,66,930' : '₹12,450'}
+              {health
+                ? formatINR(
+                    aaState.aa_connected
+                      ? health.projected_month_end_balance
+                      : health.spending,
+                  )
+                : '—'}
             </Typography>
             <View style={styles.trendBadge}>
               <TrendingUp color={COLORS.success} size={14} strokeWidth={2} />
               <Typography variant="caption" color={COLORS.success} style={styles.trendText}>
-                +8.4%
+                Score {health?.health_score ?? '—'}
               </Typography>
             </View>
           </View>
@@ -114,7 +198,7 @@ export default function Dashboard() {
                 Monthly Income
               </Typography>
               <Typography variant="bodyBold" color={COLORS.white} style={{ marginTop: 2 }}>
-                ₹85,000
+                {health ? formatINR(health.income) : '—'}
               </Typography>
             </View>
 
@@ -123,7 +207,7 @@ export default function Dashboard() {
                 Monthly Spending
               </Typography>
               <Typography variant="bodyBold" color={COLORS.white} style={{ marginTop: 2 }}>
-                ₹32,450
+                {health ? formatINR(health.spending) : '—'}
               </Typography>
             </View>
 
@@ -132,7 +216,7 @@ export default function Dashboard() {
                 Savings Rate
               </Typography>
               <Typography variant="bodyBold" color={COLORS.gold} style={{ marginTop: 2 }}>
-                61.8%
+                {health ? `${savingsRatePct}%` : '—'}
               </Typography>
             </View>
           </View>
@@ -165,57 +249,41 @@ export default function Dashboard() {
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             UPCOMING OBLIGATIONS & CASH FLOW
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {aaState.aa_connected && (
+        {obligations.length > 0 && (
           <Card style={styles.obligationCard}>
             <View style={styles.obligationHeadingBlock}>
               <Typography variant="cardHeading" style={styles.obligationTitle}>
-                Upcoming Obligations
+                Recurring Obligations
               </Typography>
               <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationSubtitle}>
-                Next 14 Days
+                From synthetic ledger
               </Typography>
             </View>
 
             <View style={styles.obligationList}>
-              <View style={styles.obligationRow}>
-                <View style={styles.calendarIconWrapper}>
-                  <Calendar size={18} color={COLORS.primary} strokeWidth={1.8} />
-                </View>
-                <View style={styles.obligationInfo}>
-                  <Typography variant="bodySemiBold" color={COLORS.primary} style={styles.obligationBillName} numberOfLines={1}>
-                    Apartment Rent
-                  </Typography>
-                  <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationMeta} numberOfLines={1}>
-                    Due 25 Sep • Auto-debit
-                  </Typography>
-                </View>
-                <View style={styles.obligationAmountWrapper}>
-                  <Typography variant="bodyBold" color={COLORS.primary} style={styles.obligationAmount} numberOfLines={1}>
-                    ₹12,000
-                  </Typography>
-                </View>
-              </View>
-
-              <View style={styles.obligationDivider} />
-
-              <View style={styles.obligationRow}>
-                <View style={styles.calendarIconWrapper}>
-                  <Calendar size={18} color={COLORS.primary} strokeWidth={1.8} />
-                </View>
-                <View style={styles.obligationInfo}>
-                  <Typography variant="bodySemiBold" color={COLORS.primary} style={styles.obligationBillName} numberOfLines={1}>
-                    Broadband & Utilities
-                  </Typography>
-                  <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationMeta} numberOfLines={1}>
-                    Due 28 Sep • AirFiber
-                  </Typography>
-                </View>
-                <View style={styles.obligationAmountWrapper}>
-                  <Typography variant="bodyBold" color={COLORS.primary} style={styles.obligationAmount} numberOfLines={1}>
-                    ₹2,200
-                  </Typography>
-                </View>
-              </View>
+              {obligations.map((item, index) => (
+                <React.Fragment key={item.id}>
+                  {index > 0 && <View style={styles.obligationDivider} />}
+                  <View style={styles.obligationRow}>
+                    <View style={styles.calendarIconWrapper}>
+                      <Calendar size={18} color={COLORS.primary} strokeWidth={1.8} />
+                    </View>
+                    <View style={styles.obligationInfo}>
+                      <Typography variant="bodySemiBold" color={COLORS.primary} style={styles.obligationBillName} numberOfLines={1}>
+                        {item.name}
+                      </Typography>
+                      <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationMeta} numberOfLines={1}>
+                        Due day {item.due_day} • {item.category}
+                      </Typography>
+                    </View>
+                    <View style={styles.obligationAmountWrapper}>
+                      <Typography variant="bodyBold" color={COLORS.primary} style={styles.obligationAmount} numberOfLines={1}>
+                        {formatINR(item.amount)}
+                      </Typography>
+                    </View>
+                  </View>
+                </React.Fragment>
+              ))}
             </View>
           </Card>
         )}
@@ -228,7 +296,7 @@ export default function Dashboard() {
             Top Spending Categories
           </Typography>
 
-          <TopSpendingCategoriesChart />
+          <TopSpendingCategoriesChart categories={spending} />
         </Card>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -276,42 +344,42 @@ export default function Dashboard() {
         </View>
 
         <Card variant="list" style={styles.recentTransactionsCard}>
-          <TransactionRow
-            name="Starbucks"
-            category="Food & Dining"
-            date="Today, 10:42 AM"
-            amount="-₹340"
-            method="UPI"
-            showDivider
-            onPress={() => router.push('/transaction/1')}
-          />
-          <TransactionRow
-            name="Salary"
-            category="Income"
-            date="Today, 09:00 AM"
-            amount="+₹85,000"
-            method="Bank"
-            isIncome
-            showDivider
-            onPress={() => router.push('/transaction/2')}
-          />
-          <TransactionRow
-            name="Uber"
-            category="Transport"
-            date="Yesterday, 6:15 PM"
-            amount="-₹250"
-            method="Card"
-            showDivider
-            onPress={() => router.push('/transaction/3')}
-          />
-          <TransactionRow
-            name="Amazon"
-            category="Shopping"
-            date="10 Jul, 2:30 PM"
-            amount="-₹1,200"
-            method="Card"
-            onPress={() => router.push('/transaction/5')}
-          />
+          {recentTxs.length === 0 && !loading ? (
+            <Typography variant="secondary" color={COLORS.textSecondary} style={{ padding: 16 }}>
+              No synthetic transactions loaded yet.
+            </Typography>
+          ) : (
+            recentTxs.slice(0, 5).map((tx, index) => {
+              const isIncome = tx.type === 'credit';
+              return (
+                <TransactionRow
+                  key={tx.id}
+                  name={tx.merchant_name || tx.description || tx.category}
+                  category={tx.category}
+                  date={tx.transaction_date}
+                  amount={formatSignedINR(tx.amount, isIncome)}
+                  method={isIncome ? 'Bank' : 'UPI'}
+                  isIncome={isIncome}
+                  showDivider={index < Math.min(recentTxs.length, 5) - 1}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/transaction/[id]',
+                      params: {
+                        id: tx.id,
+                        name: tx.merchant_name || tx.category,
+                        merchantKey: 'receipt',
+                        amount: formatSignedINR(tx.amount, isIncome),
+                        time: tx.transaction_date,
+                        method: isIncome ? 'Bank' : 'UPI',
+                        category: tx.category,
+                        notes: tx.description || '',
+                      },
+                    })
+                  }
+                />
+              );
+            })
+          )}
         </Card>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -324,19 +392,16 @@ export default function Dashboard() {
               <Text style={styles.insightTagText}>ASSAY CLARITY</Text>
             </View>
             <Typography variant="caption" color={COLORS.textSecondary}>
-              Automated Analysis
+              Synthetic ledger
             </Typography>
           </View>
 
           <Typography variant="bodyBold" color={COLORS.primary} style={styles.insightHeadline}>
-            {aaState.aa_connected
-              ? "Positive Cash Flow Trajectory"
-              : "Basic spend tracking active"}
+            {primarySignal ? 'Live health signal' : 'Ledger connected'}
           </Typography>
           <Typography variant="secondary" color={COLORS.textSecondary} style={styles.insightDetail}>
-            {aaState.aa_connected
-              ? "Your liquid reserves comfortably cover projected month-end commitments of ₹14,200. ₹52,550 surplus is eligible for compounding."
-              : "Upload recent receipts or link your account via Settings to unlock full cash flow forecasting."}
+            {primarySignal ||
+              `Projected month-end balance ${health ? formatINR(health.projected_month_end_balance) : '—'}. Pull to refresh.`}
           </Typography>
         </Card>
 
@@ -377,6 +442,20 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: SIZES.padding,
     paddingTop: 8,
+  },
+  loadingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 12,
+  },
+  errorBanner: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FECACA',
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
   },
   limitedBanner: {
     flexDirection: 'row',

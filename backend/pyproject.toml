@@ -25,6 +25,8 @@ dependencies = [
     "easyocr>=1.7.1",
     "pytesseract>=0.3.10",
     "pillow>=10.2.0",
+    "numpy>=1.24.0",
+    "pandas>=2.0.0",
 ]
 
 [project.optional-dependencies]
