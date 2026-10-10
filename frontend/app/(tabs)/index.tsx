@@ -6,6 +6,7 @@ import { Typography } from '../../components/Typography';
 import { Card } from '../../components/Card';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { TransactionRow } from '../../components/ui/TransactionRow';
+import { TopSpendingCategoriesChart } from '../../components/ui/TopSpendingCategoriesChart';
 import { COLORS, SIZES, SPACING, FONTS } from '../../constants/theme';
 import { useAAState } from '../../services/aaState';
 import {
@@ -162,64 +163,58 @@ export default function Dashboard() {
         </View>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            FINANCIAL COPILOT INSIGHT
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <Card style={styles.insightCard}>
-          <View style={styles.insightHeader}>
-            <View style={styles.insightTag}>
-              <Sparkles size={13} color={COLORS.gold} />
-              <Text style={styles.insightTagText}>ASSAY CLARITY</Text>
-            </View>
-            <Typography variant="caption" color={COLORS.textSecondary}>
-              Automated Analysis
-            </Typography>
-          </View>
-
-          <Typography variant="bodyBold" color={COLORS.primary} style={styles.insightHeadline}>
-            {aaState.aa_connected
-              ? "Positive Cash Flow Trajectory"
-              : "Basic spend tracking active"}
-          </Typography>
-          <Typography variant="secondary" color={COLORS.textSecondary} style={styles.insightDetail}>
-            {aaState.aa_connected
-              ? "Your liquid reserves comfortably cover projected month-end commitments of ₹14,200. ₹52,550 surplus is eligible for compounding."
-              : "Upload recent receipts or link your account via Settings to unlock full cash flow forecasting."}
-          </Typography>
-        </Card>
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
             UPCOMING OBLIGATIONS & CASH FLOW
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         {aaState.aa_connected && (
-          <Card style={styles.sectionCard}>
-            <View style={styles.obligationHeader}>
-              <Typography variant="h3">Upcoming Obligations</Typography>
-              <Typography variant="caption" color={COLORS.textSecondary}>Next 14 Days</Typography>
+          <Card style={styles.obligationCard}>
+            <View style={styles.obligationHeadingBlock}>
+              <Typography variant="cardHeading" style={styles.obligationTitle}>
+                Upcoming Obligations
+              </Typography>
+              <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationSubtitle}>
+                Next 14 Days
+              </Typography>
             </View>
 
             <View style={styles.obligationList}>
               <View style={styles.obligationRow}>
-                <View style={styles.obligationLeft}>
-                  <Calendar size={16} color={COLORS.primary} />
-                  <View>
-                    <Typography variant="bodyMedium">Apartment Rent</Typography>
-                    <Typography variant="caption" color={COLORS.textSecondary}>Due 25 Sep • Auto-debit</Typography>
-                  </View>
+                <View style={styles.calendarIconWrapper}>
+                  <Calendar size={18} color={COLORS.primary} strokeWidth={1.8} />
                 </View>
-                <Typography variant="bodyBold" color={COLORS.primary}>₹12,000</Typography>
+                <View style={styles.obligationInfo}>
+                  <Typography variant="bodySemiBold" color={COLORS.primary} style={styles.obligationBillName} numberOfLines={1}>
+                    Apartment Rent
+                  </Typography>
+                  <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationMeta} numberOfLines={1}>
+                    Due 25 Sep • Auto-debit
+                  </Typography>
+                </View>
+                <View style={styles.obligationAmountWrapper}>
+                  <Typography variant="bodyBold" color={COLORS.primary} style={styles.obligationAmount} numberOfLines={1}>
+                    ₹12,000
+                  </Typography>
+                </View>
               </View>
 
               <View style={styles.obligationDivider} />
 
               <View style={styles.obligationRow}>
-                <View style={styles.obligationLeft}>
-                  <Calendar size={16} color={COLORS.primary} />
-                  <View>
-                    <Typography variant="bodyMedium">Broadband & Utilities</Typography>
-                    <Typography variant="caption" color={COLORS.textSecondary}>Due 28 Sep • AirFiber</Typography>
-                  </View>
+                <View style={styles.calendarIconWrapper}>
+                  <Calendar size={18} color={COLORS.primary} strokeWidth={1.8} />
                 </View>
-                <Typography variant="bodyBold" color={COLORS.primary}>₹2,200</Typography>
+                <View style={styles.obligationInfo}>
+                  <Typography variant="bodySemiBold" color={COLORS.primary} style={styles.obligationBillName} numberOfLines={1}>
+                    Broadband & Utilities
+                  </Typography>
+                  <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationMeta} numberOfLines={1}>
+                    Due 28 Sep • AirFiber
+                  </Typography>
+                </View>
+                <View style={styles.obligationAmountWrapper}>
+                  <Typography variant="bodyBold" color={COLORS.primary} style={styles.obligationAmount} numberOfLines={1}>
+                    ₹2,200
+                  </Typography>
+                </View>
               </View>
             </View>
           </Card>
@@ -233,29 +228,7 @@ export default function Dashboard() {
             Top Spending Categories
           </Typography>
 
-          <View style={styles.breakdownRow}>
-            {/* Minimalist Donut Chart ring */}
-            <View style={styles.donutContainer}>
-              <View style={styles.donutOuter}>
-                <View style={styles.donutInner}>
-                  <Typography variant="caption" color={COLORS.textSecondary}>
-                    Total
-                  </Typography>
-                  <Typography variant="bodyBold" color={COLORS.text}>
-                    Spend
-                  </Typography>
-                </View>
-              </View>
-            </View>
-
-            <View style={styles.breakdownList}>
-              <BreakdownItem color={COLORS.gold} label="Food & Dining" amount="₹11,400" percent="35%" />
-              <BreakdownItem color={COLORS.primary} label="Shopping" amount="₹8,200" percent="25%" />
-              <BreakdownItem color={COLORS.success} label="Transport" amount="₹5,150" percent="16%" />
-              <BreakdownItem color={COLORS.warning} label="Subscriptions" amount="₹4,400" percent="14%" />
-              <BreakdownItem color={COLORS.textSecondary} label="Others" amount="₹3,300" percent="10%" />
-            </View>
-          </View>
+          <TopSpendingCategoriesChart />
         </Card>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -341,8 +314,34 @@ export default function Dashboard() {
           />
         </Card>
 
-        {/* Bottom padding for tab bar */}
-        <View style={{ height: 100 }} />
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            FINANCIAL COPILOT INSIGHT: POSITIVE CASH FLOW TRAJECTORY
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <Card style={styles.insightCard}>
+          <View style={styles.insightHeader}>
+            <View style={styles.insightTag}>
+              <Sparkles size={13} color={COLORS.gold} />
+              <Text style={styles.insightTagText}>ASSAY CLARITY</Text>
+            </View>
+            <Typography variant="caption" color={COLORS.textSecondary}>
+              Automated Analysis
+            </Typography>
+          </View>
+
+          <Typography variant="bodyBold" color={COLORS.primary} style={styles.insightHeadline}>
+            {aaState.aa_connected
+              ? "Positive Cash Flow Trajectory"
+              : "Basic spend tracking active"}
+          </Typography>
+          <Typography variant="secondary" color={COLORS.textSecondary} style={styles.insightDetail}>
+            {aaState.aa_connected
+              ? "Your liquid reserves comfortably cover projected month-end commitments of ₹14,200. ₹52,550 surplus is eligible for compounding."
+              : "Upload recent receipts or link your account via Settings to unlock full cash flow forecasting."}
+          </Typography>
+        </Card>
+
+        {/* Bottom padding for tab bar and floating action elements */}
+        <View style={{ height: 120 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -357,34 +356,6 @@ const ActionItem = ({ icon, title, onPress }: { icon: React.ReactNode; title: st
   </TouchableOpacity>
 );
 
-const BreakdownItem = ({
-  color,
-  label,
-  amount,
-  percent
-}: {
-  color: string;
-  label: string;
-  amount: string;
-  percent: string;
-}) => (
-  <View style={styles.breakdownItemRow}>
-    <View style={styles.breakdownLabelGroup}>
-      <View style={[styles.colorDot, { backgroundColor: color }]} />
-      <Typography variant="secondary" numberOfLines={1} style={styles.breakdownLabel}>
-        {label}
-      </Typography>
-    </View>
-    <View style={styles.breakdownAmountGroup}>
-      <Typography variant="caption" color={COLORS.textSecondary}>
-        {percent}
-      </Typography>
-      <Typography variant="bodyBold" color={COLORS.text} style={styles.breakdownAmount}>
-        {amount}
-      </Typography>
-    </View>
-  </View>
-);
 
 const LeakItem = ({ title, amount, count }: { title: string; amount: string; count: string }) => (
   <View style={styles.leakItemRow}>
@@ -544,7 +515,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(214, 169, 40, 0.3)',
     borderRadius: SIZES.cardRadius,
-    padding: 16,
+    padding: 20,
     marginBottom: SPACING.xl,
   },
   insightHeader: {
@@ -578,88 +549,82 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginBottom: SPACING.base,
   },
-  obligationHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.base,
+  obligationCard: {
+    paddingHorizontal: 22,
+    paddingVertical: 22,
+    marginBottom: SPACING.xl,
+  },
+  obligationHeadingBlock: {
+    marginBottom: 20,
+  },
+  obligationTitle: {
+    fontSize: 20,
+    lineHeight: 26,
+    fontFamily: FONTS.bodySemiBold,
+    color: COLORS.primary,
+  },
+  obligationSubtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontFamily: FONTS.bodyMedium,
+    color: COLORS.textSecondary,
+    marginTop: 4,
   },
   obligationList: {
-    gap: 10,
+    gap: 0,
   },
   obligationRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    minHeight: 80,
+    paddingVertical: 12,
   },
-  obligationLeft: {
-    flexDirection: 'row',
+  calendarIconWrapper: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: 10,
+    flexShrink: 0,
+  },
+  obligationInfo: {
+    flex: 1,
+    justifyContent: 'center',
+    marginLeft: 14,
+    marginRight: 12,
+  },
+  obligationBillName: {
+    fontSize: 15,
+    lineHeight: 20,
+    fontFamily: FONTS.bodySemiBold,
+    color: COLORS.primary,
+  },
+  obligationMeta: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORS.textSecondary,
+    marginTop: 3,
+  },
+  obligationAmountWrapper: {
+    flexShrink: 0,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  obligationAmount: {
+    fontSize: 16,
+    lineHeight: 22,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.primary,
+    textAlign: 'right',
   },
   obligationDivider: {
     height: 1,
     backgroundColor: COLORS.border,
-    marginVertical: 4,
-  },
-  breakdownRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  donutContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 20,
-  },
-  donutOuter: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
-    borderWidth: 12,
-    borderColor: COLORS.primary,
-    borderTopColor: COLORS.gold,
-    borderRightColor: COLORS.success,
-    borderBottomColor: COLORS.warning,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  donutInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  breakdownList: {
-    flex: 1,
-    gap: 10,
-  },
-  breakdownItemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  breakdownLabelGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    marginRight: 8,
-  },
-  breakdownLabel: {
-    fontSize: 13,
-  },
-  colorDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  breakdownAmountGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  breakdownAmount: {
-    fontSize: 13,
-    minWidth: 54,
-    textAlign: 'right',
+    opacity: 0.8,
   },
   leakHeader: {
     flexDirection: 'row',

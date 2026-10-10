@@ -31,8 +31,6 @@ export function BankCardItem({ account, isSelected, onToggle }: BankCardItemProp
       </View>
 
       <View style={styles.rightContent}>
-        <Text style={styles.balance}>{account.formattedBalance}</Text>
-        
         <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
           {isSelected && <Check size={14} color="#FFFFFF" strokeWidth={2.8} />}
         </View>
@@ -96,13 +94,8 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   rightContent: {
-    alignItems: 'flex-end',
-    gap: 6,
-  },
-  balance: {
-    fontFamily: FONTS.bodySemiBold,
-    fontSize: 15,
-    color: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   checkbox: {
     width: 22,
