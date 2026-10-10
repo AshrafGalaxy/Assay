@@ -1,11 +1,8 @@
-"""API ledger backed by the Assay synthetic personal-finance dataset.
+"""Optional synthetic CSV ledger for demos / evaluation.
 
-Replaces the old hardcoded demo ledger. Loads CSV output from
-`synthetic_finance_generator` and adapts rows into the transaction dicts
-expected by `engine.py` and the FastAPI routes.
-
-Observed API data uses historical months only (`IsFutureOutcome == False`) so
-future shock outcomes never leak into live financial-health responses.
+Production default is a clean slate: ``SYNTHETIC_LEDGER_ENABLED=false`` and no
+auto-generated CSVs. When disabled (or CSVs are missing), the API returns empty
+transaction lists so manual / bank data is the only source.
 """
 
 from __future__ import annotations
@@ -26,24 +23,47 @@ from app.services.financial_intelligence.synthetic_finance_generator import (
 )
 
 
+def synthetic_ledger_enabled() -> bool:
+    return bool(getattr(settings, "SYNTHETIC_LEDGER_ENABLED", False))
+
+
 def synthetic_data_dir() -> Path:
     configured = getattr(settings, "SYNTHETIC_DATA_DIR", None) or str(DEFAULT_OUTPUT_DIR)
     path = Path(configured)
     if not path.is_absolute():
-        # Resolve relative to the backend package root (…/backend).
         path = Path(__file__).resolve().parents[3] / path
     return path
 
 
-def ensure_synthetic_dataset(data_dir: Path | None = None) -> Path:
-    """Return a directory containing the five CSVs, generating one if missing."""
+def _required_csvs(root: Path) -> tuple[str, ...]:
+    return ("users.csv", "transactions.csv", "monthly_finances.csv", "scenarios.csv")
+
+
+def dataset_available(data_dir: Path | None = None) -> bool:
     root = data_dir or synthetic_data_dir()
-    required = ("users.csv", "transactions.csv", "monthly_finances.csv", "scenarios.csv")
-    if all((root / name).exists() for name in required):
+    return all((root / name).exists() for name in _required_csvs(root))
+
+
+def ensure_synthetic_dataset(data_dir: Path | None = None) -> Path | None:
+    """Return dataset dir when usable; never auto-bootstrap unless explicitly enabled.
+
+    With ``SYNTHETIC_LEDGER_ENABLED=false`` (default), missing CSVs mean empty ledger.
+    With enabled=true and ``SYNTHETIC_BOOTSTRAP_USERS>0``, a small dataset may be generated.
+    """
+    root = data_dir or synthetic_data_dir()
+    # Hard off: never serve synthetic CSVs unless explicitly enabled.
+    if not synthetic_ledger_enabled():
+        return None
+
+    if dataset_available(root):
         return root
 
+    bootstrap_users = int(getattr(settings, "SYNTHETIC_BOOTSTRAP_USERS", 0) or 0)
+    if bootstrap_users <= 0:
+        return None
+
     config = GeneratorConfig(
-        n_users=max(5, int(settings.SYNTHETIC_BOOTSTRAP_USERS)),
+        n_users=max(5, bootstrap_users),
         start_month=settings.SYNTHETIC_START_MONTH,
         historical_months=int(settings.SYNTHETIC_HISTORICAL_MONTHS),
         forecast_horizon=int(settings.SYNTHETIC_FORECAST_HORIZON),
@@ -51,8 +71,7 @@ def ensure_synthetic_dataset(data_dir: Path | None = None) -> Path:
         output_dir=root,
     )
     generate_and_export(config)
-    _load_frames.cache_clear()
-    _resolve_default_user_id.cache_clear()
+    clear_ledger_cache()
     return root
 
 
@@ -87,13 +106,28 @@ def _resolve_default_user_id(data_dir_str: str, mtime: float, configured_user: s
 
     stable = users[users["ScenarioType"] == SCENARIO_STABLE]
     pool = stable if not stable.empty else users
-    # Prefer a mid-income stable user for a realistic dashboard baseline.
     pool = pool.sort_values("BaseMonthlyIncome")
     return str(pool.iloc[len(pool) // 2]["UserID"])
 
 
-def get_active_user_id() -> str:
+def _empty_profile(user_id: str = "local") -> dict[str, Any]:
+    return {
+        "user_id": user_id,
+        "base_monthly_income": 0.0,
+        "income_volatility": 0.05,
+        "starting_balance": 0.0,
+        "minimum_reserve": 10000.0,
+        "monthly_emi": 0.0,
+        "savings_target": 0.0,
+        "scenario_type": None,
+        "forecast_start_month": None,
+    }
+
+
+def get_active_user_id() -> str | None:
     data_dir = ensure_synthetic_dataset()
+    if data_dir is None or not dataset_available(data_dir):
+        return None
     fingerprint = _dataset_fingerprint(data_dir)
     return _resolve_default_user_id(
         fingerprint[0],
@@ -103,8 +137,11 @@ def get_active_user_id() -> str:
 
 
 def get_user_profile(user_id: str | None = None) -> dict[str, Any]:
-    """Return synthetic user profile fields used by forecasting / what-if."""
+    """Return user profile for forecasting / what-if, or empty defaults on clean slate."""
     data_dir = ensure_synthetic_dataset()
+    if data_dir is None or not dataset_available(data_dir):
+        return _empty_profile(user_id or "local")
+
     fingerprint = _dataset_fingerprint(data_dir)
     frames = _load_frames(fingerprint[0], fingerprint[1])
     active_user = user_id or _resolve_default_user_id(
@@ -115,7 +152,7 @@ def get_user_profile(user_id: str | None = None) -> dict[str, Any]:
     users = frames["users"]
     row = users.loc[users["UserID"].astype(str) == str(active_user)]
     if row.empty:
-        raise KeyError(f"No user profile for {active_user}")
+        return _empty_profile(str(active_user))
     record = row.iloc[0]
     scenarios = frames["scenarios"]
     sc = scenarios.loc[scenarios["UserID"].astype(str) == str(active_user)]
@@ -137,8 +174,11 @@ def get_ledger_transactions(
     user_id: str | None = None,
     historical_only: bool = True,
 ) -> list[dict[str, Any]]:
-    """Return Assay-engine transactions for the active (or given) synthetic user."""
+    """Return synthetic transactions when the ledger is enabled and present; else []."""
     data_dir = ensure_synthetic_dataset()
+    if data_dir is None or not dataset_available(data_dir):
+        return []
+
     fingerprint = _dataset_fingerprint(data_dir)
     frames = _load_frames(fingerprint[0], fingerprint[1])
     active_user = user_id or _resolve_default_user_id(
@@ -149,7 +189,7 @@ def get_ledger_transactions(
     scenarios = frames["scenarios"]
     row = scenarios.loc[scenarios["UserID"].astype(str) == str(active_user)]
     if row.empty:
-        raise KeyError(f"No scenario metadata for user {active_user}")
+        return []
     forecast_start = str(row.iloc[0]["ForecastStartMonth"])
 
     transactions = frames["transactions"]
@@ -162,12 +202,15 @@ def get_ledger_transactions(
 
 
 def get_transaction_by_id(transaction_id: str) -> dict[str, Any] | None:
-    """Lookup a synthetic transaction by id across the active user's ledger."""
+    """Lookup a synthetic transaction by id, or None on clean slate."""
     for item in get_ledger_transactions(historical_only=False):
         if item["id"] == transaction_id:
             return item
-    # Fall back to full dataset scan (other users) for direct ID lookups.
+
     data_dir = ensure_synthetic_dataset()
+    if data_dir is None or not dataset_available(data_dir):
+        return None
+
     fingerprint = _dataset_fingerprint(data_dir)
     frames = _load_frames(fingerprint[0], fingerprint[1])
     match = frames["transactions"].loc[
@@ -186,8 +229,11 @@ def get_monthly_finance_row(
     month: str | None = None,
     historical_only: bool = True,
 ) -> dict[str, Any] | None:
-    """Return one monthly_finances.csv row for the active user (generator truth)."""
+    """Return one monthly_finances.csv row, or None on clean slate."""
     data_dir = ensure_synthetic_dataset()
+    if data_dir is None or not dataset_available(data_dir):
+        return None
+
     fingerprint = _dataset_fingerprint(data_dir)
     frames = _load_frames(fingerprint[0], fingerprint[1])
     monthly = frames.get("monthly_finances")

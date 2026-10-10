@@ -39,13 +39,16 @@ HEADER_IGNORE_PATTERNS = [
     r"fssai",
     r"cin\s*no",
     r"pan\s*no",
-    r"tel[:\s]",
-    r"phone[:\s]",
-    r"ph[:\s]",
-    r"mobile[:\s]",
-    r"address[:\s]",
-    r"date[:\s]",
-    r"time[:\s]",
+    r"\btel[:\s]",
+    r"\bphone[:\s]",
+    r"\bph[:\s]",
+    r"\bmobile[:\s]",
+    r"\baddress[:\s]",
+    r"\bdate[:\s]",
+    r"\btime[:\s]",
+    r"\bbill\s*no",
+    r"\binvoice\s*no",
+    r"\breceipt\s*no",
     r"pos\s*receipt",
     r"e-receipt",
     r"thank\s*you",
@@ -53,6 +56,10 @@ HEADER_IGNORE_PATTERNS = [
     r"merchant\s*copy",
     r"counter\s*#",
 ]
+
+# Receipt totals realistically never exceed 9 integer digits (₹999,999,999);
+# anything longer is a UPI reference, bill number, or phone number.
+MAX_AMOUNT_INTEGER_DIGITS = 9
 
 
 def clean_amount_string(amount_str: str) -> Optional[float]:
@@ -86,6 +93,9 @@ def clean_amount_string(amount_str: str) -> Optional[float]:
     # Pick the last candidate (amounts usually appear at the end of a line)
     for cand in reversed(candidates):
         cleaned_cand = cand.replace(",", "")
+        # Long digit runs are reference / UPI / bill numbers, never monetary amounts
+        if len(cleaned_cand.split(".")[0]) > MAX_AMOUNT_INTEGER_DIGITS:
+            continue
         try:
             val = float(cleaned_cand)
             return round(val, 2)
@@ -353,8 +363,17 @@ class ReceiptParser:
             if any(re.search(pat, lower_text) for pat in HEADER_IGNORE_PATTERNS):
                 continue
 
-            # Reject lines that are primarily digits, dates, or prices
-            if re.search(r"^\d+[\s\-\/\.]", text) or clean_amount_string(text) is not None:
+            # Reject lines that are primarily digits, dates, or prices.
+            # A merchant may legitimately contain a number ("Cafe 1947"), so only
+            # reject when the line is mostly non-alphabetic or carries a currency marker.
+            alpha_chars = sum(ch.isalpha() for ch in text)
+            if alpha_chars < 3 or alpha_chars < len(text.replace(" ", "")) * 0.5:
+                continue
+            if re.search(r"^\d+[\s\-\/\.]", text):
+                continue
+            if re.search(r"[₹$€£]|\b(?:rs\.?|inr)\s*\d", lower_text):
+                continue
+            if parse_date_string(text)[0] is not None:
                 continue
 
             # Clean extra noise like quotes or trailing separators
@@ -424,8 +443,10 @@ class ReceiptParser:
             # Check Total
             for pattern, base_weight in total_patterns:
                 if re.search(pattern, lower_text):
-                    # Skip if it's subtotal or tax line
+                    # Skip if it's subtotal or a tax-total line
                     if any(re.search(sp, lower_text) for sp in subtotal_patterns):
+                        continue
+                    if re.search(r"\b(?:total\s*tax|tax\s*total|total\s*(?:c|s|i)?gst|(?:c|s|i)?gst\s*total)\b", lower_text):
                         continue
                     amt = clean_amount_string(text)
                     if amt is None and idx + 1 < len(ocr_elements):

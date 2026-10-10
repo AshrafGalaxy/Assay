@@ -26,14 +26,14 @@ def test_financial_health():
     assert "savings" in data
 
 
-def test_transactions_come_from_synthetic_ledger():
+def test_transactions_clean_slate_has_no_synthetic_ledger():
+    """Default config has synthetic ledger off — only DB/manual rows (if any)."""
     response = client.get("/api/v1/transactions?limit=5")
     assert response.status_code == 200
     data = response.json()
-    assert data["total"] > 0
-    assert len(data["items"]) > 0
-    assert data["items"][0]["source_type"] == "synthetic"
-    assert data["items"][0]["id"].startswith("TX")
+    assert "items" in data
+    assert "total" in data
+    assert all(item.get("source_type") != "synthetic" for item in data["items"])
 
 
 def test_recommendations_endpoint():

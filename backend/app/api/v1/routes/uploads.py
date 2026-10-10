@@ -1,5 +1,6 @@
 import uuid
 import datetime
+import logging
 from fastapi import APIRouter, File, UploadFile, Depends, status, HTTPException
 from sqlalchemy.orm import Session
 from typing import Dict, Any, Optional
@@ -14,6 +15,8 @@ from app.schemas.receipt import (
     ReceiptConfirmRequest,
     ReceiptConfirmResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 
@@ -81,6 +84,7 @@ async def confirm_upload(
         merchant_name=payload.merchant,
         description=payload.description or f"Receipt purchase at {payload.merchant}",
         transaction_date=tx_date,
+        payment_method=payload.payment_method or "UNKNOWN",
         is_recurring=False,
         is_fixed=False,
         is_discretionary=True,
@@ -93,8 +97,11 @@ async def confirm_upload(
         db.refresh(tx)
     except Exception as e:
         db.rollback()
-        # Still return confirmed data even if DB schema has differences in demo mode
-        pass
+        # Still return confirmed data even if DB schema has differences in demo mode,
+        # but make the failure visible instead of silently dropping the transaction.
+        logger.error(
+            f"[ReceiptConfirm] upload_id={upload_id} tx_id={tx_id} db_save_failed error={e}"
+        )
 
     return ReceiptConfirmResponse(
         status="confirmed",

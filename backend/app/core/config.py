@@ -22,11 +22,12 @@ class Settings(BaseSettings):
     LLM_PROVIDER: str = "mock"
     AA_PROVIDER: str = "mock"
 
-    # Synthetic personal-finance dataset (API ledger source)
+    # Synthetic personal-finance dataset (optional; off by default for a clean slate)
+    SYNTHETIC_LEDGER_ENABLED: bool = False
     SYNTHETIC_DATA_DIR: str = "data/synthetic_finance"
     SYNTHETIC_USER_ID: str = ""  # empty => auto-pick a stable_income user
     SYNTHETIC_SEED: int = 42
-    SYNTHETIC_BOOTSTRAP_USERS: int = 10
+    SYNTHETIC_BOOTSTRAP_USERS: int = 0  # >0 only regenerates when enabled and CSVs missing
     SYNTHETIC_START_MONTH: str = "2023-01"
     SYNTHETIC_HISTORICAL_MONTHS: int = 12
     SYNTHETIC_FORECAST_HORIZON: int = 6

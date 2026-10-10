@@ -5,9 +5,10 @@ Reproducible INR personal-finance datasets for forecasting, scenario simulation,
 Generator module: `app/services/financial_intelligence/synthetic_finance_generator.py`  
 Adapter to Assay engine transactions: `app/services/financial_intelligence/synthetic_adapter.py`
 
-The API ledger is `ledger.py`: it loads these CSVs (auto-generating a small
-bootstrap set if missing) and serves historical transactions to
-`/financial-health`, `/transactions`, `/recommendations`, and analytics routes.
+The API ledger is `ledger.py`. **By default the synthetic ledger is disabled**
+(`SYNTHETIC_LEDGER_ENABLED=false`) for a clean slate — live routes return empty
+synthetic lists so only manual / bank data appears. Set
+`SYNTHETIC_LEDGER_ENABLED=true` and generate CSVs to re-enable demos / ML eval.
 The old hardcoded `demo_ledger.py` has been removed.
 
 ## Commands

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -57,15 +57,31 @@ export default function UploadScreen() {
   const [editMerchant, setEditMerchant] = useState('');
   const [editAmount, setEditAmount] = useState('');
   const [editCategory, setEditCategory] = useState<string>('Other');
+  const categoryScrollRef = useRef<ScrollView>(null);
+  const categoryChipOffsets = useRef<Record<string, number>>({});
 
   useEffect(() => {
     if (!scanResult) return;
-    setEditMerchant(scanResult.receipt.merchant || '');
+    setEditMerchant(scanResult.receipt?.merchant || '');
     setEditAmount(
-      scanResult.receipt.total_amount != null ? String(scanResult.receipt.total_amount) : '',
+      scanResult.receipt?.total_amount != null ? String(scanResult.receipt.total_amount) : '',
     );
     setEditCategory(scanResult.suggested_category || 'Other');
   }, [scanResult]);
+
+  // Bring the selected chip into view: the classifier's pick may be off-screen in
+  // the horizontal row (e.g. "Entertainment", "Other"), which looks like nothing is selected.
+  useEffect(() => {
+    if (!scanResult) return;
+    const x = categoryChipOffsets.current[editCategory];
+    if (x == null) return;
+    const timer = setTimeout(() => {
+      categoryScrollRef.current?.scrollTo({ x: Math.max(0, x - 16), animated: true });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [editCategory, scanResult]);
+
+  const suggestedCategory = scanResult?.suggested_category ?? null;
 
   const processImage = async (asset: ImagePicker.ImagePickerAsset) => {
     setIsScanning(true);
@@ -348,8 +364,22 @@ export default function UploadScreen() {
                 />
               </View>
               <View style={styles.fieldBlock}>
-                <Typography variant="caption" color={COLORS.textSecondary}>Category</Typography>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryRow}>
+                <View style={styles.resultRow}>
+                  <Typography variant="caption" color={COLORS.textSecondary}>Category</Typography>
+                  {suggestedCategory ? (
+                    <Typography variant="caption" color={COLORS.gold} style={styles.suggestedLabel}>
+                      {suggestedCategory === 'Other'
+                        ? 'No confident match — pick one'
+                        : `Suggested: ${suggestedCategory}`}
+                    </Typography>
+                  ) : null}
+                </View>
+                <ScrollView
+                  ref={categoryScrollRef}
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.categoryRow}
+                >
                   {RECEIPT_CATEGORIES.map((category) => {
                     const selected = editCategory === category;
                     return (
@@ -357,6 +387,9 @@ export default function UploadScreen() {
                         key={category}
                         style={[styles.categoryChip, selected && styles.categoryChipSelected]}
                         onPress={() => setEditCategory(category)}
+                        onLayout={(event) => {
+                          categoryChipOffsets.current[category] = event.nativeEvent.layout.x;
+                        }}
                         activeOpacity={0.8}
                       >
                         <Typography
@@ -583,6 +616,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(214, 169, 40, 0.18)',
   },
   categoryChipText: {
+    fontFamily: FONTS.bodySemiBold,
+  },
+  suggestedLabel: {
     fontFamily: FONTS.bodySemiBold,
   },
   resultRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },

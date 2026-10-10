@@ -10,11 +10,10 @@ FastAPI-powered Financial Intelligence Copilot API.
 
 ## Core financial API
 
-The financial API reads the **Assay Synthetic Personal Finance Dataset**
-(generated CSVs under `data/synthetic_finance/`) via
-`app/services/financial_intelligence/ledger.py`. Every endpoint below is
-calculated from the same active synthetic user (historical months only), rather
-than hardcoded demo rows.
+By default the API uses a **clean slate**: synthetic CSVs are disabled
+(`SYNTHETIC_LEDGER_ENABLED=false`). Endpoints below use manual / DB transactions
+when present; otherwise they return empty or zero baselines. Optional synthetic
+datasets can still be generated for demos and ML evaluation.
 
 - `GET /api/v1/transactions` — normalised transaction feed, with category and type filters
 - `GET /api/v1/financial-health` — income, spend, savings rate, health score, and evidence signals

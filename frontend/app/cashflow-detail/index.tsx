@@ -70,7 +70,6 @@ export default function CashFlowDetailScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      // Observed month from generator; optional 14-day provider forecast tagged separately.
       const data = await fetchDailyCashFlow({ includeForecastDays: 14 });
       setPayload(data);
       setSelectedPoint(null);
@@ -199,8 +198,8 @@ export default function CashFlowDetailScreen() {
           </Typography>
           <Typography variant="caption" color={COLORS.textSecondary} style={styles.headerSub}>
             {payload?.month
-              ? `Observed generator ledger · ${payload.month}${payload.forecast_source ? ` + ${payload.forecast_source}` : ''}`
-              : 'Daily balances from synthetic transactions'}
+              ? `Observed ledger · ${payload.month}${payload.forecast_source ? ` + ${payload.forecast_source}` : ''}`
+              : 'Daily balances from your transactions'}
           </Typography>
         </View>
       </View>
@@ -222,7 +221,7 @@ export default function CashFlowDetailScreen() {
           <View style={styles.statusRow}>
             <ActivityIndicator color={COLORS.primary} />
             <Typography variant="caption" color={COLORS.textSecondary}>
-              Loading daily path from synthetic data…
+              Loading daily cash path…
             </Typography>
           </View>
         )}
@@ -504,7 +503,7 @@ export default function CashFlowDetailScreen() {
             </Typography>
             {(
               payload?.limitations || [
-                'Daily balances reconstructed from synthetic generator transactions.',
+                'Daily balances reconstructed from observed transactions.',
               ]
             ).map((item) => (
               <View key={item} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>

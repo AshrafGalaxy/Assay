@@ -64,8 +64,10 @@ class TesseractService:
         elements: List[Dict[str, Any]] = []
         n_boxes = len(data['text'])
 
-        # Group words by line_num and block_num to reconstruct natural text fragments
-        line_map: Dict[Tuple[int, int], List[Dict[str, Any]]] = {}
+        # Group words into physical lines. Tesseract's line_num is only unique
+        # within a paragraph, so the key must include block, paragraph AND line;
+        # otherwise unrelated lines from different paragraphs get merged together.
+        line_map: Dict[Tuple[int, int, int], List[Dict[str, Any]]] = {}
 
         for i in range(n_boxes):
             text = data['text'][i].strip()
@@ -85,8 +87,9 @@ class TesseractService:
             h = float(data['height'][i])
 
             block_num = data['block_num'][i]
+            par_num = data['par_num'][i]
             line_num = data['line_num'][i]
-            key = (block_num, line_num)
+            key = (block_num, par_num, line_num)
 
             if key not in line_map:
                 line_map[key] = []

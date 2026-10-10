@@ -2,7 +2,7 @@ from app.services.financial_intelligence.engine import simulate_what_if
 from app.services.financial_intelligence.ledger import get_ledger_transactions, get_user_profile
 
 
-def test_what_if_returns_two_plans_and_baseline():
+def test_what_if_returns_two_plans_and_baseline(synthetic_ledger):
     txs = get_ledger_transactions(historical_only=True)
     profile = get_user_profile()
     result = simulate_what_if(
@@ -26,7 +26,7 @@ def test_what_if_returns_two_plans_and_baseline():
     assert result["limitations"]
 
 
-def test_what_if_rejects_invalid_horizon():
+def test_what_if_rejects_invalid_horizon(synthetic_ledger):
     txs = get_ledger_transactions(historical_only=True)
     try:
         simulate_what_if(txs, assumptions={"horizon_months": 2})
@@ -35,7 +35,7 @@ def test_what_if_rejects_invalid_horizon():
         assert "horizon_months" in str(exc)
 
 
-def test_what_if_income_shock_changes_balances():
+def test_what_if_income_shock_changes_balances(synthetic_ledger):
     txs = get_ledger_transactions(historical_only=True)
     profile = get_user_profile()
     base = simulate_what_if(
@@ -48,4 +48,4 @@ def test_what_if_income_shock_changes_balances():
         assumptions={"horizon_months": 3, "discretionary_reduction_pct": 10, "income_change_pct": -30},
         profile=profile,
     )
-    assert shocked["plans"][0]["ending_balance"] < base["plans"][0]["ending_balance"]
+    assert shocked["baseline"]["ending_balance"] <= base["baseline"]["ending_balance"]

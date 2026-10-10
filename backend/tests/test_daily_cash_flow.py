@@ -10,7 +10,7 @@ from app.services.financial_intelligence.ledger import (
 )
 
 
-def test_observed_daily_path_matches_monthly_closing():
+def test_observed_daily_path_matches_monthly_closing(synthetic_ledger):
     txs = get_ledger_transactions(historical_only=True)
     monthly = get_monthly_finance_row(historical_only=True)
     assert monthly is not None
@@ -24,11 +24,10 @@ def test_observed_daily_path_matches_monthly_closing():
     assert path["source"] == "observed_ledger"
     assert path["points"]
     assert path["opening_balance"] == float(monthly["OpeningBalance"])
-    # Closing from replaying txs should reconcile to generator monthly closing.
     assert abs(path["closing_balance"] - float(monthly["ClosingBalance"])) <= 0.05
 
 
-def test_daily_view_can_append_provider_forecast():
+def test_daily_view_can_append_provider_forecast(synthetic_ledger):
     txs = get_ledger_transactions(historical_only=True)
     monthly = get_monthly_finance_row(historical_only=True)
     profile = get_user_profile()
@@ -47,7 +46,7 @@ def test_daily_view_can_append_provider_forecast():
     assert len(view["points"]) == observed_days + 7
 
 
-def test_run_rate_provider_metadata():
+def test_run_rate_provider_metadata(synthetic_ledger):
     provider = RunRateForecastProvider()
     txs = get_ledger_transactions(historical_only=True)
     profile = get_user_profile()
