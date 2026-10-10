@@ -1,4 +1,9 @@
-from fastapi import APIRouter, Query
+from datetime import date
+from fastapi import APIRouter, Query, Depends
+from sqlalchemy.orm import Session
+from app.core.database import get_db
+from app.models.transaction import Transaction
+from app.api.v1.routes.transactions import get_all_unified_transactions
 from app.schemas.financial_health import FinancialHealthOut
 from app.services.financial_intelligence.engine import (
     build_cash_flow,
@@ -82,15 +87,38 @@ def get_obligations(user_id: str | None = Query(None)):
 
 
 @router.get("/analytics/spending")
-def get_spending_breakdown(user_id: str | None = Query(None)):
+def get_spending_breakdown(user_id: str | None = Query(None), db: Session = Depends(get_db)):
     health_transactions = _transactions(user_id)
-    if not health_transactions:
+    manual_txs = [
+        {
+            "id": tx.id,
+            "amount": float(tx.amount),
+            "type": tx.type,
+            "category": tx.category,
+            "merchant_name": tx.merchant_name,
+            "transaction_date": tx.transaction_date,
+        }
+        for tx in db.query(Transaction).all()
+    ]
+    existing_ids = {t["id"] for t in manual_txs}
+    all_txs = manual_txs + [t for t in health_transactions if t["id"] not in existing_ids]
+
+    if not all_txs:
         return {"categories": []}
-    latest_month = max(item["transaction_date"][:7] for item in health_transactions)
+
+    today = date.today().isoformat()
+    # Filter dates up to today or latest observed month
+    month_candidates = [
+        item["transaction_date"][:7]
+        for item in all_txs
+        if item["transaction_date"][:10] <= today
+    ]
+    target_month = max(month_candidates) if month_candidates else max(item["transaction_date"][:7] for item in all_txs)
+
     debits = [
         item
-        for item in health_transactions
-        if item["transaction_date"].startswith(latest_month) and item["type"] == "debit"
+        for item in all_txs
+        if item["transaction_date"].startswith(target_month) and item["type"] == "debit"
     ]
     total = sum(item["amount"] for item in debits)
     totals: dict[str, float] = {}

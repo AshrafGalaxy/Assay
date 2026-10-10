@@ -72,6 +72,7 @@ export default function RootLayout() {
       <Stack.Screen name="(tabs)" options={{ gestureEnabled: false, headerBackVisible: false }} />
       <Stack.Screen name="transaction/[id]" options={{ presentation: 'card' }} />
       <Stack.Screen name="split/index" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="add-transaction/index" options={{ presentation: 'modal' }} />
       <Stack.Screen name="ai/index" options={{ presentation: 'card' }} />
       <Stack.Screen name="debt/index" options={{ presentation: 'card' }} />
       <Stack.Screen name="copilot/analysis" options={{ presentation: 'card' }} />

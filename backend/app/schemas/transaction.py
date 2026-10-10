@@ -4,13 +4,15 @@ from datetime import datetime
 
 
 class TransactionBase(BaseModel):
+    user_id: Optional[str] = None
     account_id: Optional[str] = None
     amount: float
-    type: str  # "debit" | "credit"
+    type: str  # "debit" | "credit" | "expense" | "income"
     category: str
     merchant_name: str
     description: Optional[str] = None
-    transaction_date: str
+    transaction_date: Optional[str] = None
+    payment_method: Optional[str] = "UPI"
     is_recurring: bool = False
     is_fixed: bool = False
     is_discretionary: bool = True

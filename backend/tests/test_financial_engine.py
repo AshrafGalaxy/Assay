@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 
 from app.services.financial_intelligence.engine import (
     build_cash_flow,
@@ -29,7 +29,7 @@ def test_cash_flow_has_chronological_months():
     result = build_cash_flow(_txs())
     months = [item["month"] for item in result["monthly_summary"]]
     assert months
-    assert months == sorted(months, key=lambda label: date.strptime(label, "%b %Y"))
+    assert months == sorted(months, key=lambda label: datetime.strptime(label, "%b %Y"))
 
 
 def test_obligations_are_recurring_debits_only():

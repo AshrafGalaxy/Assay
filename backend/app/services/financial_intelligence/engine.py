@@ -7,7 +7,7 @@ synthetic ledger now and Supabase repositories later.
 
 from calendar import monthrange
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Any, Iterable
 
 
@@ -20,7 +20,21 @@ def _date(value: Any) -> date:
         return value.date()
     if isinstance(value, date):
         return value
-    return datetime.fromisoformat(str(value).replace("Z", "+00:00")).date()
+    val_str = str(value).strip().replace("Z", "+00:00")
+    if val_str.lower().startswith("today"):
+        return date.today()
+    if val_str.lower().startswith("yesterday"):
+        return date.today() - timedelta(days=1)
+    try:
+        return datetime.fromisoformat(val_str).date()
+    except Exception:
+        pass
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d", "%d %b, %I:%M %p", "%d %b %Y"):
+        try:
+            return datetime.strptime(val_str, fmt).date()
+        except Exception:
+            continue
+    return date.today()
 
 
 def _month_key(value: date) -> tuple[int, int]:
@@ -62,8 +76,11 @@ def build_financial_health(
             "signals": [{"type": "insufficient_data", "description": "Add transactions to calculate financial health.", "severity": "info"}],
         }
 
-    latest_date = max(_date(transaction["transaction_date"]) for transaction in transactions)
-    effective_date = as_of or latest_date
+    today = date.today()
+    all_dates = [_date(transaction["transaction_date"]) for transaction in transactions]
+    past_and_present = [d for d in all_dates if d <= today]
+    target_date = max(past_and_present) if past_and_present else max(all_dates)
+    effective_date = as_of or target_date
     active_month = _month_key(effective_date)
     active_transactions = _transactions_for_month(transactions, active_month)
     income = sum(float(transaction["amount"]) for transaction in active_transactions if transaction["type"] == "credit")

@@ -25,7 +25,8 @@ import {
 import {
   Camera,
   Image as ImageIcon,
-  FilePlus2,
+  FileText,
+  ChevronRight,
 } from 'lucide-react-native';
 
 interface UploadItem {
@@ -206,9 +207,6 @@ export default function UploadScreen() {
         <Typography variant="pageTitle" style={styles.headerTitle}>
           Add financial activity
         </Typography>
-        <Typography variant="secondary" color={COLORS.textSecondary} style={styles.headerSubtitle}>
-          Upload a receipt or UPI screenshot — we extract text, analyze fields, and suggest a category.
-        </Typography>
       </View>
 
       <ScrollView
@@ -224,7 +222,7 @@ export default function UploadScreen() {
           {isScanning ? (
             <ActivityIndicator color={COLORS.text} style={styles.dropZoneIcon} />
           ) : (
-            <ImageIcon color={COLORS.text} size={42} strokeWidth={1.6} style={styles.dropZoneIcon} />
+            <ImageIcon color={COLORS.text} size={46} strokeWidth={1.6} style={styles.dropZoneIcon} />
           )}
           <Typography variant="cardHeading" style={styles.dropZoneTitle}>
             {isScanning ? 'Extracting text & categorizing…' : 'Upload from gallery'}
@@ -241,7 +239,7 @@ export default function UploadScreen() {
             onPress={() => handleScanAction('gallery')}
             disabled={isScanning}
           >
-            <ImageIcon color={COLORS.text} size={18} style={{ marginRight: 6 }} />
+            <ImageIcon color={COLORS.text} size={18} style={{ marginRight: 8 }} />
             <Typography variant="bodyBold" color={COLORS.text} style={styles.actionButtonText}>
               Gallery
             </Typography>
@@ -253,23 +251,40 @@ export default function UploadScreen() {
             onPress={() => handleScanAction('camera')}
             disabled={isScanning}
           >
-            <Camera color={COLORS.text} size={18} style={{ marginRight: 6 }} />
+            <Camera color={COLORS.text} size={18} style={{ marginRight: 8 }} />
             <Typography variant="bodyBold" color={COLORS.text} style={styles.actionButtonText}>
               Camera
             </Typography>
           </TouchableOpacity>
+        </View>
 
-          <TouchableOpacity
-            style={styles.actionButton}
-            activeOpacity={0.75}
-            onPress={() => handleScanAction('manual')}
-            disabled={isScanning}
-          >
-            <FilePlus2 color={COLORS.text} size={18} style={{ marginRight: 6 }} />
-            <Typography variant="bodyBold" color={COLORS.text} style={styles.actionButtonText}>
-              Manual
+        {/* Prominent Full-Width Manual Entry Card with balanced vertical presence */}
+        <TouchableOpacity
+          style={styles.manualEntryCard}
+          activeOpacity={0.85}
+          onPress={() => router.push('/add-transaction')}
+          accessibilityLabel="Add Manual Entry"
+          accessibilityRole="button"
+        >
+          <View style={styles.manualEntryIconWrap}>
+            <FileText color={COLORS.gold} size={24} strokeWidth={1.9} />
+          </View>
+          <View style={styles.manualEntryTextWrap}>
+            <Typography variant="bodyBold" color={COLORS.white} style={styles.manualEntryTitle}>
+              Add Manual Entry
             </Typography>
-          </TouchableOpacity>
+            <Typography variant="caption" style={styles.manualEntrySubtitle}>
+              Enter cash or unlinked transaction details
+            </Typography>
+          </View>
+          <ChevronRight color="rgba(255, 255, 255, 0.75)" size={22} strokeWidth={2} />
+        </TouchableOpacity>
+
+        {/* Subtle, restrained helper note to balance vertical layout */}
+        <View style={styles.hintBox}>
+          <Typography variant="caption" color={COLORS.textSecondary} style={styles.hintText}>
+            Tip: Use manual entry for cash expenses, vendor transfers, or splits to keep your monthly figures accurate.
+          </Typography>
         </View>
 
         {!aaState.aa_onboarding_completed && (
@@ -294,61 +309,6 @@ export default function UploadScreen() {
             </Typography>
           </TouchableOpacity>
         )}
-
-        <View style={styles.recentSectionHeader}>
-          <Typography variant="cardHeading" style={styles.sectionTitle}>
-            Recent uploads
-          </Typography>
-          <TouchableOpacity activeOpacity={0.7}>
-            <Typography variant="caption" color={COLORS.textSecondary}>
-              View all
-            </Typography>
-          </TouchableOpacity>
-        </View>
-
-        {uploads.map((item) => (
-          <TouchableOpacity
-            key={item.id}
-            style={styles.uploadCard}
-            activeOpacity={0.75}
-            onPress={() => router.push({
-              pathname: '/transaction/[id]',
-              params: {
-                id: item.id,
-                name: item.title.replace(' Receipt', '').replace(' Ride', '').replace(' Purchase', '').replace(' Groceries', '').replace(' Gourmet', ''),
-                merchantKey: item.merchant,
-                amount: item.amount,
-                time: item.time,
-                method: 'UPI',
-                category: item.category,
-                notes: item.notes,
-              },
-            })}
-          >
-            <MerchantLogo name={item.merchant} size={46} style={{ marginRight: 14 }} />
-
-            <View style={styles.uploadInfo}>
-              <Typography variant="bodyBold" style={styles.uploadTitle}>
-                {item.title}
-              </Typography>
-              <Typography variant="caption" color={COLORS.textSecondary} style={{ marginBottom: 6 }}>
-                {item.time} · {item.category}
-              </Typography>
-
-              <View style={styles.processedBadge}>
-                <Typography variant="caption" style={styles.processedText}>
-                  {item.status}
-                </Typography>
-              </View>
-            </View>
-
-            <Typography variant="financial" style={styles.amountText}>
-              {item.amount}
-            </Typography>
-          </TouchableOpacity>
-        ))}
-
-        <View style={{ height: 110 }} />
       </ScrollView>
 
       <Modal
@@ -460,12 +420,10 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: COLORS.text,
   },
-  headerSubtitle: {
-    marginTop: 4,
-  },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 4,
+    paddingTop: 6,
+    paddingBottom: 110,
   },
   dropZone: {
     backgroundColor: '#FAF9F5',
@@ -473,23 +431,23 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: '#D4CEB8',
     borderRadius: 24,
-    paddingVertical: 38,
+    paddingVertical: 40,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   dropZoneIcon: {
-    marginBottom: 10,
+    marginBottom: 12,
   },
   dropZoneTitle: {
     fontSize: 19,
-    marginBottom: 4,
+    marginBottom: 6,
     color: COLORS.text,
   },
   actionButtonsRow: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 26,
+    gap: 12,
+    marginBottom: 18,
   },
   actionButton: {
     flex: 1,
@@ -500,56 +458,64 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
   },
   actionButtonText: {
     fontSize: 14,
   },
-  recentSectionHeader: {
+  manualEntryCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    color: COLORS.text,
-  },
-  uploadCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
+    backgroundColor: '#0F172A',
+    borderRadius: 22,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 14,
-    marginBottom: 12,
+    borderColor: 'rgba(255, 255, 255, 0.08)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 4,
+    marginBottom: 16,
   },
-  uploadInfo: {
+  manualEntryIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(214, 169, 40, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(214, 169, 40, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  manualEntryTextWrap: {
     flex: 1,
   },
-  uploadTitle: {
-    fontSize: 15,
+  manualEntryTitle: {
+    fontSize: 16.5,
+    lineHeight: 22,
     marginBottom: 2,
-    color: COLORS.text,
   },
-  processedBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#DCFCE7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+  manualEntrySubtitle: {
+    color: 'rgba(255, 255, 255, 0.65)',
+    fontSize: 13,
   },
-  processedText: {
-    color: '#16A34A',
-    fontSize: 11,
-    fontWeight: '600',
+  hintBox: {
+    backgroundColor: 'rgba(0, 0, 0, 0.025)',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.06)',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    marginBottom: 20,
+    alignItems: 'center',
   },
-  amountText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginLeft: 12,
+  hintText: {
+    textAlign: 'center',
+    lineHeight: 18,
+    fontSize: 12,
   },
   aaBanner: {
     flexDirection: 'row',

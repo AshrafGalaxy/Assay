@@ -89,14 +89,12 @@ def build_observed_daily_path(
         point: dict[str, Any] = {
             "day": day,
             "date": date(year, month_n, day).isoformat(),
-            "label": date(year, month_n, day).strftime("%-d %b") if hasattr(date, "strftime") else f"{day}",
+            "label": f"{day} {date(year, month_n, day).strftime('%b')}",
             "balance": balance,
             "pct_x": round((day - 1) / max(days_in_month - 1, 1), 4),
             "is_forecast": False,
             "source": "observed_ledger",
         }
-        # Prefer portable day labels (Windows lacks %-d).
-        point["label"] = f"{day} {date(year, month_n, day).strftime('%b')}"
         if primary_event:
             point["event"] = primary_event["name"]
             point["event_amount"] = primary_event["amount"]

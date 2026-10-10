@@ -84,4 +84,9 @@ Mock UI/
 
 # Supabase temporary files
 supabase/.temp/
-.temp/
+.temp/
+
+# IDE & local db
+.vscode/
+/assay.db
+
