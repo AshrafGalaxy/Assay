@@ -89,4 +89,15 @@ supabase/.temp/
 # IDE & local db
 .vscode/
 /assay.db
+
+# Local Dev Runner Scripts (Never Committed)
+run_dev.js
+dev.bat
+dev.ps1
+.vscode/tasks.json
+.vscode/settings.json
+AI_ML_MODELS_GUIDE.md
+Real_App_Screenshots/
+
+
 

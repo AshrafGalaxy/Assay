@@ -7,7 +7,12 @@ from app.api.v1.router import api_router
 # Supabase schema is applied by its migration workflow. The local SQLite
 # fallback remains self-contained for development and API tests.
 if settings.manages_schema:
-    Base.metadata.create_all(bind=engine)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Could not connect to database on startup: {e}")
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -17,14 +22,15 @@ app = FastAPI(
 )
 
 # Set all CORS enabled origins
-if settings.CORS_ORIGINS:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=[str(origin) for origin in settings.CORS_ORIGINS],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"],
+)
+
 
 
 @app.get("/")

@@ -346,6 +346,62 @@ export async function runWhatIfSimulation(
   return data;
 }
 
+export type MoneyLeakItem = {
+  title: string;
+  amount: number;
+  count: number;
+  label: string;
+};
+
+export type MoneyLeaksResponse = {
+  target_month: string;
+  total_amount: number;
+  total_count: number;
+  leaks: MoneyLeakItem[];
+  note: string;
+};
+
+export async function fetchMoneyLeaks(threshold: number = 250): Promise<MoneyLeaksResponse> {
+  const { data } = await api.get<MoneyLeaksResponse>(endpoints.financialHealth.moneyLeaks, {
+    params: { threshold },
+  });
+  return data;
+}
+
+export type ConformalForecastPeriod = {
+  period_id: number;
+  month_label: string;
+  income_p10: number;
+  income_p50: number;
+  income_p90: number;
+  essential_p10: number;
+  essential_p50: number;
+  essential_p90: number;
+  net_cash_p50: number;
+  reserve_threshold: number;
+};
+
+export type ConformalForecastResponse = {
+  horizon_months: number;
+  uncertainty_method: string;
+  conformal_coverage_pct: number;
+  periods: ConformalForecastPeriod[];
+  summary: Record<string, any>;
+};
+
+export async function fetchConformalForecast(
+  horizonMonths: number = 6,
+  confidenceLevel: number = 0.80,
+): Promise<ConformalForecastResponse> {
+  const { data } = await api.get<ConformalForecastResponse>(endpoints.planning.forecast, {
+    params: {
+      horizon_months: horizonMonths,
+      confidence_level: confidenceLevel,
+    },
+  });
+  return data;
+}
+
 export function groupTransactionsByDate(items: ApiTransaction[]) {
   const groups = new Map<string, ApiTransaction[]>();
   const sorted = [...items].sort((a, b) =>

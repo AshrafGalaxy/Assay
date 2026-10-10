@@ -27,6 +27,8 @@ import {
   fetchObligations,
   fetchSpendingBreakdown,
   fetchTransactions,
+  fetchMoneyLeaks,
+  MoneyLeaksResponse,
   formatINR,
   formatSignedINR,
 } from '../../services/finance';
@@ -53,6 +55,7 @@ export default function Dashboard() {
   const [recentTxs, setRecentTxs] = useState<ApiTransaction[]>([]);
   const [spending, setSpending] = useState<SpendingCategory[]>([]);
   const [obligations, setObligations] = useState<ObligationItem[]>([]);
+  const [moneyLeaks, setMoneyLeaks] = useState<MoneyLeaksResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -60,16 +63,18 @@ export default function Dashboard() {
   const loadDashboard = useCallback(async () => {
     try {
       setError(null);
-      const [healthData, txData, spendingData, obligationsData] = await Promise.all([
+      const [healthData, txData, spendingData, obligationsData, leaksData] = await Promise.all([
         fetchFinancialHealth(),
         fetchTransactions(8),
         fetchSpendingBreakdown(),
         fetchObligations(),
+        fetchMoneyLeaks(250).catch(() => null),
       ]);
       setHealth(healthData);
       setRecentTxs(txData.items);
       setSpending(spendingData);
       setObligations(obligationsData.items.slice(0, 3));
+      if (leaksData) setMoneyLeaks(leaksData);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load ledger';
       setError(`${message} (API: ${API_BASE_URL})`);
@@ -85,13 +90,13 @@ export default function Dashboard() {
 
   const { cashIn: liveCashIn, cashOut: liveCashOut } = useTransactions();
 
-  // Current calendar month cash flow metrics from single source of truth
-  const cashIn = aaState.aa_connected ? liveCashIn : (liveCashIn > 85000 ? liveCashIn : 15000);
-  const cashOut = aaState.aa_connected ? liveCashOut : (liveCashOut > 32450 ? liveCashOut : 12450);
+  // Current calendar month cash flow metrics bound directly to unified health intelligence
+  const cashIn = health?.income ?? (aaState.aa_connected ? liveCashIn : (liveCashIn > 85000 ? liveCashIn : 85000));
+  const cashOut = health?.spending ?? (aaState.aa_connected ? liveCashOut : (liveCashOut > 32450 ? liveCashOut : 32450));
   // Remaining This Month: Monthly cash inflows minus monthly cash outflows
   const remainingThisMonth = Math.max(0, cashIn - cashOut);
 
-  const formatCurrency = (val: number) => `₹${val.toLocaleString('en-IN')}`;
+  const formatCurrency = (val: number) => `₹${Math.round(val).toLocaleString('en-IN')}`;
 
   const handleNotificationPress = () => {
     setHasUnreadNotification(false);
@@ -326,21 +331,34 @@ export default function Dashboard() {
             <Typography variant="h3">Money Leaks</Typography>
             <View style={styles.leakTotalBadge}>
               <Typography variant="caption" color={COLORS.error}>
-                ₹1,450 Total
+                {moneyLeaks ? formatINR(moneyLeaks.total_amount) : '₹1,450'} Total
               </Typography>
             </View>
           </View>
 
           <View style={styles.leakList}>
-            <LeakItem title="Tea & Coffee" amount="₹450" count="9 micro-transactions" />
-            <LeakItem title="Snacks" amount="₹600" count="12 transactions" />
-            <LeakItem title="Auto & Quick Cabs" amount="₹250" count="4 short rides" />
-            <LeakItem title="Impulse Buys" amount="₹150" count="3 small orders" />
+            {moneyLeaks && moneyLeaks.leaks.length > 0 ? (
+              moneyLeaks.leaks.slice(0, 4).map((leak, idx) => (
+                <LeakItem
+                  key={idx}
+                  title={leak.title}
+                  amount={formatINR(leak.amount)}
+                  count={leak.label}
+                />
+              ))
+            ) : (
+              <>
+                <LeakItem title="Tea & Coffee" amount="₹450" count="9 micro-transactions" />
+                <LeakItem title="Snacks" amount="₹600" count="12 transactions" />
+                <LeakItem title="Auto & Quick Cabs" amount="₹250" count="4 short rides" />
+                <LeakItem title="Impulse Buys" amount="₹150" count="3 small orders" />
+              </>
+            )}
           </View>
 
           <View style={styles.leakFooterBox}>
             <Typography variant="caption" color={COLORS.textSecondary} align="center">
-              Small purchases under ₹100 often go unnoticed.
+              {moneyLeaks?.note ?? 'Small purchases under ₹250 often go unnoticed.'}
             </Typography>
           </View>
         </Card>

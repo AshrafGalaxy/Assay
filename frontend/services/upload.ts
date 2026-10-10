@@ -52,15 +52,14 @@ export type ReceiptConfirmInput = {
 
 const OCR_TIMEOUT_MS = 90_000;
 
-/** Gallery photos (often HEIC) and large camera shots are normalized to JPEG for the backend. */
+/** Gallery photos (often HEIC) and large camera shots are normalized to JPEG for the backend.
+ * Always resizes high-MP images (e.g. 64MP on Realme) to max width 1200 to prevent native OOM crashes.
+ */
 async function prepareReceiptImage(image: CapturedImage): Promise<CapturedImage> {
-  const actions =
-    image.width && image.width > 1600
-      ? [{ resize: { width: 1600 } }]
-      : [];
+  const actions = [{ resize: { width: 1200 } }];
 
   const converted = await manipulateAsync(image.uri, actions, {
-    compress: 0.85,
+    compress: 0.8,
     format: SaveFormat.JPEG,
   });
 

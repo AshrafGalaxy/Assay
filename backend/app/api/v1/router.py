@@ -8,6 +8,7 @@ from app.api.v1.routes import (
     recommendations,
     uploads,
     simulator,
+    planning,
 )
 
 api_router = APIRouter()
@@ -20,3 +21,4 @@ api_router.include_router(copilot.router)
 api_router.include_router(recommendations.router)
 api_router.include_router(uploads.router)
 api_router.include_router(simulator.router)
+api_router.include_router(planning.router)

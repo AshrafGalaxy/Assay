@@ -38,7 +38,13 @@ class TesseractService:
 
     @property
     def is_available(self) -> bool:
+        if hasattr(self, "_available_override") and self._available_override is not None:
+            return self._available_override
         return is_tesseract_available()
+
+    @is_available.setter
+    def is_available(self, value: bool) -> None:
+        self._available_override = value
 
     def extract_text_and_boxes(
         self,
