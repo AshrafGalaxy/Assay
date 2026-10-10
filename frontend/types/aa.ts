@@ -11,6 +11,8 @@ export interface SandboxAccount {
   fipId: string;
   institutionType: 'Bank' | 'NBFC' | 'Mutual Fund';
   selectedDefault: boolean;
+  status?: 'connected' | 'syncing' | 'disconnected' | 'error';
+  lastSynced?: string;
 }
 
 export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
@@ -27,20 +29,24 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     fipId: 'FIP-HDFC-001',
     institutionType: 'Bank',
     selectedDefault: true,
+    status: 'connected',
+    lastSynced: 'Today, 8:20 PM',
   },
   {
-    id: 'acc-icici-7192',
+    id: 'acc-icici-7712',
     bankName: 'ICICI Bank',
     bankKey: 'icici',
-    accountType: 'Salary Account',
-    accountNumber: '7192',
-    maskedNumber: 'Salary •••• 7192',
-    balance: 124350,
-    formattedBalance: '₹1,24,350',
+    accountType: 'Savings Account',
+    accountNumber: '7712',
+    maskedNumber: 'Savings •••• 7712',
+    balance: 18240,
+    formattedBalance: '₹18,240',
     currency: 'INR',
     fipId: 'FIP-ICICI-002',
     institutionType: 'Bank',
     selectedDefault: false,
+    status: 'connected',
+    lastSynced: 'Today, 7:10 PM',
   },
   {
     id: 'acc-axis-3044',
@@ -95,6 +101,20 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     formattedBalance: '₹31,250',
     currency: 'INR',
     fipId: 'FIP-PNB-006',
+    institutionType: 'Bank',
+    selectedDefault: false,
+  },
+  {
+    id: 'acc-indusind-6310',
+    bankName: 'IndusInd Bank',
+    bankKey: 'indusind',
+    accountType: 'Savings Account',
+    accountNumber: '6310',
+    maskedNumber: 'Savings •••• 6310',
+    balance: 24150,
+    formattedBalance: '₹24,150',
+    currency: 'INR',
+    fipId: 'FIP-INDUSIND-007',
     institutionType: 'Bank',
     selectedDefault: false,
   },

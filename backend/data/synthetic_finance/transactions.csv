@@ -1,0 +1,1948 @@
+TransactionID,UserID,ScenarioID,TransactionDate,Description,Category,TransactionType,PaymentMode,Amount,IsRecurring
+TX00000001,U00001,S00001,2023-01-01,Salary credit,Salary,income,Net Banking,97709.59,True
+TX00000002,U00001,S00001,2023-01-03,Rent,Housing & Rent,essential_expense,Net Banking,23136.17,True
+TX00000003,U00001,S00001,2023-01-22,Groceries,Groceries,essential_expense,Debit Card,6245.14,True
+TX00000004,U00001,S00001,2023-01-11,Utilities,Utilities,essential_expense,Credit Card,4428.22,True
+TX00000005,U00001,S00001,2023-01-18,Transport Pass,Transportation,essential_expense,Net Banking,4624.81,True
+TX00000006,U00001,S00001,2023-01-30,Dining,Food & Dining,discretionary_expense,Debit Card,4552.48,False
+TX00000007,U00001,S00001,2023-01-05,Shopping,Shopping,discretionary_expense,Net Banking,1528.84,False
+TX00000008,U00001,S00001,2023-01-20,Streaming,Subscriptions,discretionary_expense,Net Banking,2962.77,True
+TX00000009,U00001,S00001,2023-01-04,Entertainment,Entertainment,discretionary_expense,Credit Card,4122.39,False
+TX00000010,U00001,S00001,2023-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000011,U00001,S00001,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000012,U00001,S00001,2023-02-01,Salary credit,Salary,income,Net Banking,90228.43,True
+TX00000013,U00001,S00001,2023-02-03,Rent,Housing & Rent,essential_expense,Debit Card,25685.08,True
+TX00000014,U00001,S00001,2023-02-20,Groceries,Groceries,essential_expense,Credit Card,5958.21,True
+TX00000015,U00001,S00001,2023-02-22,Utilities,Utilities,essential_expense,Cash,4117.02,True
+TX00000016,U00001,S00001,2023-02-13,Transport Pass,Transportation,essential_expense,Cash,4428.58,True
+TX00000017,U00001,S00001,2023-02-16,Dining,Food & Dining,discretionary_expense,UPI,3635.48,False
+TX00000018,U00001,S00001,2023-02-04,Shopping,Shopping,discretionary_expense,Credit Card,7773.09,False
+TX00000019,U00001,S00001,2023-02-04,Streaming,Subscriptions,discretionary_expense,Debit Card,463.71,True
+TX00000020,U00001,S00001,2023-02-19,Entertainment,Entertainment,discretionary_expense,Cash,3671.02,False
+TX00000021,U00001,S00001,2023-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000022,U00001,S00001,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000023,U00001,S00001,2023-03-01,Salary credit,Salary,income,Net Banking,82845.92,True
+TX00000024,U00001,S00001,2023-03-03,Rent,Housing & Rent,essential_expense,Debit Card,25529.26,True
+TX00000025,U00001,S00001,2023-03-31,Groceries,Groceries,essential_expense,Wallet,6198.22,True
+TX00000026,U00001,S00001,2023-03-02,Utilities,Utilities,essential_expense,Credit Card,4297.87,True
+TX00000027,U00001,S00001,2023-03-26,Transport Pass,Transportation,essential_expense,UPI,4343.7,True
+TX00000028,U00001,S00001,2023-03-27,Dining,Food & Dining,discretionary_expense,Credit Card,3853.32,False
+TX00000029,U00001,S00001,2023-03-29,Shopping,Shopping,discretionary_expense,Credit Card,289.09,False
+TX00000030,U00001,S00001,2023-03-14,Streaming,Subscriptions,discretionary_expense,Cash,6221.0,True
+TX00000031,U00001,S00001,2023-03-04,Entertainment,Entertainment,discretionary_expense,Cash,4040.99,False
+TX00000032,U00001,S00001,2023-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000033,U00001,S00001,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000034,U00001,S00001,2023-04-01,Salary credit,Salary,income,Net Banking,96208.18,True
+TX00000035,U00001,S00001,2023-04-03,Rent,Housing & Rent,essential_expense,Wallet,25134.72,True
+TX00000036,U00001,S00001,2023-04-16,Groceries,Groceries,essential_expense,Wallet,5976.56,True
+TX00000037,U00001,S00001,2023-04-05,Utilities,Utilities,essential_expense,Debit Card,4475.44,True
+TX00000038,U00001,S00001,2023-04-21,Transport Pass,Transportation,essential_expense,Debit Card,4073.66,True
+TX00000039,U00001,S00001,2023-04-14,Dining,Food & Dining,discretionary_expense,UPI,669.87,False
+TX00000040,U00001,S00001,2023-04-12,Shopping,Shopping,discretionary_expense,Credit Card,311.21,False
+TX00000041,U00001,S00001,2023-04-10,Streaming,Subscriptions,discretionary_expense,Net Banking,9771.12,True
+TX00000042,U00001,S00001,2023-04-19,Entertainment,Entertainment,discretionary_expense,Cash,2553.58,False
+TX00000043,U00001,S00001,2023-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000044,U00001,S00001,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000045,U00001,S00001,2023-05-01,Salary credit,Salary,income,Net Banking,84556.7,True
+TX00000046,U00001,S00001,2023-05-03,Rent,Housing & Rent,essential_expense,Debit Card,22993.99,True
+TX00000047,U00001,S00001,2023-05-23,Groceries,Groceries,essential_expense,Credit Card,6515.85,True
+TX00000048,U00001,S00001,2023-05-03,Utilities,Utilities,essential_expense,UPI,4539.92,True
+TX00000049,U00001,S00001,2023-05-14,Transport Pass,Transportation,essential_expense,Wallet,4440.43,True
+TX00000050,U00001,S00001,2023-05-04,Dining,Food & Dining,discretionary_expense,Debit Card,5198.48,False
+TX00000051,U00001,S00001,2023-05-22,Shopping,Shopping,discretionary_expense,Credit Card,2839.74,False
+TX00000052,U00001,S00001,2023-05-23,Streaming,Subscriptions,discretionary_expense,Credit Card,4701.01,True
+TX00000053,U00001,S00001,2023-05-26,Entertainment,Entertainment,discretionary_expense,Cash,1846.6,False
+TX00000054,U00001,S00001,2023-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000055,U00001,S00001,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000056,U00001,S00001,2023-06-01,Salary credit,Salary,income,Net Banking,90746.26,True
+TX00000057,U00001,S00001,2023-06-03,Rent,Housing & Rent,essential_expense,Net Banking,25888.26,True
+TX00000058,U00001,S00001,2023-06-02,Groceries,Groceries,essential_expense,Credit Card,6318.41,True
+TX00000059,U00001,S00001,2023-06-15,Utilities,Utilities,essential_expense,Credit Card,4410.97,True
+TX00000060,U00001,S00001,2023-06-10,Transport Pass,Transportation,essential_expense,Cash,4256.19,True
+TX00000061,U00001,S00001,2023-06-05,Dining,Food & Dining,discretionary_expense,Net Banking,1273.05,False
+TX00000062,U00001,S00001,2023-06-04,Shopping,Shopping,discretionary_expense,Credit Card,8857.55,False
+TX00000063,U00001,S00001,2023-06-18,Streaming,Subscriptions,discretionary_expense,Net Banking,3384.47,True
+TX00000064,U00001,S00001,2023-06-06,Entertainment,Entertainment,discretionary_expense,Credit Card,921.67,False
+TX00000065,U00001,S00001,2023-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000066,U00001,S00001,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000067,U00001,S00001,2023-07-01,Salary credit,Salary,income,Net Banking,92229.06,True
+TX00000068,U00001,S00001,2023-07-03,Rent,Housing & Rent,essential_expense,Wallet,23890.8,True
+TX00000069,U00001,S00001,2023-07-14,Groceries,Groceries,essential_expense,Wallet,6155.7,True
+TX00000070,U00001,S00001,2023-07-05,Utilities,Utilities,essential_expense,Cash,3935.98,True
+TX00000071,U00001,S00001,2023-07-17,Transport Pass,Transportation,essential_expense,Debit Card,4618.64,True
+TX00000072,U00001,S00001,2023-07-26,Dining,Food & Dining,discretionary_expense,Credit Card,3015.79,False
+TX00000073,U00001,S00001,2023-07-30,Shopping,Shopping,discretionary_expense,Credit Card,6257.97,False
+TX00000074,U00001,S00001,2023-07-17,Streaming,Subscriptions,discretionary_expense,Cash,1091.08,True
+TX00000075,U00001,S00001,2023-07-27,Entertainment,Entertainment,discretionary_expense,Debit Card,4404.7,False
+TX00000076,U00001,S00001,2023-07-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000077,U00001,S00001,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000078,U00001,S00001,2023-08-01,Salary credit,Salary,income,Net Banking,94036.08,True
+TX00000079,U00001,S00001,2023-08-03,Rent,Housing & Rent,essential_expense,Wallet,25769.44,True
+TX00000080,U00001,S00001,2023-08-24,Groceries,Groceries,essential_expense,Credit Card,6452.03,True
+TX00000081,U00001,S00001,2023-08-04,Utilities,Utilities,essential_expense,Cash,4016.06,True
+TX00000082,U00001,S00001,2023-08-29,Transport Pass,Transportation,essential_expense,Wallet,4340.14,True
+TX00000083,U00001,S00001,2023-08-08,Dining,Food & Dining,discretionary_expense,Credit Card,667.13,False
+TX00000084,U00001,S00001,2023-08-02,Shopping,Shopping,discretionary_expense,UPI,11052.26,False
+TX00000085,U00001,S00001,2023-08-18,Streaming,Subscriptions,discretionary_expense,Cash,1446.12,True
+TX00000086,U00001,S00001,2023-08-12,Entertainment,Entertainment,discretionary_expense,Credit Card,2653.91,False
+TX00000087,U00001,S00001,2023-08-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000088,U00001,S00001,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000089,U00001,S00001,2023-09-01,Salary credit,Salary,income,Net Banking,101142.26,True
+TX00000090,U00001,S00001,2023-09-03,Rent,Housing & Rent,essential_expense,Net Banking,23774.3,True
+TX00000091,U00001,S00001,2023-09-30,Groceries,Groceries,essential_expense,Wallet,6507.11,True
+TX00000092,U00001,S00001,2023-09-05,Utilities,Utilities,essential_expense,Wallet,4118.78,True
+TX00000093,U00001,S00001,2023-09-03,Transport Pass,Transportation,essential_expense,Net Banking,4313.31,True
+TX00000094,U00001,S00001,2023-09-26,Dining,Food & Dining,discretionary_expense,Wallet,3389.44,False
+TX00000095,U00001,S00001,2023-09-07,Shopping,Shopping,discretionary_expense,Wallet,8156.73,False
+TX00000096,U00001,S00001,2023-09-04,Streaming,Subscriptions,discretionary_expense,Cash,1843.38,True
+TX00000097,U00001,S00001,2023-09-15,Entertainment,Entertainment,discretionary_expense,Credit Card,1132.9,False
+TX00000098,U00001,S00001,2023-09-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000099,U00001,S00001,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000100,U00001,S00001,2023-10-01,Salary credit,Salary,income,Net Banking,96649.69,True
+TX00000101,U00001,S00001,2023-10-03,Rent,Housing & Rent,essential_expense,Wallet,25124.33,True
+TX00000102,U00001,S00001,2023-10-05,Groceries,Groceries,essential_expense,Net Banking,5944.79,True
+TX00000103,U00001,S00001,2023-10-06,Utilities,Utilities,essential_expense,Debit Card,3984.84,True
+TX00000104,U00001,S00001,2023-10-19,Transport Pass,Transportation,essential_expense,Net Banking,4472.85,True
+TX00000105,U00001,S00001,2023-10-28,Dining,Food & Dining,discretionary_expense,UPI,3081.31,False
+TX00000106,U00001,S00001,2023-10-07,Shopping,Shopping,discretionary_expense,Credit Card,8886.65,False
+TX00000107,U00001,S00001,2023-10-10,Streaming,Subscriptions,discretionary_expense,Wallet,3803.32,True
+TX00000108,U00001,S00001,2023-10-25,Entertainment,Entertainment,discretionary_expense,Credit Card,510.77,False
+TX00000109,U00001,S00001,2023-10-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000110,U00001,S00001,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000111,U00001,S00001,2023-11-01,Salary credit,Salary,income,Net Banking,95020.56,True
+TX00000112,U00001,S00001,2023-11-03,Rent,Housing & Rent,essential_expense,Wallet,23095.45,True
+TX00000113,U00001,S00001,2023-11-13,Groceries,Groceries,essential_expense,Credit Card,5595.57,True
+TX00000114,U00001,S00001,2023-11-26,Utilities,Utilities,essential_expense,Net Banking,4077.02,True
+TX00000115,U00001,S00001,2023-11-01,Transport Pass,Transportation,essential_expense,Net Banking,4049.46,True
+TX00000116,U00001,S00001,2023-11-03,Dining,Food & Dining,discretionary_expense,Net Banking,8092.73,False
+TX00000117,U00001,S00001,2023-11-25,Shopping,Shopping,discretionary_expense,UPI,417.22,False
+TX00000118,U00001,S00001,2023-11-14,Streaming,Subscriptions,discretionary_expense,UPI,2678.35,True
+TX00000119,U00001,S00001,2023-11-18,Entertainment,Entertainment,discretionary_expense,Wallet,3982.95,False
+TX00000120,U00001,S00001,2023-11-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000121,U00001,S00001,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000122,U00001,S00001,2023-12-01,Salary credit,Salary,income,Net Banking,91544.33,True
+TX00000123,U00001,S00001,2023-12-03,Rent,Housing & Rent,essential_expense,Wallet,23710.86,True
+TX00000124,U00001,S00001,2023-12-04,Groceries,Groceries,essential_expense,Net Banking,6056.36,True
+TX00000125,U00001,S00001,2023-12-05,Utilities,Utilities,essential_expense,Net Banking,4372.38,True
+TX00000126,U00001,S00001,2023-12-13,Transport Pass,Transportation,essential_expense,UPI,4616.62,True
+TX00000127,U00001,S00001,2023-12-30,Dining,Food & Dining,discretionary_expense,UPI,4042.75,False
+TX00000128,U00001,S00001,2023-12-19,Shopping,Shopping,discretionary_expense,Credit Card,5409.73,False
+TX00000129,U00001,S00001,2023-12-29,Streaming,Subscriptions,discretionary_expense,Net Banking,133.19,True
+TX00000130,U00001,S00001,2023-12-25,Entertainment,Entertainment,discretionary_expense,Debit Card,5820.44,False
+TX00000131,U00001,S00001,2023-12-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000132,U00001,S00001,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000133,U00001,S00001,2024-01-01,Salary credit,Salary,income,Net Banking,90771.24,True
+TX00000134,U00001,S00001,2024-01-03,Rent,Housing & Rent,essential_expense,Debit Card,22601.48,True
+TX00000135,U00001,S00001,2024-01-09,Groceries,Groceries,essential_expense,Debit Card,5688.0,True
+TX00000136,U00001,S00001,2024-01-04,Utilities,Utilities,essential_expense,Debit Card,4485.95,True
+TX00000137,U00001,S00001,2024-01-29,Transport Pass,Transportation,essential_expense,Debit Card,4507.29,True
+TX00000138,U00001,S00001,2024-01-04,Dining,Food & Dining,discretionary_expense,Cash,1577.92,False
+TX00000139,U00001,S00001,2024-01-30,Shopping,Shopping,discretionary_expense,Wallet,5100.96,False
+TX00000140,U00001,S00001,2024-01-09,Streaming,Subscriptions,discretionary_expense,Debit Card,6443.97,True
+TX00000141,U00001,S00001,2024-01-17,Entertainment,Entertainment,discretionary_expense,Credit Card,2146.11,False
+TX00000142,U00001,S00001,2024-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000143,U00001,S00001,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000144,U00001,S00001,2024-02-01,Salary credit,Salary,income,Net Banking,85715.5,True
+TX00000145,U00001,S00001,2024-02-03,Rent,Housing & Rent,essential_expense,Wallet,25454.87,True
+TX00000146,U00001,S00001,2024-02-27,Groceries,Groceries,essential_expense,Cash,6374.76,True
+TX00000147,U00001,S00001,2024-02-05,Utilities,Utilities,essential_expense,UPI,3992.21,True
+TX00000148,U00001,S00001,2024-02-09,Transport Pass,Transportation,essential_expense,Cash,4004.53,True
+TX00000149,U00001,S00001,2024-02-05,Dining,Food & Dining,discretionary_expense,Debit Card,3433.4,False
+TX00000150,U00001,S00001,2024-02-04,Shopping,Shopping,discretionary_expense,Cash,672.2,False
+TX00000151,U00001,S00001,2024-02-01,Streaming,Subscriptions,discretionary_expense,Net Banking,4481.64,True
+TX00000152,U00001,S00001,2024-02-02,Entertainment,Entertainment,discretionary_expense,Credit Card,4641.22,False
+TX00000153,U00001,S00001,2024-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000154,U00001,S00001,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000155,U00001,S00001,2024-03-01,Salary credit,Salary,income,Net Banking,91027.98,True
+TX00000156,U00001,S00001,2024-03-03,Rent,Housing & Rent,essential_expense,Credit Card,24848.0,True
+TX00000157,U00001,S00001,2024-03-28,Groceries,Groceries,essential_expense,Credit Card,6242.88,True
+TX00000158,U00001,S00001,2024-03-08,Utilities,Utilities,essential_expense,Credit Card,4188.82,True
+TX00000159,U00001,S00001,2024-03-20,Transport Pass,Transportation,essential_expense,Cash,4177.63,True
+TX00000160,U00001,S00001,2024-03-30,Dining,Food & Dining,discretionary_expense,Debit Card,644.91,False
+TX00000161,U00001,S00001,2024-03-09,Shopping,Shopping,discretionary_expense,UPI,10519.85,False
+TX00000162,U00001,S00001,2024-03-01,Streaming,Subscriptions,discretionary_expense,Debit Card,1960.56,True
+TX00000163,U00001,S00001,2024-03-29,Entertainment,Entertainment,discretionary_expense,Cash,270.33,False
+TX00000164,U00001,S00001,2024-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000165,U00001,S00001,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000166,U00001,S00001,2024-04-01,Salary credit,Salary,income,Net Banking,86985.47,True
+TX00000167,U00001,S00001,2024-04-03,Rent,Housing & Rent,essential_expense,Cash,25797.52,True
+TX00000168,U00001,S00001,2024-04-20,Groceries,Groceries,essential_expense,Cash,5632.49,True
+TX00000169,U00001,S00001,2024-04-24,Utilities,Utilities,essential_expense,Net Banking,4551.0,True
+TX00000170,U00001,S00001,2024-04-05,Transport Pass,Transportation,essential_expense,Net Banking,4026.94,True
+TX00000171,U00001,S00001,2024-04-17,Dining,Food & Dining,discretionary_expense,Credit Card,580.07,False
+TX00000172,U00001,S00001,2024-04-16,Shopping,Shopping,discretionary_expense,Wallet,2580.11,False
+TX00000173,U00001,S00001,2024-04-26,Streaming,Subscriptions,discretionary_expense,Wallet,5347.57,True
+TX00000174,U00001,S00001,2024-04-14,Entertainment,Entertainment,discretionary_expense,Net Banking,7544.87,False
+TX00000175,U00001,S00001,2024-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000176,U00001,S00001,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000177,U00001,S00001,2024-05-01,Salary credit,Salary,income,Net Banking,96338.6,True
+TX00000178,U00001,S00001,2024-05-03,Rent,Housing & Rent,essential_expense,Debit Card,23575.73,True
+TX00000179,U00001,S00001,2024-05-06,Groceries,Groceries,essential_expense,Net Banking,5717.73,True
+TX00000180,U00001,S00001,2024-05-08,Utilities,Utilities,essential_expense,Credit Card,4246.26,True
+TX00000181,U00001,S00001,2024-05-25,Transport Pass,Transportation,essential_expense,Wallet,4245.72,True
+TX00000182,U00001,S00001,2024-05-21,Dining,Food & Dining,discretionary_expense,Wallet,611.8,False
+TX00000183,U00001,S00001,2024-05-27,Shopping,Shopping,discretionary_expense,Debit Card,1576.21,False
+TX00000184,U00001,S00001,2024-05-24,Streaming,Subscriptions,discretionary_expense,Credit Card,5583.69,True
+TX00000185,U00001,S00001,2024-05-15,Entertainment,Entertainment,discretionary_expense,Cash,6503.56,False
+TX00000186,U00001,S00001,2024-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000187,U00001,S00001,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000188,U00001,S00001,2024-06-01,Salary credit,Salary,income,Net Banking,107712.66,True
+TX00000189,U00001,S00001,2024-06-03,Rent,Housing & Rent,essential_expense,Wallet,25088.77,True
+TX00000190,U00001,S00001,2024-06-04,Groceries,Groceries,essential_expense,Wallet,6362.94,True
+TX00000191,U00001,S00001,2024-06-19,Utilities,Utilities,essential_expense,Cash,4283.65,True
+TX00000192,U00001,S00001,2024-06-03,Transport Pass,Transportation,essential_expense,Cash,4394.45,True
+TX00000193,U00001,S00001,2024-06-22,Dining,Food & Dining,discretionary_expense,Cash,2514.19,False
+TX00000194,U00001,S00001,2024-06-03,Shopping,Shopping,discretionary_expense,Cash,7066.23,False
+TX00000195,U00001,S00001,2024-06-29,Streaming,Subscriptions,discretionary_expense,Net Banking,5549.14,True
+TX00000196,U00001,S00001,2024-06-05,Entertainment,Entertainment,discretionary_expense,Wallet,1284.03,False
+TX00000197,U00001,S00001,2024-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7718.48,True
+TX00000198,U00001,S00001,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,4752.89,True
+TX00000199,U00002,S00002,2023-01-01,Mixed credit,Salary,income,Net Banking,134263.86,True
+TX00000200,U00002,S00002,2023-01-03,Rent,Housing & Rent,essential_expense,Net Banking,42985.22,True
+TX00000201,U00002,S00002,2023-01-23,Groceries,Groceries,essential_expense,Wallet,9448.29,True
+TX00000202,U00002,S00002,2023-01-26,Utilities,Utilities,essential_expense,Net Banking,5531.78,True
+TX00000203,U00002,S00002,2023-01-20,Transport Pass,Transportation,essential_expense,Credit Card,3840.29,True
+TX00000204,U00002,S00002,2023-01-25,Dining,Food & Dining,discretionary_expense,Debit Card,6812.36,False
+TX00000205,U00002,S00002,2023-01-17,Shopping,Shopping,discretionary_expense,Credit Card,790.81,False
+TX00000206,U00002,S00002,2023-01-10,Streaming,Subscriptions,discretionary_expense,UPI,4401.72,True
+TX00000207,U00002,S00002,2023-01-30,Entertainment,Entertainment,discretionary_expense,UPI,7852.06,False
+TX00000208,U00002,S00002,2023-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000209,U00002,S00002,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000210,U00002,S00002,2023-02-01,Mixed credit,Salary,income,Net Banking,162256.55,True
+TX00000211,U00002,S00002,2023-02-03,Rent,Housing & Rent,essential_expense,UPI,39811.26,True
+TX00000212,U00002,S00002,2023-02-21,Groceries,Groceries,essential_expense,Wallet,9872.57,True
+TX00000213,U00002,S00002,2023-02-27,Utilities,Utilities,essential_expense,Debit Card,6109.35,True
+TX00000214,U00002,S00002,2023-02-04,Transport Pass,Transportation,essential_expense,Credit Card,4146.37,True
+TX00000215,U00002,S00002,2023-02-24,Dining,Food & Dining,discretionary_expense,Wallet,13588.73,False
+TX00000216,U00002,S00002,2023-02-18,Shopping,Shopping,discretionary_expense,UPI,6773.57,False
+TX00000217,U00002,S00002,2023-02-04,Streaming,Subscriptions,discretionary_expense,Debit Card,1519.19,True
+TX00000218,U00002,S00002,2023-02-17,Entertainment,Entertainment,discretionary_expense,UPI,2069.74,False
+TX00000219,U00002,S00002,2023-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000220,U00002,S00002,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000221,U00002,S00002,2023-03-01,Mixed credit,Salary,income,Net Banking,154105.26,True
+TX00000222,U00002,S00002,2023-03-03,Rent,Housing & Rent,essential_expense,Net Banking,39916.86,True
+TX00000223,U00002,S00002,2023-03-13,Groceries,Groceries,essential_expense,Wallet,10584.17,True
+TX00000224,U00002,S00002,2023-03-02,Utilities,Utilities,essential_expense,Wallet,5699.84,True
+TX00000225,U00002,S00002,2023-03-22,Transport Pass,Transportation,essential_expense,Credit Card,4084.24,True
+TX00000226,U00002,S00002,2023-03-25,Dining,Food & Dining,discretionary_expense,Wallet,3965.05,False
+TX00000227,U00002,S00002,2023-03-02,Shopping,Shopping,discretionary_expense,UPI,837.95,False
+TX00000228,U00002,S00002,2023-03-21,Streaming,Subscriptions,discretionary_expense,Wallet,4052.52,True
+TX00000229,U00002,S00002,2023-03-01,Entertainment,Entertainment,discretionary_expense,Cash,9602.9,False
+TX00000230,U00002,S00002,2023-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000231,U00002,S00002,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000232,U00002,S00002,2023-04-01,Mixed credit,Salary,income,Net Banking,154382.72,True
+TX00000233,U00002,S00002,2023-04-03,Rent,Housing & Rent,essential_expense,Wallet,37575.78,True
+TX00000234,U00002,S00002,2023-04-02,Groceries,Groceries,essential_expense,UPI,10699.48,True
+TX00000235,U00002,S00002,2023-04-01,Utilities,Utilities,essential_expense,UPI,5448.71,True
+TX00000236,U00002,S00002,2023-04-02,Transport Pass,Transportation,essential_expense,Net Banking,3941.02,True
+TX00000237,U00002,S00002,2023-04-19,Dining,Food & Dining,discretionary_expense,Wallet,1862.69,False
+TX00000238,U00002,S00002,2023-04-25,Shopping,Shopping,discretionary_expense,Wallet,6936.91,False
+TX00000239,U00002,S00002,2023-04-08,Streaming,Subscriptions,discretionary_expense,Credit Card,688.25,True
+TX00000240,U00002,S00002,2023-04-26,Entertainment,Entertainment,discretionary_expense,Credit Card,12392.0,False
+TX00000241,U00002,S00002,2023-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000242,U00002,S00002,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000243,U00002,S00002,2023-05-01,Mixed credit,Salary,income,Net Banking,159968.28,True
+TX00000244,U00002,S00002,2023-05-03,Rent,Housing & Rent,essential_expense,UPI,42963.09,True
+TX00000245,U00002,S00002,2023-05-17,Groceries,Groceries,essential_expense,Cash,10498.39,True
+TX00000246,U00002,S00002,2023-05-03,Utilities,Utilities,essential_expense,Wallet,6079.59,True
+TX00000247,U00002,S00002,2023-05-14,Transport Pass,Transportation,essential_expense,UPI,4333.85,True
+TX00000248,U00002,S00002,2023-05-26,Dining,Food & Dining,discretionary_expense,Net Banking,1048.98,False
+TX00000249,U00002,S00002,2023-05-02,Shopping,Shopping,discretionary_expense,Credit Card,10194.91,False
+TX00000250,U00002,S00002,2023-05-01,Streaming,Subscriptions,discretionary_expense,Credit Card,5398.0,True
+TX00000251,U00002,S00002,2023-05-04,Entertainment,Entertainment,discretionary_expense,Net Banking,5795.48,False
+TX00000252,U00002,S00002,2023-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000253,U00002,S00002,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000254,U00002,S00002,2023-06-01,Mixed credit,Salary,income,Net Banking,168845.12,True
+TX00000255,U00002,S00002,2023-06-03,Rent,Housing & Rent,essential_expense,Debit Card,40928.41,True
+TX00000256,U00002,S00002,2023-06-30,Groceries,Groceries,essential_expense,Cash,9343.29,True
+TX00000257,U00002,S00002,2023-06-14,Utilities,Utilities,essential_expense,Cash,6002.45,True
+TX00000258,U00002,S00002,2023-06-24,Transport Pass,Transportation,essential_expense,Credit Card,3810.45,True
+TX00000259,U00002,S00002,2023-06-20,Dining,Food & Dining,discretionary_expense,Wallet,14732.24,False
+TX00000260,U00002,S00002,2023-06-18,Shopping,Shopping,discretionary_expense,Debit Card,2271.57,False
+TX00000261,U00002,S00002,2023-06-05,Streaming,Subscriptions,discretionary_expense,Credit Card,1224.36,True
+TX00000262,U00002,S00002,2023-06-29,Entertainment,Entertainment,discretionary_expense,Cash,687.62,False
+TX00000263,U00002,S00002,2023-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000264,U00002,S00002,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000265,U00002,S00002,2023-07-01,Mixed credit,Salary,income,Net Banking,139622.66,True
+TX00000266,U00002,S00002,2023-07-03,Rent,Housing & Rent,essential_expense,Credit Card,41496.07,True
+TX00000267,U00002,S00002,2023-07-30,Groceries,Groceries,essential_expense,Credit Card,10300.6,True
+TX00000268,U00002,S00002,2023-07-03,Utilities,Utilities,essential_expense,Credit Card,6308.2,True
+TX00000269,U00002,S00002,2023-07-20,Transport Pass,Transportation,essential_expense,Debit Card,3880.24,True
+TX00000270,U00002,S00002,2023-07-25,Dining,Food & Dining,discretionary_expense,Cash,14402.98,False
+TX00000271,U00002,S00002,2023-07-13,Shopping,Shopping,discretionary_expense,Cash,2453.09,False
+TX00000272,U00002,S00002,2023-07-31,Streaming,Subscriptions,discretionary_expense,Debit Card,1417.78,True
+TX00000273,U00002,S00002,2023-07-05,Entertainment,Entertainment,discretionary_expense,Debit Card,331.96,False
+TX00000274,U00002,S00002,2023-07-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000275,U00002,S00002,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000276,U00002,S00002,2023-08-01,Mixed credit,Salary,income,Net Banking,138592.63,True
+TX00000277,U00002,S00002,2023-08-03,Rent,Housing & Rent,essential_expense,Cash,40778.91,True
+TX00000278,U00002,S00002,2023-08-21,Groceries,Groceries,essential_expense,Cash,9765.89,True
+TX00000279,U00002,S00002,2023-08-21,Utilities,Utilities,essential_expense,Cash,5455.37,True
+TX00000280,U00002,S00002,2023-08-10,Transport Pass,Transportation,essential_expense,Credit Card,4057.83,True
+TX00000281,U00002,S00002,2023-08-25,Dining,Food & Dining,discretionary_expense,Debit Card,6738.5,False
+TX00000282,U00002,S00002,2023-08-18,Shopping,Shopping,discretionary_expense,Credit Card,1997.62,False
+TX00000283,U00002,S00002,2023-08-14,Streaming,Subscriptions,discretionary_expense,Cash,11888.85,True
+TX00000284,U00002,S00002,2023-08-20,Entertainment,Entertainment,discretionary_expense,Cash,1541.63,False
+TX00000285,U00002,S00002,2023-08-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000286,U00002,S00002,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000287,U00002,S00002,2023-09-01,Mixed credit,Salary,income,Net Banking,155158.04,True
+TX00000288,U00002,S00002,2023-09-03,Rent,Housing & Rent,essential_expense,Debit Card,41733.67,True
+TX00000289,U00002,S00002,2023-09-02,Groceries,Groceries,essential_expense,UPI,10682.37,True
+TX00000290,U00002,S00002,2023-09-02,Utilities,Utilities,essential_expense,UPI,6289.78,True
+TX00000291,U00002,S00002,2023-09-27,Transport Pass,Transportation,essential_expense,Wallet,4113.9,True
+TX00000292,U00002,S00002,2023-09-25,Dining,Food & Dining,discretionary_expense,UPI,2266.65,False
+TX00000293,U00002,S00002,2023-09-03,Shopping,Shopping,discretionary_expense,Credit Card,13142.0,False
+TX00000294,U00002,S00002,2023-09-17,Streaming,Subscriptions,discretionary_expense,Debit Card,1715.96,True
+TX00000295,U00002,S00002,2023-09-15,Entertainment,Entertainment,discretionary_expense,Credit Card,3738.7,False
+TX00000296,U00002,S00002,2023-09-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000297,U00002,S00002,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000298,U00002,S00002,2023-10-01,Mixed credit,Salary,income,Net Banking,161669.13,True
+TX00000299,U00002,S00002,2023-10-03,Rent,Housing & Rent,essential_expense,Cash,41772.19,True
+TX00000300,U00002,S00002,2023-10-30,Groceries,Groceries,essential_expense,UPI,9279.19,True
+TX00000301,U00002,S00002,2023-10-31,Utilities,Utilities,essential_expense,Debit Card,6201.26,True
+TX00000302,U00002,S00002,2023-10-24,Transport Pass,Transportation,essential_expense,Debit Card,4346.06,True
+TX00000303,U00002,S00002,2023-10-10,Dining,Food & Dining,discretionary_expense,Net Banking,3515.83,False
+TX00000304,U00002,S00002,2023-10-22,Shopping,Shopping,discretionary_expense,UPI,2121.41,False
+TX00000305,U00002,S00002,2023-10-22,Streaming,Subscriptions,discretionary_expense,Net Banking,11662.2,True
+TX00000306,U00002,S00002,2023-10-13,Entertainment,Entertainment,discretionary_expense,Wallet,2753.64,False
+TX00000307,U00002,S00002,2023-10-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000308,U00002,S00002,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000309,U00002,S00002,2023-11-01,Mixed credit,Salary,income,Net Banking,152332.5,True
+TX00000310,U00002,S00002,2023-11-03,Rent,Housing & Rent,essential_expense,Cash,38338.93,True
+TX00000311,U00002,S00002,2023-11-10,Groceries,Groceries,essential_expense,UPI,10100.77,True
+TX00000312,U00002,S00002,2023-11-26,Utilities,Utilities,essential_expense,Net Banking,5575.76,True
+TX00000313,U00002,S00002,2023-11-02,Transport Pass,Transportation,essential_expense,Debit Card,3891.73,True
+TX00000314,U00002,S00002,2023-11-15,Dining,Food & Dining,discretionary_expense,Debit Card,2945.91,False
+TX00000315,U00002,S00002,2023-11-28,Shopping,Shopping,discretionary_expense,UPI,6822.91,False
+TX00000316,U00002,S00002,2023-11-10,Streaming,Subscriptions,discretionary_expense,Credit Card,4038.81,True
+TX00000317,U00002,S00002,2023-11-08,Entertainment,Entertainment,discretionary_expense,Wallet,6418.84,False
+TX00000318,U00002,S00002,2023-11-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000319,U00002,S00002,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000320,U00002,S00002,2023-12-01,Mixed credit,Salary,income,Net Banking,157253.15,True
+TX00000321,U00002,S00002,2023-12-03,Rent,Housing & Rent,essential_expense,Cash,38492.02,True
+TX00000322,U00002,S00002,2023-12-21,Groceries,Groceries,essential_expense,Debit Card,9725.68,True
+TX00000323,U00002,S00002,2023-12-21,Utilities,Utilities,essential_expense,Net Banking,5883.55,True
+TX00000324,U00002,S00002,2023-12-24,Transport Pass,Transportation,essential_expense,Cash,4168.38,True
+TX00000325,U00002,S00002,2023-12-02,Dining,Food & Dining,discretionary_expense,Net Banking,5186.53,False
+TX00000326,U00002,S00002,2023-12-12,Shopping,Shopping,discretionary_expense,Net Banking,759.84,False
+TX00000327,U00002,S00002,2023-12-17,Streaming,Subscriptions,discretionary_expense,Wallet,2389.8,True
+TX00000328,U00002,S00002,2023-12-11,Entertainment,Entertainment,discretionary_expense,Wallet,13426.55,False
+TX00000329,U00002,S00002,2023-12-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000330,U00002,S00002,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000331,U00002,S00002,2024-01-01,Mixed credit,Salary,income,Net Banking,158205.4,True
+TX00000332,U00002,S00002,2024-01-03,Rent,Housing & Rent,essential_expense,Wallet,41939.05,True
+TX00000333,U00002,S00002,2024-01-31,Groceries,Groceries,essential_expense,Wallet,10627.02,True
+TX00000334,U00002,S00002,2024-01-20,Utilities,Utilities,essential_expense,Cash,5897.31,True
+TX00000335,U00002,S00002,2024-01-13,Transport Pass,Transportation,essential_expense,Credit Card,4380.93,True
+TX00000336,U00002,S00002,2024-01-01,Dining,Food & Dining,discretionary_expense,Debit Card,6761.81,False
+TX00000337,U00002,S00002,2024-01-10,Shopping,Shopping,discretionary_expense,Credit Card,10085.87,False
+TX00000338,U00002,S00002,2024-01-09,Streaming,Subscriptions,discretionary_expense,UPI,2668.98,True
+TX00000339,U00002,S00002,2024-01-19,Entertainment,Entertainment,discretionary_expense,Wallet,747.3,False
+TX00000340,U00002,S00002,2024-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000341,U00002,S00002,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000342,U00002,S00002,2024-02-01,Mixed credit,Salary,income,Net Banking,158131.33,True
+TX00000343,U00002,S00002,2024-02-03,Rent,Housing & Rent,essential_expense,Wallet,38972.5,True
+TX00000344,U00002,S00002,2024-02-23,Groceries,Groceries,essential_expense,Cash,10218.91,True
+TX00000345,U00002,S00002,2024-02-27,Utilities,Utilities,essential_expense,Cash,5428.26,True
+TX00000346,U00002,S00002,2024-02-21,Transport Pass,Transportation,essential_expense,Credit Card,3965.48,True
+TX00000347,U00002,S00002,2024-02-28,Dining,Food & Dining,discretionary_expense,Cash,7405.93,False
+TX00000348,U00002,S00002,2024-02-23,Shopping,Shopping,discretionary_expense,Debit Card,3631.58,False
+TX00000349,U00002,S00002,2024-02-26,Streaming,Subscriptions,discretionary_expense,UPI,6681.91,True
+TX00000350,U00002,S00002,2024-02-04,Entertainment,Entertainment,discretionary_expense,Cash,3039.58,False
+TX00000351,U00002,S00002,2024-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000352,U00002,S00002,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000353,U00002,S00002,2024-03-01,Mixed credit,Salary,income,Net Banking,142366.52,True
+TX00000354,U00002,S00002,2024-03-03,Rent,Housing & Rent,essential_expense,Net Banking,40552.43,True
+TX00000355,U00002,S00002,2024-03-10,Groceries,Groceries,essential_expense,UPI,10308.44,True
+TX00000356,U00002,S00002,2024-03-16,Utilities,Utilities,essential_expense,Net Banking,6335.75,True
+TX00000357,U00002,S00002,2024-03-30,Transport Pass,Transportation,essential_expense,Debit Card,4430.29,True
+TX00000358,U00002,S00002,2024-03-28,Dining,Food & Dining,discretionary_expense,Wallet,3792.12,False
+TX00000359,U00002,S00002,2024-03-27,Shopping,Shopping,discretionary_expense,Debit Card,6981.8,False
+TX00000360,U00002,S00002,2024-03-11,Streaming,Subscriptions,discretionary_expense,Wallet,4247.65,True
+TX00000361,U00002,S00002,2024-03-08,Entertainment,Entertainment,discretionary_expense,Debit Card,3520.13,False
+TX00000362,U00002,S00002,2024-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000363,U00002,S00002,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000364,U00002,S00002,2024-04-01,Mixed credit,Salary,income,Net Banking,147841.35,True
+TX00000365,U00002,S00002,2024-04-03,Rent,Housing & Rent,essential_expense,Wallet,37539.61,True
+TX00000366,U00002,S00002,2024-04-21,Groceries,Groceries,essential_expense,Net Banking,10149.66,True
+TX00000367,U00002,S00002,2024-04-22,Utilities,Utilities,essential_expense,Cash,6177.59,True
+TX00000368,U00002,S00002,2024-04-24,Transport Pass,Transportation,essential_expense,UPI,4390.9,True
+TX00000369,U00002,S00002,2024-04-26,Dining,Food & Dining,discretionary_expense,Net Banking,10218.79,False
+TX00000370,U00002,S00002,2024-04-23,Shopping,Shopping,discretionary_expense,Debit Card,173.12,False
+TX00000371,U00002,S00002,2024-04-25,Streaming,Subscriptions,discretionary_expense,Debit Card,7442.75,True
+TX00000372,U00002,S00002,2024-04-02,Entertainment,Entertainment,discretionary_expense,Wallet,615.58,False
+TX00000373,U00002,S00002,2024-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000374,U00002,S00002,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000375,U00002,S00002,2024-05-01,Mixed credit,Salary,income,Net Banking,166381.38,True
+TX00000376,U00002,S00002,2024-05-03,Rent,Housing & Rent,essential_expense,Credit Card,42514.85,True
+TX00000377,U00002,S00002,2024-05-13,Groceries,Groceries,essential_expense,Wallet,9262.8,True
+TX00000378,U00002,S00002,2024-05-17,Utilities,Utilities,essential_expense,Debit Card,5906.58,True
+TX00000379,U00002,S00002,2024-05-25,Transport Pass,Transportation,essential_expense,Wallet,4228.14,True
+TX00000380,U00002,S00002,2024-05-28,Dining,Food & Dining,discretionary_expense,Credit Card,286.24,False
+TX00000381,U00002,S00002,2024-05-22,Shopping,Shopping,discretionary_expense,Cash,7648.41,False
+TX00000382,U00002,S00002,2024-05-14,Streaming,Subscriptions,discretionary_expense,Debit Card,4269.99,True
+TX00000383,U00002,S00002,2024-05-04,Entertainment,Entertainment,discretionary_expense,Credit Card,7050.51,False
+TX00000384,U00002,S00002,2024-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000385,U00002,S00002,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000386,U00002,S00002,2024-06-01,Mixed credit,Salary,income,Net Banking,151383.69,True
+TX00000387,U00002,S00002,2024-06-03,Rent,Housing & Rent,essential_expense,Wallet,38200.83,True
+TX00000388,U00002,S00002,2024-06-22,Groceries,Groceries,essential_expense,Net Banking,9392.08,True
+TX00000389,U00002,S00002,2024-06-18,Utilities,Utilities,essential_expense,UPI,5743.75,True
+TX00000390,U00002,S00002,2024-06-12,Transport Pass,Transportation,essential_expense,Debit Card,4254.68,True
+TX00000391,U00002,S00002,2024-06-28,Dining,Food & Dining,discretionary_expense,Credit Card,8486.52,False
+TX00000392,U00002,S00002,2024-06-15,Shopping,Shopping,discretionary_expense,Debit Card,5260.6,False
+TX00000393,U00002,S00002,2024-06-05,Streaming,Subscriptions,discretionary_expense,UPI,1129.49,True
+TX00000394,U00002,S00002,2024-06-11,Entertainment,Entertainment,discretionary_expense,UPI,9143.26,False
+TX00000395,U00002,S00002,2024-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,8574.43,True
+TX00000396,U00002,S00002,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,7655.97,True
+TX00000397,U00003,S00003,2023-01-01,Salary credit,Salary,income,Net Banking,74018.83,True
+TX00000398,U00003,S00003,2023-01-03,Rent,Housing & Rent,essential_expense,Cash,23270.41,True
+TX00000399,U00003,S00003,2023-01-19,Groceries,Groceries,essential_expense,Net Banking,7352.73,True
+TX00000400,U00003,S00003,2023-01-20,Utilities,Utilities,essential_expense,Debit Card,2509.6,True
+TX00000401,U00003,S00003,2023-01-27,Transport Pass,Transportation,essential_expense,Debit Card,2203.45,True
+TX00000402,U00003,S00003,2023-01-30,Dining,Food & Dining,discretionary_expense,Wallet,1562.88,False
+TX00000403,U00003,S00003,2023-01-19,Shopping,Shopping,discretionary_expense,Net Banking,10004.25,False
+TX00000404,U00003,S00003,2023-01-08,Streaming,Subscriptions,discretionary_expense,Net Banking,923.03,True
+TX00000405,U00003,S00003,2023-01-21,Entertainment,Entertainment,discretionary_expense,Wallet,847.77,False
+TX00000406,U00003,S00003,2023-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000407,U00003,S00003,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000408,U00003,S00003,2023-02-01,Salary credit,Salary,income,Net Banking,71295.4,True
+TX00000409,U00003,S00003,2023-02-03,Rent,Housing & Rent,essential_expense,Net Banking,21568.73,True
+TX00000410,U00003,S00003,2023-02-03,Groceries,Groceries,essential_expense,Credit Card,7672.14,True
+TX00000411,U00003,S00003,2023-02-02,Utilities,Utilities,essential_expense,UPI,2451.18,True
+TX00000412,U00003,S00003,2023-02-07,Transport Pass,Transportation,essential_expense,Cash,2323.35,True
+TX00000413,U00003,S00003,2023-02-02,Dining,Food & Dining,discretionary_expense,Wallet,8505.47,False
+TX00000414,U00003,S00003,2023-02-13,Shopping,Shopping,discretionary_expense,Credit Card,1588.5,False
+TX00000415,U00003,S00003,2023-02-15,Streaming,Subscriptions,discretionary_expense,Net Banking,3810.88,True
+TX00000416,U00003,S00003,2023-02-09,Entertainment,Entertainment,discretionary_expense,UPI,50.43,False
+TX00000417,U00003,S00003,2023-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000418,U00003,S00003,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000419,U00003,S00003,2023-03-01,Salary credit,Salary,income,Net Banking,69966.54,True
+TX00000420,U00003,S00003,2023-03-03,Rent,Housing & Rent,essential_expense,UPI,22293.08,True
+TX00000421,U00003,S00003,2023-03-13,Groceries,Groceries,essential_expense,Wallet,7062.41,True
+TX00000422,U00003,S00003,2023-03-06,Utilities,Utilities,essential_expense,UPI,2700.95,True
+TX00000423,U00003,S00003,2023-03-04,Transport Pass,Transportation,essential_expense,Cash,2161.55,True
+TX00000424,U00003,S00003,2023-03-09,Dining,Food & Dining,discretionary_expense,Debit Card,1223.71,False
+TX00000425,U00003,S00003,2023-03-01,Shopping,Shopping,discretionary_expense,Credit Card,7153.51,False
+TX00000426,U00003,S00003,2023-03-13,Streaming,Subscriptions,discretionary_expense,Debit Card,2445.47,True
+TX00000427,U00003,S00003,2023-03-18,Entertainment,Entertainment,discretionary_expense,Net Banking,13.79,False
+TX00000428,U00003,S00003,2023-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000429,U00003,S00003,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000430,U00003,S00003,2023-04-01,Salary credit,Salary,income,Net Banking,69985.58,True
+TX00000431,U00003,S00003,2023-04-03,Rent,Housing & Rent,essential_expense,Debit Card,21841.9,True
+TX00000432,U00003,S00003,2023-04-14,Groceries,Groceries,essential_expense,Wallet,7380.82,True
+TX00000433,U00003,S00003,2023-04-22,Utilities,Utilities,essential_expense,Credit Card,2510.06,True
+TX00000434,U00003,S00003,2023-04-05,Transport Pass,Transportation,essential_expense,Cash,2260.55,True
+TX00000435,U00003,S00003,2023-04-02,Dining,Food & Dining,discretionary_expense,Credit Card,1347.36,False
+TX00000436,U00003,S00003,2023-04-05,Shopping,Shopping,discretionary_expense,UPI,1684.64,False
+TX00000437,U00003,S00003,2023-04-28,Streaming,Subscriptions,discretionary_expense,UPI,6647.3,True
+TX00000438,U00003,S00003,2023-04-01,Entertainment,Entertainment,discretionary_expense,Wallet,923.55,False
+TX00000439,U00003,S00003,2023-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000440,U00003,S00003,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000441,U00003,S00003,2023-05-01,Salary credit,Salary,income,Net Banking,74068.3,True
+TX00000442,U00003,S00003,2023-05-03,Rent,Housing & Rent,essential_expense,Credit Card,21297.81,True
+TX00000443,U00003,S00003,2023-05-15,Groceries,Groceries,essential_expense,UPI,7742.61,True
+TX00000444,U00003,S00003,2023-05-28,Utilities,Utilities,essential_expense,Net Banking,2509.71,True
+TX00000445,U00003,S00003,2023-05-31,Transport Pass,Transportation,essential_expense,Wallet,2292.97,True
+TX00000446,U00003,S00003,2023-05-10,Dining,Food & Dining,discretionary_expense,Credit Card,4132.4,False
+TX00000447,U00003,S00003,2023-05-08,Shopping,Shopping,discretionary_expense,Wallet,8198.32,False
+TX00000448,U00003,S00003,2023-05-18,Streaming,Subscriptions,discretionary_expense,Debit Card,16.07,True
+TX00000449,U00003,S00003,2023-05-31,Entertainment,Entertainment,discretionary_expense,Cash,355.18,False
+TX00000450,U00003,S00003,2023-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000451,U00003,S00003,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000452,U00003,S00003,2023-06-01,Salary credit,Salary,income,Net Banking,76251.41,True
+TX00000453,U00003,S00003,2023-06-03,Rent,Housing & Rent,essential_expense,Wallet,22209.62,True
+TX00000454,U00003,S00003,2023-06-01,Groceries,Groceries,essential_expense,Net Banking,7977.2,True
+TX00000455,U00003,S00003,2023-06-11,Utilities,Utilities,essential_expense,Debit Card,2541.86,True
+TX00000456,U00003,S00003,2023-06-01,Transport Pass,Transportation,essential_expense,Net Banking,2376.43,True
+TX00000457,U00003,S00003,2023-06-05,Dining,Food & Dining,discretionary_expense,Cash,4266.77,False
+TX00000458,U00003,S00003,2023-06-22,Shopping,Shopping,discretionary_expense,Wallet,2889.15,False
+TX00000459,U00003,S00003,2023-06-22,Streaming,Subscriptions,discretionary_expense,Credit Card,2110.25,True
+TX00000460,U00003,S00003,2023-06-23,Entertainment,Entertainment,discretionary_expense,Net Banking,1445.36,False
+TX00000461,U00003,S00003,2023-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000462,U00003,S00003,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000463,U00003,S00003,2023-07-01,Salary credit,Salary,income,Net Banking,72836.77,True
+TX00000464,U00003,S00003,2023-07-03,Rent,Housing & Rent,essential_expense,Credit Card,23053.78,True
+TX00000465,U00003,S00003,2023-07-18,Groceries,Groceries,essential_expense,Wallet,7142.02,True
+TX00000466,U00003,S00003,2023-07-18,Utilities,Utilities,essential_expense,Cash,2468.69,True
+TX00000467,U00003,S00003,2023-07-13,Transport Pass,Transportation,essential_expense,UPI,2337.93,True
+TX00000468,U00003,S00003,2023-07-18,Dining,Food & Dining,discretionary_expense,Wallet,1072.58,False
+TX00000469,U00003,S00003,2023-07-03,Shopping,Shopping,discretionary_expense,Wallet,717.82,False
+TX00000470,U00003,S00003,2023-07-13,Streaming,Subscriptions,discretionary_expense,Cash,8658.64,True
+TX00000471,U00003,S00003,2023-07-06,Entertainment,Entertainment,discretionary_expense,Cash,36.12,False
+TX00000472,U00003,S00003,2023-07-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000473,U00003,S00003,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000474,U00003,S00003,2023-08-01,Salary credit,Salary,income,Net Banking,71930.04,True
+TX00000475,U00003,S00003,2023-08-03,Rent,Housing & Rent,essential_expense,Wallet,21079.37,True
+TX00000476,U00003,S00003,2023-08-08,Groceries,Groceries,essential_expense,Cash,7711.51,True
+TX00000477,U00003,S00003,2023-08-19,Utilities,Utilities,essential_expense,Credit Card,2531.96,True
+TX00000478,U00003,S00003,2023-08-18,Transport Pass,Transportation,essential_expense,Cash,2327.23,True
+TX00000479,U00003,S00003,2023-08-13,Dining,Food & Dining,discretionary_expense,Net Banking,5358.14,False
+TX00000480,U00003,S00003,2023-08-22,Shopping,Shopping,discretionary_expense,Cash,275.68,False
+TX00000481,U00003,S00003,2023-08-23,Streaming,Subscriptions,discretionary_expense,Net Banking,7536.39,True
+TX00000482,U00003,S00003,2023-08-18,Entertainment,Entertainment,discretionary_expense,Credit Card,469.09,False
+TX00000483,U00003,S00003,2023-08-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000484,U00003,S00003,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000485,U00003,S00003,2023-09-01,Salary credit,Salary,income,Net Banking,69490.28,True
+TX00000486,U00003,S00003,2023-09-03,Rent,Housing & Rent,essential_expense,Net Banking,22419.43,True
+TX00000487,U00003,S00003,2023-09-05,Groceries,Groceries,essential_expense,Net Banking,7614.29,True
+TX00000488,U00003,S00003,2023-09-15,Utilities,Utilities,essential_expense,UPI,2413.72,True
+TX00000489,U00003,S00003,2023-09-11,Transport Pass,Transportation,essential_expense,Wallet,2375.28,True
+TX00000490,U00003,S00003,2023-09-08,Dining,Food & Dining,discretionary_expense,Credit Card,2707.99,False
+TX00000491,U00003,S00003,2023-09-21,Shopping,Shopping,discretionary_expense,Credit Card,5710.11,False
+TX00000492,U00003,S00003,2023-09-28,Streaming,Subscriptions,discretionary_expense,Wallet,349.12,True
+TX00000493,U00003,S00003,2023-09-30,Entertainment,Entertainment,discretionary_expense,Wallet,3110.22,False
+TX00000494,U00003,S00003,2023-09-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000495,U00003,S00003,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000496,U00003,S00003,2023-10-01,Salary credit,Salary,income,Net Banking,69673.57,True
+TX00000497,U00003,S00003,2023-10-03,Rent,Housing & Rent,essential_expense,Debit Card,22603.05,True
+TX00000498,U00003,S00003,2023-10-04,Groceries,Groceries,essential_expense,Net Banking,7880.37,True
+TX00000499,U00003,S00003,2023-10-29,Utilities,Utilities,essential_expense,Net Banking,2776.42,True
+TX00000500,U00003,S00003,2023-10-27,Transport Pass,Transportation,essential_expense,Wallet,2223.97,True
+TX00000501,U00003,S00003,2023-10-25,Dining,Food & Dining,discretionary_expense,Cash,2579.61,False
+TX00000502,U00003,S00003,2023-10-04,Shopping,Shopping,discretionary_expense,UPI,5013.34,False
+TX00000503,U00003,S00003,2023-10-07,Streaming,Subscriptions,discretionary_expense,Debit Card,1575.67,True
+TX00000504,U00003,S00003,2023-10-24,Entertainment,Entertainment,discretionary_expense,Debit Card,3352.39,False
+TX00000505,U00003,S00003,2023-10-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000506,U00003,S00003,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000507,U00003,S00003,2023-11-01,Salary credit,Salary,income,Net Banking,76519.0,True
+TX00000508,U00003,S00003,2023-11-03,Rent,Housing & Rent,essential_expense,UPI,22266.34,True
+TX00000509,U00003,S00003,2023-11-18,Groceries,Groceries,essential_expense,Wallet,7863.13,True
+TX00000510,U00003,S00003,2023-11-16,Utilities,Utilities,essential_expense,Debit Card,2780.27,True
+TX00000511,U00003,S00003,2023-11-03,Transport Pass,Transportation,essential_expense,Credit Card,2229.63,True
+TX00000512,U00003,S00003,2023-11-11,Dining,Food & Dining,discretionary_expense,Debit Card,2832.1,False
+TX00000513,U00003,S00003,2023-11-11,Shopping,Shopping,discretionary_expense,Debit Card,7055.34,False
+TX00000514,U00003,S00003,2023-11-24,Streaming,Subscriptions,discretionary_expense,UPI,580.82,True
+TX00000515,U00003,S00003,2023-11-10,Entertainment,Entertainment,discretionary_expense,UPI,2169.9,False
+TX00000516,U00003,S00003,2023-11-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000517,U00003,S00003,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000518,U00003,S00003,2023-12-01,Salary credit,Salary,income,Net Banking,73215.63,True
+TX00000519,U00003,S00003,2023-12-03,Rent,Housing & Rent,essential_expense,Debit Card,22129.45,True
+TX00000520,U00003,S00003,2023-12-17,Groceries,Groceries,essential_expense,UPI,8149.48,True
+TX00000521,U00003,S00003,2023-12-15,Utilities,Utilities,essential_expense,Debit Card,2510.53,True
+TX00000522,U00003,S00003,2023-12-09,Transport Pass,Transportation,essential_expense,UPI,2122.33,True
+TX00000523,U00003,S00003,2023-12-02,Dining,Food & Dining,discretionary_expense,UPI,5632.47,False
+TX00000524,U00003,S00003,2023-12-15,Shopping,Shopping,discretionary_expense,UPI,2376.98,False
+TX00000525,U00003,S00003,2023-12-30,Streaming,Subscriptions,discretionary_expense,Credit Card,3006.07,True
+TX00000526,U00003,S00003,2023-12-21,Entertainment,Entertainment,discretionary_expense,Net Banking,92.1,False
+TX00000527,U00003,S00003,2023-12-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000528,U00003,S00003,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000529,U00003,S00003,2024-01-01,Salary credit,Salary,income,Net Banking,67895.87,True
+TX00000530,U00003,S00003,2024-01-03,Rent,Housing & Rent,essential_expense,Debit Card,21813.14,True
+TX00000531,U00003,S00003,2024-01-07,Groceries,Groceries,essential_expense,Cash,7347.13,True
+TX00000532,U00003,S00003,2024-01-14,Utilities,Utilities,essential_expense,UPI,2728.85,True
+TX00000533,U00003,S00003,2024-01-26,Transport Pass,Transportation,essential_expense,Wallet,2404.55,True
+TX00000534,U00003,S00003,2024-01-24,Dining,Food & Dining,discretionary_expense,Cash,1886.36,False
+TX00000535,U00003,S00003,2024-01-13,Shopping,Shopping,discretionary_expense,Cash,7092.73,False
+TX00000536,U00003,S00003,2024-01-17,Streaming,Subscriptions,discretionary_expense,UPI,995.0,True
+TX00000537,U00003,S00003,2024-01-03,Entertainment,Entertainment,discretionary_expense,Credit Card,1570.24,False
+TX00000538,U00003,S00003,2024-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000539,U00003,S00003,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000540,U00003,S00003,2024-02-01,Salary credit,Salary,income,Net Banking,71571.4,True
+TX00000541,U00003,S00003,2024-02-03,Rent,Housing & Rent,essential_expense,Cash,23991.74,True
+TX00000542,U00003,S00003,2024-02-28,Groceries,Groceries,essential_expense,Debit Card,7698.94,True
+TX00000543,U00003,S00003,2024-02-04,Utilities,Utilities,essential_expense,Credit Card,2716.42,True
+TX00000544,U00003,S00003,2024-02-26,Transport Pass,Transportation,essential_expense,Net Banking,2193.85,True
+TX00000545,U00003,S00003,2024-02-03,Healthcare,Healthcare,essential_expense,Debit Card,81620.99,False
+TX00000546,U00003,S00003,2024-02-08,Dining,Food & Dining,discretionary_expense,Credit Card,1659.85,False
+TX00000547,U00003,S00003,2024-02-25,Shopping,Shopping,discretionary_expense,Cash,1442.24,False
+TX00000548,U00003,S00003,2024-02-06,Streaming,Subscriptions,discretionary_expense,Cash,2591.24,True
+TX00000549,U00003,S00003,2024-02-12,Entertainment,Entertainment,discretionary_expense,UPI,5491.72,False
+TX00000550,U00003,S00003,2024-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000551,U00003,S00003,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000552,U00003,S00003,2024-03-01,Salary credit,Salary,income,Net Banking,70878.58,True
+TX00000553,U00003,S00003,2024-03-03,Rent,Housing & Rent,essential_expense,Debit Card,23476.84,True
+TX00000554,U00003,S00003,2024-03-03,Groceries,Groceries,essential_expense,Wallet,8023.6,True
+TX00000555,U00003,S00003,2024-03-01,Utilities,Utilities,essential_expense,Net Banking,2774.83,True
+TX00000556,U00003,S00003,2024-03-11,Transport Pass,Transportation,essential_expense,Cash,2209.56,True
+TX00000557,U00003,S00003,2024-03-09,Dining,Food & Dining,discretionary_expense,Debit Card,2972.7,False
+TX00000558,U00003,S00003,2024-03-14,Shopping,Shopping,discretionary_expense,Cash,3421.62,False
+TX00000559,U00003,S00003,2024-03-13,Streaming,Subscriptions,discretionary_expense,Cash,5828.91,True
+TX00000560,U00003,S00003,2024-03-26,Entertainment,Entertainment,discretionary_expense,Debit Card,1659.37,False
+TX00000561,U00003,S00003,2024-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000562,U00003,S00003,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000563,U00003,S00003,2024-04-01,Salary credit,Salary,income,Net Banking,72436.15,True
+TX00000564,U00003,S00003,2024-04-03,Rent,Housing & Rent,essential_expense,Debit Card,21352.44,True
+TX00000565,U00003,S00003,2024-04-04,Groceries,Groceries,essential_expense,UPI,8146.26,True
+TX00000566,U00003,S00003,2024-04-28,Utilities,Utilities,essential_expense,UPI,2610.4,True
+TX00000567,U00003,S00003,2024-04-10,Transport Pass,Transportation,essential_expense,Wallet,2432.31,True
+TX00000568,U00003,S00003,2024-04-19,Dining,Food & Dining,discretionary_expense,UPI,1166.83,False
+TX00000569,U00003,S00003,2024-04-14,Shopping,Shopping,discretionary_expense,Wallet,4205.04,False
+TX00000570,U00003,S00003,2024-04-13,Streaming,Subscriptions,discretionary_expense,Cash,2210.07,True
+TX00000571,U00003,S00003,2024-04-16,Entertainment,Entertainment,discretionary_expense,Cash,2952.8,False
+TX00000572,U00003,S00003,2024-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000573,U00003,S00003,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000574,U00003,S00003,2024-05-01,Salary credit,Salary,income,Net Banking,65726.5,True
+TX00000575,U00003,S00003,2024-05-03,Rent,Housing & Rent,essential_expense,Credit Card,23869.55,True
+TX00000576,U00003,S00003,2024-05-21,Groceries,Groceries,essential_expense,Cash,7890.24,True
+TX00000577,U00003,S00003,2024-05-02,Utilities,Utilities,essential_expense,Net Banking,2604.84,True
+TX00000578,U00003,S00003,2024-05-20,Transport Pass,Transportation,essential_expense,Net Banking,2141.9,True
+TX00000579,U00003,S00003,2024-05-26,Dining,Food & Dining,discretionary_expense,Credit Card,7409.79,False
+TX00000580,U00003,S00003,2024-05-07,Shopping,Shopping,discretionary_expense,Wallet,3832.49,False
+TX00000581,U00003,S00003,2024-05-17,Streaming,Subscriptions,discretionary_expense,Debit Card,925.28,True
+TX00000582,U00003,S00003,2024-05-09,Entertainment,Entertainment,discretionary_expense,Cash,1179.5,False
+TX00000583,U00003,S00003,2024-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000584,U00003,S00003,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000585,U00003,S00003,2024-06-01,Salary credit,Salary,income,Net Banking,72187.69,True
+TX00000586,U00003,S00003,2024-06-03,Rent,Housing & Rent,essential_expense,Cash,24505.72,True
+TX00000587,U00003,S00003,2024-06-10,Groceries,Groceries,essential_expense,Debit Card,7330.26,True
+TX00000588,U00003,S00003,2024-06-22,Utilities,Utilities,essential_expense,Net Banking,2434.49,True
+TX00000589,U00003,S00003,2024-06-14,Transport Pass,Transportation,essential_expense,Credit Card,2252.72,True
+TX00000590,U00003,S00003,2024-06-20,Dining,Food & Dining,discretionary_expense,Cash,1389.29,False
+TX00000591,U00003,S00003,2024-06-18,Shopping,Shopping,discretionary_expense,UPI,2272.02,False
+TX00000592,U00003,S00003,2024-06-15,Streaming,Subscriptions,discretionary_expense,Cash,5525.61,True
+TX00000593,U00003,S00003,2024-06-29,Entertainment,Entertainment,discretionary_expense,Cash,4628.84,False
+TX00000594,U00003,S00003,2024-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,9333.8,True
+TX00000595,U00003,S00003,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5964.52,True
+TX00000596,U00004,S00004,2023-01-01,Salary credit,Salary,income,Net Banking,69460.55,True
+TX00000597,U00004,S00004,2023-01-03,Rent,Housing & Rent,essential_expense,Debit Card,20919.71,True
+TX00000598,U00004,S00004,2023-01-05,Groceries,Groceries,essential_expense,Cash,8130.97,True
+TX00000599,U00004,S00004,2023-01-23,Utilities,Utilities,essential_expense,Cash,2535.7,True
+TX00000600,U00004,S00004,2023-01-10,Transport Pass,Transportation,essential_expense,UPI,3117.53,True
+TX00000601,U00004,S00004,2023-01-28,Dining,Food & Dining,discretionary_expense,Credit Card,1083.28,False
+TX00000602,U00004,S00004,2023-01-25,Shopping,Shopping,discretionary_expense,Credit Card,436.61,False
+TX00000603,U00004,S00004,2023-01-06,Streaming,Subscriptions,discretionary_expense,Net Banking,3736.65,True
+TX00000604,U00004,S00004,2023-01-30,Entertainment,Entertainment,discretionary_expense,Wallet,2724.33,False
+TX00000605,U00004,S00004,2023-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000606,U00004,S00004,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000607,U00004,S00004,2023-02-01,Salary credit,Salary,income,Net Banking,64323.64,True
+TX00000608,U00004,S00004,2023-02-03,Rent,Housing & Rent,essential_expense,Cash,20167.91,True
+TX00000609,U00004,S00004,2023-02-20,Groceries,Groceries,essential_expense,Net Banking,7748.84,True
+TX00000610,U00004,S00004,2023-02-27,Utilities,Utilities,essential_expense,Cash,2388.27,True
+TX00000611,U00004,S00004,2023-02-18,Transport Pass,Transportation,essential_expense,Net Banking,3013.29,True
+TX00000612,U00004,S00004,2023-02-08,Dining,Food & Dining,discretionary_expense,Credit Card,1960.48,False
+TX00000613,U00004,S00004,2023-02-18,Shopping,Shopping,discretionary_expense,UPI,1353.9,False
+TX00000614,U00004,S00004,2023-02-09,Streaming,Subscriptions,discretionary_expense,Net Banking,3261.91,True
+TX00000615,U00004,S00004,2023-02-28,Entertainment,Entertainment,discretionary_expense,Cash,1118.68,False
+TX00000616,U00004,S00004,2023-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000617,U00004,S00004,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000618,U00004,S00004,2023-03-01,Salary credit,Salary,income,Net Banking,66722.83,True
+TX00000619,U00004,S00004,2023-03-03,Rent,Housing & Rent,essential_expense,Debit Card,18142.21,True
+TX00000620,U00004,S00004,2023-03-22,Groceries,Groceries,essential_expense,Debit Card,8105.61,True
+TX00000621,U00004,S00004,2023-03-14,Utilities,Utilities,essential_expense,Cash,2626.09,True
+TX00000622,U00004,S00004,2023-03-26,Transport Pass,Transportation,essential_expense,Debit Card,3254.59,True
+TX00000623,U00004,S00004,2023-03-26,Dining,Food & Dining,discretionary_expense,Credit Card,2112.07,False
+TX00000624,U00004,S00004,2023-03-13,Shopping,Shopping,discretionary_expense,Wallet,3603.81,False
+TX00000625,U00004,S00004,2023-03-30,Streaming,Subscriptions,discretionary_expense,Wallet,1029.99,True
+TX00000626,U00004,S00004,2023-03-10,Entertainment,Entertainment,discretionary_expense,Wallet,954.73,False
+TX00000627,U00004,S00004,2023-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000628,U00004,S00004,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000629,U00004,S00004,2023-04-01,Salary credit,Salary,income,Net Banking,70853.92,True
+TX00000630,U00004,S00004,2023-04-03,Rent,Housing & Rent,essential_expense,Debit Card,20410.33,True
+TX00000631,U00004,S00004,2023-04-18,Groceries,Groceries,essential_expense,Debit Card,8586.15,True
+TX00000632,U00004,S00004,2023-04-13,Utilities,Utilities,essential_expense,Credit Card,2581.49,True
+TX00000633,U00004,S00004,2023-04-07,Transport Pass,Transportation,essential_expense,Cash,3188.27,True
+TX00000634,U00004,S00004,2023-04-25,Dining,Food & Dining,discretionary_expense,Credit Card,1394.91,False
+TX00000635,U00004,S00004,2023-04-26,Shopping,Shopping,discretionary_expense,Cash,524.52,False
+TX00000636,U00004,S00004,2023-04-06,Streaming,Subscriptions,discretionary_expense,Debit Card,3483.44,True
+TX00000637,U00004,S00004,2023-04-01,Entertainment,Entertainment,discretionary_expense,UPI,1644.04,False
+TX00000638,U00004,S00004,2023-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000639,U00004,S00004,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000640,U00004,S00004,2023-05-01,Salary credit,Salary,income,Net Banking,70931.05,True
+TX00000641,U00004,S00004,2023-05-03,Rent,Housing & Rent,essential_expense,Debit Card,20706.29,True
+TX00000642,U00004,S00004,2023-05-09,Groceries,Groceries,essential_expense,Wallet,7760.66,True
+TX00000643,U00004,S00004,2023-05-20,Utilities,Utilities,essential_expense,UPI,2586.14,True
+TX00000644,U00004,S00004,2023-05-30,Transport Pass,Transportation,essential_expense,UPI,3001.54,True
+TX00000645,U00004,S00004,2023-05-19,Dining,Food & Dining,discretionary_expense,Net Banking,2499.43,False
+TX00000646,U00004,S00004,2023-05-08,Shopping,Shopping,discretionary_expense,Credit Card,1799.48,False
+TX00000647,U00004,S00004,2023-05-15,Streaming,Subscriptions,discretionary_expense,Wallet,1020.83,True
+TX00000648,U00004,S00004,2023-05-07,Entertainment,Entertainment,discretionary_expense,Cash,3266.19,False
+TX00000649,U00004,S00004,2023-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000650,U00004,S00004,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000651,U00004,S00004,2023-06-01,Salary credit,Salary,income,Net Banking,62768.47,True
+TX00000652,U00004,S00004,2023-06-03,Rent,Housing & Rent,essential_expense,Net Banking,20685.41,True
+TX00000653,U00004,S00004,2023-06-22,Groceries,Groceries,essential_expense,UPI,7810.78,True
+TX00000654,U00004,S00004,2023-06-30,Utilities,Utilities,essential_expense,Credit Card,2447.07,True
+TX00000655,U00004,S00004,2023-06-10,Transport Pass,Transportation,essential_expense,Credit Card,3224.89,True
+TX00000656,U00004,S00004,2023-06-14,Dining,Food & Dining,discretionary_expense,Credit Card,1295.49,False
+TX00000657,U00004,S00004,2023-06-13,Shopping,Shopping,discretionary_expense,Credit Card,1827.74,False
+TX00000658,U00004,S00004,2023-06-02,Streaming,Subscriptions,discretionary_expense,Debit Card,901.64,True
+TX00000659,U00004,S00004,2023-06-21,Entertainment,Entertainment,discretionary_expense,Net Banking,2651.34,False
+TX00000660,U00004,S00004,2023-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000661,U00004,S00004,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000662,U00004,S00004,2023-07-01,Salary credit,Salary,income,Net Banking,72013.3,True
+TX00000663,U00004,S00004,2023-07-03,Rent,Housing & Rent,essential_expense,Debit Card,20684.13,True
+TX00000664,U00004,S00004,2023-07-18,Groceries,Groceries,essential_expense,Wallet,8660.7,True
+TX00000665,U00004,S00004,2023-07-29,Utilities,Utilities,essential_expense,UPI,2444.37,True
+TX00000666,U00004,S00004,2023-07-11,Transport Pass,Transportation,essential_expense,UPI,3106.87,True
+TX00000667,U00004,S00004,2023-07-10,Dining,Food & Dining,discretionary_expense,Cash,1382.73,False
+TX00000668,U00004,S00004,2023-07-09,Shopping,Shopping,discretionary_expense,UPI,2927.21,False
+TX00000669,U00004,S00004,2023-07-16,Streaming,Subscriptions,discretionary_expense,UPI,345.45,True
+TX00000670,U00004,S00004,2023-07-08,Entertainment,Entertainment,discretionary_expense,UPI,2131.86,False
+TX00000671,U00004,S00004,2023-07-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000672,U00004,S00004,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000673,U00004,S00004,2023-08-01,Salary credit,Salary,income,Net Banking,65624.05,True
+TX00000674,U00004,S00004,2023-08-03,Rent,Housing & Rent,essential_expense,Debit Card,20503.45,True
+TX00000675,U00004,S00004,2023-08-26,Groceries,Groceries,essential_expense,UPI,7624.26,True
+TX00000676,U00004,S00004,2023-08-03,Utilities,Utilities,essential_expense,Debit Card,2537.75,True
+TX00000677,U00004,S00004,2023-08-13,Transport Pass,Transportation,essential_expense,Cash,3363.54,True
+TX00000678,U00004,S00004,2023-08-23,Dining,Food & Dining,discretionary_expense,Cash,245.04,False
+TX00000679,U00004,S00004,2023-08-08,Shopping,Shopping,discretionary_expense,Credit Card,384.2,False
+TX00000680,U00004,S00004,2023-08-24,Streaming,Subscriptions,discretionary_expense,Credit Card,5700.4,True
+TX00000681,U00004,S00004,2023-08-16,Entertainment,Entertainment,discretionary_expense,Cash,1358.18,False
+TX00000682,U00004,S00004,2023-08-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000683,U00004,S00004,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000684,U00004,S00004,2023-09-01,Salary credit,Salary,income,Net Banking,76497.65,True
+TX00000685,U00004,S00004,2023-09-03,Rent,Housing & Rent,essential_expense,Net Banking,19225.34,True
+TX00000686,U00004,S00004,2023-09-02,Groceries,Groceries,essential_expense,Debit Card,7867.23,True
+TX00000687,U00004,S00004,2023-09-21,Utilities,Utilities,essential_expense,Wallet,2361.81,True
+TX00000688,U00004,S00004,2023-09-26,Transport Pass,Transportation,essential_expense,UPI,3326.88,True
+TX00000689,U00004,S00004,2023-09-30,Dining,Food & Dining,discretionary_expense,Cash,2071.82,False
+TX00000690,U00004,S00004,2023-09-06,Shopping,Shopping,discretionary_expense,Debit Card,92.63,False
+TX00000691,U00004,S00004,2023-09-28,Streaming,Subscriptions,discretionary_expense,Debit Card,2448.15,True
+TX00000692,U00004,S00004,2023-09-06,Entertainment,Entertainment,discretionary_expense,Wallet,3723.03,False
+TX00000693,U00004,S00004,2023-09-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000694,U00004,S00004,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000695,U00004,S00004,2023-10-01,Salary credit,Salary,income,Net Banking,75414.78,True
+TX00000696,U00004,S00004,2023-10-03,Rent,Housing & Rent,essential_expense,Debit Card,20812.15,True
+TX00000697,U00004,S00004,2023-10-23,Groceries,Groceries,essential_expense,Debit Card,7831.79,True
+TX00000698,U00004,S00004,2023-10-01,Utilities,Utilities,essential_expense,Cash,2366.73,True
+TX00000699,U00004,S00004,2023-10-02,Transport Pass,Transportation,essential_expense,Wallet,3278.05,True
+TX00000700,U00004,S00004,2023-10-19,Dining,Food & Dining,discretionary_expense,Debit Card,1955.68,False
+TX00000701,U00004,S00004,2023-10-16,Shopping,Shopping,discretionary_expense,Cash,3235.15,False
+TX00000702,U00004,S00004,2023-10-09,Streaming,Subscriptions,discretionary_expense,Credit Card,1576.23,True
+TX00000703,U00004,S00004,2023-10-13,Entertainment,Entertainment,discretionary_expense,Credit Card,1580.97,False
+TX00000704,U00004,S00004,2023-10-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000705,U00004,S00004,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000706,U00004,S00004,2023-11-01,Salary credit,Salary,income,Net Banking,61878.29,True
+TX00000707,U00004,S00004,2023-11-03,Rent,Housing & Rent,essential_expense,Net Banking,19832.84,True
+TX00000708,U00004,S00004,2023-11-01,Groceries,Groceries,essential_expense,Credit Card,8086.25,True
+TX00000709,U00004,S00004,2023-11-18,Utilities,Utilities,essential_expense,Wallet,2386.51,True
+TX00000710,U00004,S00004,2023-11-24,Transport Pass,Transportation,essential_expense,Cash,3209.41,True
+TX00000711,U00004,S00004,2023-11-24,Dining,Food & Dining,discretionary_expense,Credit Card,336.55,False
+TX00000712,U00004,S00004,2023-11-26,Shopping,Shopping,discretionary_expense,Wallet,2060.21,False
+TX00000713,U00004,S00004,2023-11-03,Streaming,Subscriptions,discretionary_expense,Debit Card,3984.33,True
+TX00000714,U00004,S00004,2023-11-25,Entertainment,Entertainment,discretionary_expense,Debit Card,80.53,False
+TX00000715,U00004,S00004,2023-11-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000716,U00004,S00004,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000717,U00004,S00004,2023-12-01,Salary credit,Salary,income,Net Banking,67796.29,True
+TX00000718,U00004,S00004,2023-12-03,Rent,Housing & Rent,essential_expense,Cash,18256.15,True
+TX00000719,U00004,S00004,2023-12-06,Groceries,Groceries,essential_expense,UPI,7861.94,True
+TX00000720,U00004,S00004,2023-12-05,Utilities,Utilities,essential_expense,Cash,2511.4,True
+TX00000721,U00004,S00004,2023-12-27,Transport Pass,Transportation,essential_expense,Credit Card,3042.37,True
+TX00000722,U00004,S00004,2023-12-10,Dining,Food & Dining,discretionary_expense,Debit Card,5011.92,False
+TX00000723,U00004,S00004,2023-12-12,Shopping,Shopping,discretionary_expense,Credit Card,1236.25,False
+TX00000724,U00004,S00004,2023-12-02,Streaming,Subscriptions,discretionary_expense,Cash,662.83,True
+TX00000725,U00004,S00004,2023-12-12,Entertainment,Entertainment,discretionary_expense,Debit Card,511.9,False
+TX00000726,U00004,S00004,2023-12-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000727,U00004,S00004,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000728,U00004,S00004,2024-01-01,Salary credit,Salary,income,Net Banking,72832.74,True
+TX00000729,U00004,S00004,2024-01-03,Rent,Housing & Rent,essential_expense,Credit Card,18714.65,True
+TX00000730,U00004,S00004,2024-01-30,Groceries,Groceries,essential_expense,Net Banking,8749.19,True
+TX00000731,U00004,S00004,2024-01-04,Utilities,Utilities,essential_expense,Net Banking,2647.71,True
+TX00000732,U00004,S00004,2024-01-22,Transport Pass,Transportation,essential_expense,Cash,2993.42,True
+TX00000733,U00004,S00004,2024-01-05,Dining,Food & Dining,discretionary_expense,Wallet,300.06,False
+TX00000734,U00004,S00004,2024-01-14,Shopping,Shopping,discretionary_expense,UPI,2118.25,False
+TX00000735,U00004,S00004,2024-01-07,Streaming,Subscriptions,discretionary_expense,Debit Card,5676.82,True
+TX00000736,U00004,S00004,2024-01-02,Entertainment,Entertainment,discretionary_expense,Credit Card,307.24,False
+TX00000737,U00004,S00004,2024-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000738,U00004,S00004,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000739,U00004,S00004,2024-02-01,Salary credit,Salary,income,Net Banking,66386.81,True
+TX00000740,U00004,S00004,2024-02-03,Rent,Housing & Rent,essential_expense,Net Banking,19881.98,True
+TX00000741,U00004,S00004,2024-02-17,Groceries,Groceries,essential_expense,Debit Card,8640.88,True
+TX00000742,U00004,S00004,2024-02-04,Utilities,Utilities,essential_expense,Cash,2346.73,True
+TX00000743,U00004,S00004,2024-02-10,Transport Pass,Transportation,essential_expense,Credit Card,3443.11,True
+TX00000744,U00004,S00004,2024-02-06,Dining,Food & Dining,discretionary_expense,Wallet,399.41,False
+TX00000745,U00004,S00004,2024-02-03,Shopping,Shopping,discretionary_expense,Net Banking,4917.47,False
+TX00000746,U00004,S00004,2024-02-26,Streaming,Subscriptions,discretionary_expense,UPI,1843.5,True
+TX00000747,U00004,S00004,2024-02-18,Entertainment,Entertainment,discretionary_expense,Cash,205.05,False
+TX00000748,U00004,S00004,2024-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000749,U00004,S00004,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000750,U00004,S00004,2024-03-01,Salary credit,Salary,income,Net Banking,66587.97,True
+TX00000751,U00004,S00004,2024-03-03,Rent,Housing & Rent,essential_expense,Debit Card,19425.25,True
+TX00000752,U00004,S00004,2024-03-10,Groceries,Groceries,essential_expense,Cash,8412.82,True
+TX00000753,U00004,S00004,2024-03-11,Utilities,Utilities,essential_expense,Cash,2646.56,True
+TX00000754,U00004,S00004,2024-03-12,Transport Pass,Transportation,essential_expense,Credit Card,3419.65,True
+TX00000755,U00004,S00004,2024-03-31,Dining,Food & Dining,discretionary_expense,Debit Card,1401.43,False
+TX00000756,U00004,S00004,2024-03-03,Shopping,Shopping,discretionary_expense,Debit Card,753.22,False
+TX00000757,U00004,S00004,2024-03-17,Streaming,Subscriptions,discretionary_expense,UPI,3533.47,True
+TX00000758,U00004,S00004,2024-03-10,Entertainment,Entertainment,discretionary_expense,UPI,1823.88,False
+TX00000759,U00004,S00004,2024-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000760,U00004,S00004,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000761,U00004,S00004,2024-04-01,Salary credit,Salary,income,Net Banking,73328.61,True
+TX00000762,U00004,S00004,2024-04-03,Rent,Housing & Rent,essential_expense,Wallet,19291.94,True
+TX00000763,U00004,S00004,2024-04-02,Groceries,Groceries,essential_expense,Cash,7861.1,True
+TX00000764,U00004,S00004,2024-04-29,Utilities,Utilities,essential_expense,Wallet,2502.24,True
+TX00000765,U00004,S00004,2024-04-12,Transport Pass,Transportation,essential_expense,UPI,3328.95,True
+TX00000766,U00004,S00004,2024-04-28,Dining,Food & Dining,discretionary_expense,Wallet,1117.77,False
+TX00000767,U00004,S00004,2024-04-18,Shopping,Shopping,discretionary_expense,Wallet,1699.74,False
+TX00000768,U00004,S00004,2024-04-01,Streaming,Subscriptions,discretionary_expense,Cash,4890.0,True
+TX00000769,U00004,S00004,2024-04-02,Entertainment,Entertainment,discretionary_expense,Wallet,276.68,False
+TX00000770,U00004,S00004,2024-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000771,U00004,S00004,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000772,U00004,S00004,2024-05-01,Salary credit,Salary,income,Net Banking,70528.79,True
+TX00000773,U00004,S00004,2024-05-03,Rent,Housing & Rent,essential_expense,Net Banking,18152.59,True
+TX00000774,U00004,S00004,2024-05-31,Groceries,Groceries,essential_expense,Debit Card,8558.2,True
+TX00000775,U00004,S00004,2024-05-27,Utilities,Utilities,essential_expense,Cash,2616.98,True
+TX00000776,U00004,S00004,2024-05-02,Transport Pass,Transportation,essential_expense,Credit Card,3196.36,True
+TX00000777,U00004,S00004,2024-05-21,Dining,Food & Dining,discretionary_expense,UPI,6396.06,False
+TX00000778,U00004,S00004,2024-05-14,Shopping,Shopping,discretionary_expense,Net Banking,78.46,False
+TX00000779,U00004,S00004,2024-05-05,Streaming,Subscriptions,discretionary_expense,Debit Card,621.25,True
+TX00000780,U00004,S00004,2024-05-07,Entertainment,Entertainment,discretionary_expense,Cash,1366.74,False
+TX00000781,U00004,S00004,2024-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000782,U00004,S00004,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000783,U00004,S00004,2024-06-01,Salary credit,Salary,income,Net Banking,72650.93,True
+TX00000784,U00004,S00004,2024-06-03,Rent,Housing & Rent,essential_expense,Credit Card,21097.24,True
+TX00000785,U00004,S00004,2024-06-17,Groceries,Groceries,essential_expense,Cash,8706.06,True
+TX00000786,U00004,S00004,2024-06-30,Utilities,Utilities,essential_expense,Net Banking,2353.57,True
+TX00000787,U00004,S00004,2024-06-19,Transport Pass,Transportation,essential_expense,Wallet,3246.43,True
+TX00000788,U00004,S00004,2024-06-13,Dining,Food & Dining,discretionary_expense,Wallet,1265.19,False
+TX00000789,U00004,S00004,2024-06-12,Shopping,Shopping,discretionary_expense,UPI,1665.64,False
+TX00000790,U00004,S00004,2024-06-13,Streaming,Subscriptions,discretionary_expense,UPI,2201.89,True
+TX00000791,U00004,S00004,2024-06-04,Entertainment,Entertainment,discretionary_expense,Wallet,2424.75,False
+TX00000792,U00004,S00004,2024-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,15701.61,True
+TX00000793,U00004,S00004,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3446.34,True
+TX00000794,U00005,S00005,2023-01-01,Salary credit,Salary,income,Net Banking,160926.21,True
+TX00000795,U00005,S00005,2023-01-03,Rent,Housing & Rent,essential_expense,Debit Card,40118.05,True
+TX00000796,U00005,S00005,2023-01-31,Groceries,Groceries,essential_expense,Credit Card,13249.12,True
+TX00000797,U00005,S00005,2023-01-03,Utilities,Utilities,essential_expense,Cash,6063.9,True
+TX00000798,U00005,S00005,2023-01-21,Transport Pass,Transportation,essential_expense,Wallet,3985.97,True
+TX00000799,U00005,S00005,2023-01-28,Dining,Food & Dining,discretionary_expense,Wallet,3530.84,False
+TX00000800,U00005,S00005,2023-01-20,Shopping,Shopping,discretionary_expense,Debit Card,883.99,False
+TX00000801,U00005,S00005,2023-01-14,Streaming,Subscriptions,discretionary_expense,UPI,18295.51,True
+TX00000802,U00005,S00005,2023-01-14,Entertainment,Entertainment,discretionary_expense,Debit Card,2654.4,False
+TX00000803,U00005,S00005,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000804,U00005,S00005,2023-02-01,Salary credit,Salary,income,Net Banking,156548.64,True
+TX00000805,U00005,S00005,2023-02-03,Rent,Housing & Rent,essential_expense,UPI,43132.49,True
+TX00000806,U00005,S00005,2023-02-26,Groceries,Groceries,essential_expense,UPI,14902.68,True
+TX00000807,U00005,S00005,2023-02-08,Utilities,Utilities,essential_expense,UPI,5961.74,True
+TX00000808,U00005,S00005,2023-02-01,Transport Pass,Transportation,essential_expense,Wallet,4333.2,True
+TX00000809,U00005,S00005,2023-02-27,Dining,Food & Dining,discretionary_expense,UPI,1449.61,False
+TX00000810,U00005,S00005,2023-02-21,Shopping,Shopping,discretionary_expense,Cash,12874.58,False
+TX00000811,U00005,S00005,2023-02-02,Streaming,Subscriptions,discretionary_expense,Wallet,650.64,True
+TX00000812,U00005,S00005,2023-02-25,Entertainment,Entertainment,discretionary_expense,Cash,10588.43,False
+TX00000813,U00005,S00005,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000814,U00005,S00005,2023-03-01,Salary credit,Salary,income,Net Banking,157347.73,True
+TX00000815,U00005,S00005,2023-03-03,Rent,Housing & Rent,essential_expense,UPI,39624.05,True
+TX00000816,U00005,S00005,2023-03-22,Groceries,Groceries,essential_expense,Cash,12913.22,True
+TX00000817,U00005,S00005,2023-03-26,Utilities,Utilities,essential_expense,UPI,6917.56,True
+TX00000818,U00005,S00005,2023-03-31,Transport Pass,Transportation,essential_expense,Cash,4067.98,True
+TX00000819,U00005,S00005,2023-03-27,Dining,Food & Dining,discretionary_expense,Debit Card,2268.39,False
+TX00000820,U00005,S00005,2023-03-30,Shopping,Shopping,discretionary_expense,Cash,5800.08,False
+TX00000821,U00005,S00005,2023-03-04,Streaming,Subscriptions,discretionary_expense,Wallet,14236.45,True
+TX00000822,U00005,S00005,2023-03-25,Entertainment,Entertainment,discretionary_expense,Credit Card,3466.05,False
+TX00000823,U00005,S00005,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000824,U00005,S00005,2023-04-01,Salary credit,Salary,income,Net Banking,158611.11,True
+TX00000825,U00005,S00005,2023-04-03,Rent,Housing & Rent,essential_expense,Cash,42527.28,True
+TX00000826,U00005,S00005,2023-04-22,Groceries,Groceries,essential_expense,UPI,14931.77,True
+TX00000827,U00005,S00005,2023-04-18,Utilities,Utilities,essential_expense,Net Banking,6645.84,True
+TX00000828,U00005,S00005,2023-04-22,Transport Pass,Transportation,essential_expense,Debit Card,4183.62,True
+TX00000829,U00005,S00005,2023-04-06,Dining,Food & Dining,discretionary_expense,Wallet,4419.44,False
+TX00000830,U00005,S00005,2023-04-26,Shopping,Shopping,discretionary_expense,Cash,8499.13,False
+TX00000831,U00005,S00005,2023-04-03,Streaming,Subscriptions,discretionary_expense,UPI,2567.83,True
+TX00000832,U00005,S00005,2023-04-10,Entertainment,Entertainment,discretionary_expense,UPI,4869.77,False
+TX00000833,U00005,S00005,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000834,U00005,S00005,2023-05-01,Salary credit,Salary,income,Net Banking,152609.59,True
+TX00000835,U00005,S00005,2023-05-03,Rent,Housing & Rent,essential_expense,UPI,43018.59,True
+TX00000836,U00005,S00005,2023-05-07,Groceries,Groceries,essential_expense,UPI,13258.84,True
+TX00000837,U00005,S00005,2023-05-18,Utilities,Utilities,essential_expense,Debit Card,6451.16,True
+TX00000838,U00005,S00005,2023-05-29,Transport Pass,Transportation,essential_expense,Credit Card,4487.84,True
+TX00000839,U00005,S00005,2023-05-17,Dining,Food & Dining,discretionary_expense,Cash,11799.0,False
+TX00000840,U00005,S00005,2023-05-20,Shopping,Shopping,discretionary_expense,Net Banking,6432.24,False
+TX00000841,U00005,S00005,2023-05-07,Streaming,Subscriptions,discretionary_expense,Cash,470.27,True
+TX00000842,U00005,S00005,2023-05-25,Entertainment,Entertainment,discretionary_expense,Wallet,1470.64,False
+TX00000843,U00005,S00005,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000844,U00005,S00005,2023-06-01,Salary credit,Salary,income,Net Banking,153498.15,True
+TX00000845,U00005,S00005,2023-06-03,Rent,Housing & Rent,essential_expense,Cash,42846.58,True
+TX00000846,U00005,S00005,2023-06-13,Groceries,Groceries,essential_expense,Credit Card,13545.84,True
+TX00000847,U00005,S00005,2023-06-19,Utilities,Utilities,essential_expense,Credit Card,6013.4,True
+TX00000848,U00005,S00005,2023-06-06,Transport Pass,Transportation,essential_expense,Cash,4011.11,True
+TX00000849,U00005,S00005,2023-06-06,Dining,Food & Dining,discretionary_expense,Net Banking,4193.03,False
+TX00000850,U00005,S00005,2023-06-05,Shopping,Shopping,discretionary_expense,Debit Card,1966.75,False
+TX00000851,U00005,S00005,2023-06-25,Streaming,Subscriptions,discretionary_expense,Credit Card,1876.85,True
+TX00000852,U00005,S00005,2023-06-24,Entertainment,Entertainment,discretionary_expense,Net Banking,15458.35,False
+TX00000853,U00005,S00005,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000854,U00005,S00005,2023-07-01,Salary credit,Salary,income,Net Banking,160275.9,True
+TX00000855,U00005,S00005,2023-07-03,Rent,Housing & Rent,essential_expense,Wallet,42768.72,True
+TX00000856,U00005,S00005,2023-07-14,Groceries,Groceries,essential_expense,Wallet,13190.42,True
+TX00000857,U00005,S00005,2023-07-03,Utilities,Utilities,essential_expense,Net Banking,6030.63,True
+TX00000858,U00005,S00005,2023-07-19,Transport Pass,Transportation,essential_expense,Credit Card,4193.49,True
+TX00000859,U00005,S00005,2023-07-08,Dining,Food & Dining,discretionary_expense,Net Banking,2931.93,False
+TX00000860,U00005,S00005,2023-07-20,Shopping,Shopping,discretionary_expense,Cash,3666.2,False
+TX00000861,U00005,S00005,2023-07-02,Streaming,Subscriptions,discretionary_expense,Cash,2974.18,True
+TX00000862,U00005,S00005,2023-07-31,Entertainment,Entertainment,discretionary_expense,UPI,13487.21,False
+TX00000863,U00005,S00005,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000864,U00005,S00005,2023-08-01,Salary credit,Salary,income,Net Banking,157193.62,True
+TX00000865,U00005,S00005,2023-08-03,Rent,Housing & Rent,essential_expense,Debit Card,39819.42,True
+TX00000866,U00005,S00005,2023-08-10,Groceries,Groceries,essential_expense,Debit Card,12907.03,True
+TX00000867,U00005,S00005,2023-08-14,Utilities,Utilities,essential_expense,Cash,6766.69,True
+TX00000868,U00005,S00005,2023-08-25,Transport Pass,Transportation,essential_expense,Net Banking,4294.53,True
+TX00000869,U00005,S00005,2023-08-29,Dining,Food & Dining,discretionary_expense,Wallet,11958.82,False
+TX00000870,U00005,S00005,2023-08-22,Shopping,Shopping,discretionary_expense,Debit Card,3064.98,False
+TX00000871,U00005,S00005,2023-08-19,Streaming,Subscriptions,discretionary_expense,Debit Card,3017.36,True
+TX00000872,U00005,S00005,2023-08-20,Entertainment,Entertainment,discretionary_expense,Net Banking,6084.67,False
+TX00000873,U00005,S00005,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000874,U00005,S00005,2023-09-01,Salary credit,Salary,income,Net Banking,158209.72,True
+TX00000875,U00005,S00005,2023-09-03,Rent,Housing & Rent,essential_expense,Net Banking,41488.88,True
+TX00000876,U00005,S00005,2023-09-09,Groceries,Groceries,essential_expense,Cash,13794.21,True
+TX00000877,U00005,S00005,2023-09-04,Utilities,Utilities,essential_expense,UPI,6142.02,True
+TX00000878,U00005,S00005,2023-09-29,Transport Pass,Transportation,essential_expense,Net Banking,4359.65,True
+TX00000879,U00005,S00005,2023-09-05,Dining,Food & Dining,discretionary_expense,Credit Card,576.48,False
+TX00000880,U00005,S00005,2023-09-06,Shopping,Shopping,discretionary_expense,Debit Card,1983.46,False
+TX00000881,U00005,S00005,2023-09-09,Streaming,Subscriptions,discretionary_expense,Credit Card,7134.21,True
+TX00000882,U00005,S00005,2023-09-16,Entertainment,Entertainment,discretionary_expense,Credit Card,16267.53,False
+TX00000883,U00005,S00005,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000884,U00005,S00005,2023-10-01,Salary credit,Salary,income,Net Banking,159058.43,True
+TX00000885,U00005,S00005,2023-10-03,Rent,Housing & Rent,essential_expense,Wallet,41307.13,True
+TX00000886,U00005,S00005,2023-10-26,Groceries,Groceries,essential_expense,Net Banking,13162.16,True
+TX00000887,U00005,S00005,2023-10-05,Utilities,Utilities,essential_expense,UPI,6288.41,True
+TX00000888,U00005,S00005,2023-10-14,Transport Pass,Transportation,essential_expense,Debit Card,4180.58,True
+TX00000889,U00005,S00005,2023-10-08,Dining,Food & Dining,discretionary_expense,Net Banking,6330.11,False
+TX00000890,U00005,S00005,2023-10-19,Shopping,Shopping,discretionary_expense,Net Banking,1144.03,False
+TX00000891,U00005,S00005,2023-10-04,Streaming,Subscriptions,discretionary_expense,Net Banking,9717.99,True
+TX00000892,U00005,S00005,2023-10-07,Entertainment,Entertainment,discretionary_expense,Debit Card,6370.84,False
+TX00000893,U00005,S00005,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000894,U00005,S00005,2023-11-01,Salary credit,Salary,income,Net Banking,156432.68,True
+TX00000895,U00005,S00005,2023-11-03,Rent,Housing & Rent,essential_expense,Debit Card,38317.56,True
+TX00000896,U00005,S00005,2023-11-04,Groceries,Groceries,essential_expense,UPI,13574.52,True
+TX00000897,U00005,S00005,2023-11-14,Utilities,Utilities,essential_expense,Net Banking,6101.72,True
+TX00000898,U00005,S00005,2023-11-10,Transport Pass,Transportation,essential_expense,Wallet,4173.25,True
+TX00000899,U00005,S00005,2023-11-12,Dining,Food & Dining,discretionary_expense,Wallet,1684.44,False
+TX00000900,U00005,S00005,2023-11-08,Shopping,Shopping,discretionary_expense,Cash,4551.06,False
+TX00000901,U00005,S00005,2023-11-23,Streaming,Subscriptions,discretionary_expense,UPI,9179.72,True
+TX00000902,U00005,S00005,2023-11-28,Entertainment,Entertainment,discretionary_expense,Debit Card,6215.71,False
+TX00000903,U00005,S00005,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000904,U00005,S00005,2023-12-01,Salary credit,Salary,income,Net Banking,157168.4,True
+TX00000905,U00005,S00005,2023-12-03,Rent,Housing & Rent,essential_expense,Debit Card,42324.21,True
+TX00000906,U00005,S00005,2023-12-19,Groceries,Groceries,essential_expense,Debit Card,14991.81,True
+TX00000907,U00005,S00005,2023-12-15,Utilities,Utilities,essential_expense,Debit Card,6551.82,True
+TX00000908,U00005,S00005,2023-12-16,Transport Pass,Transportation,essential_expense,Debit Card,4456.69,True
+TX00000909,U00005,S00005,2023-12-14,Dining,Food & Dining,discretionary_expense,Cash,12915.62,False
+TX00000910,U00005,S00005,2023-12-24,Shopping,Shopping,discretionary_expense,Cash,4326.33,False
+TX00000911,U00005,S00005,2023-12-20,Streaming,Subscriptions,discretionary_expense,Wallet,1990.01,True
+TX00000912,U00005,S00005,2023-12-31,Entertainment,Entertainment,discretionary_expense,UPI,609.24,False
+TX00000913,U00005,S00005,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000914,U00005,S00005,2024-01-01,Salary credit,Salary,income,Net Banking,155280.9,True
+TX00000915,U00005,S00005,2024-01-03,Rent,Housing & Rent,essential_expense,Cash,41849.82,True
+TX00000916,U00005,S00005,2024-01-30,Groceries,Groceries,essential_expense,Debit Card,14656.39,True
+TX00000917,U00005,S00005,2024-01-11,Utilities,Utilities,essential_expense,Wallet,6944.41,True
+TX00000918,U00005,S00005,2024-01-18,Transport Pass,Transportation,essential_expense,Cash,4445.37,True
+TX00000919,U00005,S00005,2024-01-10,Dining,Food & Dining,discretionary_expense,Credit Card,8716.81,False
+TX00000920,U00005,S00005,2024-01-06,Shopping,Shopping,discretionary_expense,Credit Card,5991.86,False
+TX00000921,U00005,S00005,2024-01-07,Streaming,Subscriptions,discretionary_expense,Net Banking,7076.91,True
+TX00000922,U00005,S00005,2024-01-02,Entertainment,Entertainment,discretionary_expense,Cash,2167.78,False
+TX00000923,U00005,S00005,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000924,U00005,S00005,2024-02-01,Salary credit,Salary,income,Net Banking,157021.05,True
+TX00000925,U00005,S00005,2024-02-03,Rent,Housing & Rent,essential_expense,Wallet,42112.81,True
+TX00000926,U00005,S00005,2024-02-29,Groceries,Groceries,essential_expense,Net Banking,14286.51,True
+TX00000927,U00005,S00005,2024-02-13,Utilities,Utilities,essential_expense,Credit Card,6117.74,True
+TX00000928,U00005,S00005,2024-02-28,Transport Pass,Transportation,essential_expense,Credit Card,3977.24,True
+TX00000929,U00005,S00005,2024-02-10,Dining,Food & Dining,discretionary_expense,Wallet,4517.46,False
+TX00000930,U00005,S00005,2024-02-17,Shopping,Shopping,discretionary_expense,Credit Card,5168.34,False
+TX00000931,U00005,S00005,2024-02-01,Streaming,Subscriptions,discretionary_expense,Debit Card,9141.07,True
+TX00000932,U00005,S00005,2024-02-29,Entertainment,Entertainment,discretionary_expense,Debit Card,5623.78,False
+TX00000933,U00005,S00005,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000934,U00005,S00005,2024-03-01,Salary credit,Salary,income,Net Banking,158165.4,True
+TX00000935,U00005,S00005,2024-03-03,Rent,Housing & Rent,essential_expense,Wallet,41739.72,True
+TX00000936,U00005,S00005,2024-03-17,Groceries,Groceries,essential_expense,Net Banking,14487.59,True
+TX00000937,U00005,S00005,2024-03-26,Utilities,Utilities,essential_expense,Net Banking,6309.66,True
+TX00000938,U00005,S00005,2024-03-03,Transport Pass,Transportation,essential_expense,UPI,4420.01,True
+TX00000939,U00005,S00005,2024-03-13,Dining,Food & Dining,discretionary_expense,Debit Card,2954.07,False
+TX00000940,U00005,S00005,2024-03-24,Shopping,Shopping,discretionary_expense,UPI,67.4,False
+TX00000941,U00005,S00005,2024-03-12,Streaming,Subscriptions,discretionary_expense,Credit Card,10053.68,True
+TX00000942,U00005,S00005,2024-03-06,Entertainment,Entertainment,discretionary_expense,Credit Card,8104.47,False
+TX00000943,U00005,S00005,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000944,U00005,S00005,2024-04-01,Salary credit,Salary,income,Net Banking,156757.2,True
+TX00000945,U00005,S00005,2024-04-03,Rent,Housing & Rent,essential_expense,Credit Card,39844.08,True
+TX00000946,U00005,S00005,2024-04-30,Groceries,Groceries,essential_expense,UPI,14687.44,True
+TX00000947,U00005,S00005,2024-04-13,Utilities,Utilities,essential_expense,Debit Card,6581.4,True
+TX00000948,U00005,S00005,2024-04-04,Transport Pass,Transportation,essential_expense,Credit Card,4322.87,True
+TX00000949,U00005,S00005,2024-04-06,Dining,Food & Dining,discretionary_expense,Credit Card,10569.85,False
+TX00000950,U00005,S00005,2024-04-13,Shopping,Shopping,discretionary_expense,Debit Card,2972.31,False
+TX00000951,U00005,S00005,2024-04-08,Streaming,Subscriptions,discretionary_expense,Credit Card,4774.92,True
+TX00000952,U00005,S00005,2024-04-06,Entertainment,Entertainment,discretionary_expense,Net Banking,6668.85,False
+TX00000953,U00005,S00005,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000954,U00005,S00005,2024-05-01,Salary credit,Salary,income,Net Banking,157454.02,True
+TX00000955,U00005,S00005,2024-05-03,Rent,Housing & Rent,essential_expense,Cash,41911.97,True
+TX00000956,U00005,S00005,2024-05-13,Groceries,Groceries,essential_expense,Credit Card,13363.97,True
+TX00000957,U00005,S00005,2024-05-02,Utilities,Utilities,essential_expense,UPI,6202.39,True
+TX00000958,U00005,S00005,2024-05-06,Transport Pass,Transportation,essential_expense,Net Banking,4030.44,True
+TX00000959,U00005,S00005,2024-05-20,Dining,Food & Dining,discretionary_expense,Debit Card,394.4,False
+TX00000960,U00005,S00005,2024-05-25,Shopping,Shopping,discretionary_expense,UPI,18250.08,False
+TX00000961,U00005,S00005,2024-05-07,Streaming,Subscriptions,discretionary_expense,Debit Card,3019.24,True
+TX00000962,U00005,S00005,2024-05-29,Entertainment,Entertainment,discretionary_expense,Cash,3963.57,False
+TX00000963,U00005,S00005,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000964,U00005,S00005,2024-06-01,Salary credit,Salary,income,Net Banking,151223.59,True
+TX00000965,U00005,S00005,2024-06-03,Rent,Housing & Rent,essential_expense,Wallet,38233.82,True
+TX00000966,U00005,S00005,2024-06-04,Groceries,Groceries,essential_expense,Net Banking,12885.27,True
+TX00000967,U00005,S00005,2024-06-30,Utilities,Utilities,essential_expense,Debit Card,6813.24,True
+TX00000968,U00005,S00005,2024-06-02,Transport Pass,Transportation,essential_expense,Wallet,4064.72,True
+TX00000969,U00005,S00005,2024-06-06,Dining,Food & Dining,discretionary_expense,Cash,5227.79,False
+TX00000970,U00005,S00005,2024-06-30,Shopping,Shopping,discretionary_expense,Net Banking,15443.05,False
+TX00000971,U00005,S00005,2024-06-02,Streaming,Subscriptions,discretionary_expense,Net Banking,500.48,True
+TX00000972,U00005,S00005,2024-06-05,Entertainment,Entertainment,discretionary_expense,Net Banking,5095.54,False
+TX00000973,U00005,S00005,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,17685.96,True
+TX00000974,U00006,S00006,2023-01-01,Salary credit,Salary,income,Net Banking,86503.1,True
+TX00000975,U00006,S00006,2023-01-03,Rent,Housing & Rent,essential_expense,UPI,25960.21,True
+TX00000976,U00006,S00006,2023-01-09,Groceries,Groceries,essential_expense,Cash,10372.01,True
+TX00000977,U00006,S00006,2023-01-25,Utilities,Utilities,essential_expense,Cash,2243.52,True
+TX00000978,U00006,S00006,2023-01-12,Transport Pass,Transportation,essential_expense,Cash,4239.54,True
+TX00000979,U00006,S00006,2023-01-31,Dining,Food & Dining,discretionary_expense,Debit Card,3069.05,False
+TX00000980,U00006,S00006,2023-01-28,Shopping,Shopping,discretionary_expense,Net Banking,9390.73,False
+TX00000981,U00006,S00006,2023-01-10,Streaming,Subscriptions,discretionary_expense,Credit Card,1149.54,True
+TX00000982,U00006,S00006,2023-01-24,Entertainment,Entertainment,discretionary_expense,Credit Card,181.38,False
+TX00000983,U00006,S00006,2023-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00000984,U00006,S00006,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00000985,U00006,S00006,2023-02-01,Salary credit,Salary,income,Net Banking,87335.27,True
+TX00000986,U00006,S00006,2023-02-03,Rent,Housing & Rent,essential_expense,Debit Card,24950.36,True
+TX00000987,U00006,S00006,2023-02-23,Groceries,Groceries,essential_expense,Wallet,10133.91,True
+TX00000988,U00006,S00006,2023-02-22,Utilities,Utilities,essential_expense,UPI,2123.08,True
+TX00000989,U00006,S00006,2023-02-24,Transport Pass,Transportation,essential_expense,Debit Card,3962.09,True
+TX00000990,U00006,S00006,2023-02-12,Dining,Food & Dining,discretionary_expense,Wallet,7285.57,False
+TX00000991,U00006,S00006,2023-02-25,Shopping,Shopping,discretionary_expense,UPI,1666.97,False
+TX00000992,U00006,S00006,2023-02-11,Streaming,Subscriptions,discretionary_expense,Net Banking,2312.63,True
+TX00000993,U00006,S00006,2023-02-16,Entertainment,Entertainment,discretionary_expense,Credit Card,565.0,False
+TX00000994,U00006,S00006,2023-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00000995,U00006,S00006,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00000996,U00006,S00006,2023-03-01,Salary credit,Salary,income,Net Banking,79002.62,True
+TX00000997,U00006,S00006,2023-03-03,Rent,Housing & Rent,essential_expense,Debit Card,25291.36,True
+TX00000998,U00006,S00006,2023-03-23,Groceries,Groceries,essential_expense,UPI,10220.33,True
+TX00000999,U00006,S00006,2023-03-20,Utilities,Utilities,essential_expense,Debit Card,2193.47,True
+TX00001000,U00006,S00006,2023-03-24,Transport Pass,Transportation,essential_expense,Wallet,4168.58,True
+TX00001001,U00006,S00006,2023-03-17,Dining,Food & Dining,discretionary_expense,UPI,12078.82,False
+TX00001002,U00006,S00006,2023-03-15,Shopping,Shopping,discretionary_expense,UPI,919.79,False
+TX00001003,U00006,S00006,2023-03-14,Streaming,Subscriptions,discretionary_expense,UPI,1085.17,True
+TX00001004,U00006,S00006,2023-03-20,Entertainment,Entertainment,discretionary_expense,Credit Card,15.45,False
+TX00001005,U00006,S00006,2023-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001006,U00006,S00006,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001007,U00006,S00006,2023-04-01,Salary credit,Salary,income,Net Banking,83284.09,True
+TX00001008,U00006,S00006,2023-04-03,Rent,Housing & Rent,essential_expense,Credit Card,25547.1,True
+TX00001009,U00006,S00006,2023-04-09,Groceries,Groceries,essential_expense,Credit Card,9394.57,True
+TX00001010,U00006,S00006,2023-04-04,Utilities,Utilities,essential_expense,UPI,2326.82,True
+TX00001011,U00006,S00006,2023-04-06,Transport Pass,Transportation,essential_expense,UPI,3909.58,True
+TX00001012,U00006,S00006,2023-04-12,Dining,Food & Dining,discretionary_expense,UPI,5890.99,False
+TX00001013,U00006,S00006,2023-04-02,Shopping,Shopping,discretionary_expense,Wallet,3579.55,False
+TX00001014,U00006,S00006,2023-04-03,Streaming,Subscriptions,discretionary_expense,UPI,1047.89,True
+TX00001015,U00006,S00006,2023-04-01,Entertainment,Entertainment,discretionary_expense,UPI,645.64,False
+TX00001016,U00006,S00006,2023-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001017,U00006,S00006,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001018,U00006,S00006,2023-05-01,Salary credit,Salary,income,Net Banking,80554.29,True
+TX00001019,U00006,S00006,2023-05-03,Rent,Housing & Rent,essential_expense,Credit Card,24645.74,True
+TX00001020,U00006,S00006,2023-05-15,Groceries,Groceries,essential_expense,UPI,10048.93,True
+TX00001021,U00006,S00006,2023-05-06,Utilities,Utilities,essential_expense,Debit Card,2346.05,True
+TX00001022,U00006,S00006,2023-05-25,Transport Pass,Transportation,essential_expense,Net Banking,4401.44,True
+TX00001023,U00006,S00006,2023-05-09,Dining,Food & Dining,discretionary_expense,Debit Card,2106.13,False
+TX00001024,U00006,S00006,2023-05-05,Shopping,Shopping,discretionary_expense,Net Banking,1148.35,False
+TX00001025,U00006,S00006,2023-05-08,Streaming,Subscriptions,discretionary_expense,Net Banking,5926.37,True
+TX00001026,U00006,S00006,2023-05-27,Entertainment,Entertainment,discretionary_expense,Net Banking,2641.1,False
+TX00001027,U00006,S00006,2023-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001028,U00006,S00006,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001029,U00006,S00006,2023-06-01,Salary credit,Salary,income,Net Banking,86219.89,True
+TX00001030,U00006,S00006,2023-06-03,Rent,Housing & Rent,essential_expense,Credit Card,25720.96,True
+TX00001031,U00006,S00006,2023-06-08,Groceries,Groceries,essential_expense,Credit Card,8975.91,True
+TX00001032,U00006,S00006,2023-06-11,Utilities,Utilities,essential_expense,Cash,2395.36,True
+TX00001033,U00006,S00006,2023-06-09,Transport Pass,Transportation,essential_expense,Cash,4020.17,True
+TX00001034,U00006,S00006,2023-06-14,Dining,Food & Dining,discretionary_expense,Cash,469.11,False
+TX00001035,U00006,S00006,2023-06-05,Shopping,Shopping,discretionary_expense,Cash,6219.11,False
+TX00001036,U00006,S00006,2023-06-28,Streaming,Subscriptions,discretionary_expense,UPI,2976.21,True
+TX00001037,U00006,S00006,2023-06-10,Entertainment,Entertainment,discretionary_expense,Net Banking,2985.84,False
+TX00001038,U00006,S00006,2023-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001039,U00006,S00006,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001040,U00006,S00006,2023-07-01,Salary credit,Salary,income,Net Banking,81126.99,True
+TX00001041,U00006,S00006,2023-07-03,Rent,Housing & Rent,essential_expense,Wallet,25044.22,True
+TX00001042,U00006,S00006,2023-07-26,Groceries,Groceries,essential_expense,Debit Card,8970.25,True
+TX00001043,U00006,S00006,2023-07-17,Utilities,Utilities,essential_expense,UPI,2278.37,True
+TX00001044,U00006,S00006,2023-07-24,Transport Pass,Transportation,essential_expense,Wallet,4087.44,True
+TX00001045,U00006,S00006,2023-07-15,Dining,Food & Dining,discretionary_expense,Cash,1035.94,False
+TX00001046,U00006,S00006,2023-07-16,Shopping,Shopping,discretionary_expense,UPI,987.2,False
+TX00001047,U00006,S00006,2023-07-20,Streaming,Subscriptions,discretionary_expense,Net Banking,2704.27,True
+TX00001048,U00006,S00006,2023-07-29,Entertainment,Entertainment,discretionary_expense,Wallet,6689.24,False
+TX00001049,U00006,S00006,2023-07-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001050,U00006,S00006,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001051,U00006,S00006,2023-08-01,Salary credit,Salary,income,Net Banking,84600.94,True
+TX00001052,U00006,S00006,2023-08-03,Rent,Housing & Rent,essential_expense,Debit Card,24730.45,True
+TX00001053,U00006,S00006,2023-08-16,Groceries,Groceries,essential_expense,Debit Card,9992.09,True
+TX00001054,U00006,S00006,2023-08-19,Utilities,Utilities,essential_expense,Credit Card,2140.5,True
+TX00001055,U00006,S00006,2023-08-14,Transport Pass,Transportation,essential_expense,Credit Card,4158.22,True
+TX00001056,U00006,S00006,2023-08-05,Dining,Food & Dining,discretionary_expense,UPI,775.13,False
+TX00001057,U00006,S00006,2023-08-19,Shopping,Shopping,discretionary_expense,UPI,10350.27,False
+TX00001058,U00006,S00006,2023-08-21,Streaming,Subscriptions,discretionary_expense,Debit Card,1450.43,True
+TX00001059,U00006,S00006,2023-08-12,Entertainment,Entertainment,discretionary_expense,Net Banking,1537.1,False
+TX00001060,U00006,S00006,2023-08-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001061,U00006,S00006,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001062,U00006,S00006,2023-09-01,Salary credit,Salary,income,Net Banking,77349.75,True
+TX00001063,U00006,S00006,2023-09-03,Rent,Housing & Rent,essential_expense,Credit Card,22511.84,True
+TX00001064,U00006,S00006,2023-09-23,Groceries,Groceries,essential_expense,UPI,9734.06,True
+TX00001065,U00006,S00006,2023-09-07,Utilities,Utilities,essential_expense,Credit Card,2170.81,True
+TX00001066,U00006,S00006,2023-09-28,Transport Pass,Transportation,essential_expense,Wallet,4440.53,True
+TX00001067,U00006,S00006,2023-09-16,Dining,Food & Dining,discretionary_expense,UPI,1537.72,False
+TX00001068,U00006,S00006,2023-09-23,Shopping,Shopping,discretionary_expense,Debit Card,4169.15,False
+TX00001069,U00006,S00006,2023-09-26,Streaming,Subscriptions,discretionary_expense,Debit Card,2219.82,True
+TX00001070,U00006,S00006,2023-09-30,Entertainment,Entertainment,discretionary_expense,Net Banking,4141.39,False
+TX00001071,U00006,S00006,2023-09-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001072,U00006,S00006,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001073,U00006,S00006,2023-10-01,Salary credit,Salary,income,Net Banking,84822.88,True
+TX00001074,U00006,S00006,2023-10-03,Rent,Housing & Rent,essential_expense,Credit Card,23361.69,True
+TX00001075,U00006,S00006,2023-10-10,Groceries,Groceries,essential_expense,Credit Card,9261.04,True
+TX00001076,U00006,S00006,2023-10-12,Utilities,Utilities,essential_expense,Cash,2328.23,True
+TX00001077,U00006,S00006,2023-10-21,Transport Pass,Transportation,essential_expense,Net Banking,4475.34,True
+TX00001078,U00006,S00006,2023-10-07,Dining,Food & Dining,discretionary_expense,Credit Card,3693.07,False
+TX00001079,U00006,S00006,2023-10-30,Shopping,Shopping,discretionary_expense,Debit Card,3808.39,False
+TX00001080,U00006,S00006,2023-10-08,Streaming,Subscriptions,discretionary_expense,Wallet,3526.68,True
+TX00001081,U00006,S00006,2023-10-14,Entertainment,Entertainment,discretionary_expense,Wallet,2975.97,False
+TX00001082,U00006,S00006,2023-10-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001083,U00006,S00006,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001084,U00006,S00006,2023-11-01,Salary credit,Salary,income,Net Banking,83064.38,True
+TX00001085,U00006,S00006,2023-11-03,Rent,Housing & Rent,essential_expense,Net Banking,25495.3,True
+TX00001086,U00006,S00006,2023-11-11,Groceries,Groceries,essential_expense,Debit Card,9270.68,True
+TX00001087,U00006,S00006,2023-11-10,Utilities,Utilities,essential_expense,Cash,2232.05,True
+TX00001088,U00006,S00006,2023-11-04,Transport Pass,Transportation,essential_expense,Debit Card,4179.19,True
+TX00001089,U00006,S00006,2023-11-06,Dining,Food & Dining,discretionary_expense,Cash,3468.32,False
+TX00001090,U00006,S00006,2023-11-26,Shopping,Shopping,discretionary_expense,Wallet,3576.94,False
+TX00001091,U00006,S00006,2023-11-14,Streaming,Subscriptions,discretionary_expense,UPI,4669.43,True
+TX00001092,U00006,S00006,2023-11-07,Entertainment,Entertainment,discretionary_expense,UPI,1606.14,False
+TX00001093,U00006,S00006,2023-11-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001094,U00006,S00006,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001095,U00006,S00006,2023-12-01,Salary credit,Salary,income,Net Banking,79929.37,True
+TX00001096,U00006,S00006,2023-12-03,Rent,Housing & Rent,essential_expense,Net Banking,22469.04,True
+TX00001097,U00006,S00006,2023-12-01,Groceries,Groceries,essential_expense,Wallet,9343.43,True
+TX00001098,U00006,S00006,2023-12-04,Utilities,Utilities,essential_expense,UPI,2179.16,True
+TX00001099,U00006,S00006,2023-12-17,Transport Pass,Transportation,essential_expense,Cash,4251.25,True
+TX00001100,U00006,S00006,2023-12-08,Dining,Food & Dining,discretionary_expense,Debit Card,1248.47,False
+TX00001101,U00006,S00006,2023-12-21,Shopping,Shopping,discretionary_expense,Debit Card,1133.5,False
+TX00001102,U00006,S00006,2023-12-12,Streaming,Subscriptions,discretionary_expense,UPI,572.71,True
+TX00001103,U00006,S00006,2023-12-15,Entertainment,Entertainment,discretionary_expense,Net Banking,7661.27,False
+TX00001104,U00006,S00006,2023-12-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001105,U00006,S00006,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001106,U00006,S00006,2024-01-01,Salary credit,Salary,income,Net Banking,55505.82,True
+TX00001107,U00006,S00006,2024-01-03,Rent,Housing & Rent,essential_expense,Wallet,22429.56,True
+TX00001108,U00006,S00006,2024-01-30,Groceries,Groceries,essential_expense,Wallet,9131.26,True
+TX00001109,U00006,S00006,2024-01-16,Utilities,Utilities,essential_expense,Cash,2446.42,True
+TX00001110,U00006,S00006,2024-01-10,Transport Pass,Transportation,essential_expense,Wallet,4180.66,True
+TX00001111,U00006,S00006,2024-01-15,Dining,Food & Dining,discretionary_expense,Net Banking,783.38,False
+TX00001112,U00006,S00006,2024-01-12,Shopping,Shopping,discretionary_expense,Net Banking,645.62,False
+TX00001113,U00006,S00006,2024-01-07,Streaming,Subscriptions,discretionary_expense,Net Banking,9998.57,True
+TX00001114,U00006,S00006,2024-01-02,Entertainment,Entertainment,discretionary_expense,UPI,1336.46,False
+TX00001115,U00006,S00006,2024-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001116,U00006,S00006,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001117,U00006,S00006,2024-02-01,Salary credit,Salary,income,Net Banking,53789.39,True
+TX00001118,U00006,S00006,2024-02-03,Rent,Housing & Rent,essential_expense,Debit Card,22458.46,True
+TX00001119,U00006,S00006,2024-02-19,Groceries,Groceries,essential_expense,Cash,9532.59,True
+TX00001120,U00006,S00006,2024-02-21,Utilities,Utilities,essential_expense,Credit Card,2350.87,True
+TX00001121,U00006,S00006,2024-02-06,Transport Pass,Transportation,essential_expense,UPI,4221.08,True
+TX00001122,U00006,S00006,2024-02-26,Dining,Food & Dining,discretionary_expense,Credit Card,209.88,False
+TX00001123,U00006,S00006,2024-02-17,Shopping,Shopping,discretionary_expense,Debit Card,8875.2,False
+TX00001124,U00006,S00006,2024-02-05,Streaming,Subscriptions,discretionary_expense,Debit Card,2789.28,True
+TX00001125,U00006,S00006,2024-02-03,Entertainment,Entertainment,discretionary_expense,Credit Card,427.1,False
+TX00001126,U00006,S00006,2024-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001127,U00006,S00006,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001128,U00006,S00006,2024-03-01,Salary credit,Salary,income,Net Banking,52366.66,True
+TX00001129,U00006,S00006,2024-03-03,Rent,Housing & Rent,essential_expense,Credit Card,25990.68,True
+TX00001130,U00006,S00006,2024-03-29,Groceries,Groceries,essential_expense,Credit Card,9166.29,True
+TX00001131,U00006,S00006,2024-03-31,Utilities,Utilities,essential_expense,Credit Card,2455.86,True
+TX00001132,U00006,S00006,2024-03-18,Transport Pass,Transportation,essential_expense,Net Banking,3827.84,True
+TX00001133,U00006,S00006,2024-03-03,Dining,Food & Dining,discretionary_expense,UPI,2776.18,False
+TX00001134,U00006,S00006,2024-03-27,Shopping,Shopping,discretionary_expense,UPI,7682.49,False
+TX00001135,U00006,S00006,2024-03-20,Streaming,Subscriptions,discretionary_expense,Wallet,32.14,True
+TX00001136,U00006,S00006,2024-03-20,Entertainment,Entertainment,discretionary_expense,Debit Card,3651.87,False
+TX00001137,U00006,S00006,2024-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001138,U00006,S00006,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001139,U00006,S00006,2024-04-01,Salary credit,Salary,income,Net Banking,57196.43,True
+TX00001140,U00006,S00006,2024-04-03,Rent,Housing & Rent,essential_expense,Debit Card,22984.61,True
+TX00001141,U00006,S00006,2024-04-04,Groceries,Groceries,essential_expense,Net Banking,9995.56,True
+TX00001142,U00006,S00006,2024-04-01,Utilities,Utilities,essential_expense,Debit Card,2141.67,True
+TX00001143,U00006,S00006,2024-04-30,Transport Pass,Transportation,essential_expense,Credit Card,4300.3,True
+TX00001144,U00006,S00006,2024-04-12,Dining,Food & Dining,discretionary_expense,Credit Card,6744.09,False
+TX00001145,U00006,S00006,2024-04-22,Shopping,Shopping,discretionary_expense,Debit Card,1584.24,False
+TX00001146,U00006,S00006,2024-04-18,Streaming,Subscriptions,discretionary_expense,Wallet,3331.42,True
+TX00001147,U00006,S00006,2024-04-16,Entertainment,Entertainment,discretionary_expense,Net Banking,2480.17,False
+TX00001148,U00006,S00006,2024-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001149,U00006,S00006,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001150,U00006,S00006,2024-05-01,Salary credit,Salary,income,Net Banking,51735.98,True
+TX00001151,U00006,S00006,2024-05-03,Rent,Housing & Rent,essential_expense,Cash,25733.23,True
+TX00001152,U00006,S00006,2024-05-05,Groceries,Groceries,essential_expense,Debit Card,9438.67,True
+TX00001153,U00006,S00006,2024-05-03,Utilities,Utilities,essential_expense,Net Banking,2427.24,True
+TX00001154,U00006,S00006,2024-05-21,Transport Pass,Transportation,essential_expense,Wallet,3976.39,True
+TX00001155,U00006,S00006,2024-05-11,Dining,Food & Dining,discretionary_expense,Credit Card,6543.17,False
+TX00001156,U00006,S00006,2024-05-03,Shopping,Shopping,discretionary_expense,Debit Card,4299.34,False
+TX00001157,U00006,S00006,2024-05-15,Streaming,Subscriptions,discretionary_expense,Net Banking,268.26,True
+TX00001158,U00006,S00006,2024-05-24,Entertainment,Entertainment,discretionary_expense,UPI,3095.53,False
+TX00001159,U00006,S00006,2024-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001160,U00006,S00006,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001161,U00006,S00006,2024-06-01,Salary credit,Salary,income,Net Banking,50756.05,True
+TX00001162,U00006,S00006,2024-06-03,Rent,Housing & Rent,essential_expense,Credit Card,25679.26,True
+TX00001163,U00006,S00006,2024-06-09,Groceries,Groceries,essential_expense,UPI,9657.18,True
+TX00001164,U00006,S00006,2024-06-09,Utilities,Utilities,essential_expense,UPI,2423.93,True
+TX00001165,U00006,S00006,2024-06-06,Transport Pass,Transportation,essential_expense,Net Banking,4112.23,True
+TX00001166,U00006,S00006,2024-06-04,Dining,Food & Dining,discretionary_expense,UPI,2954.73,False
+TX00001167,U00006,S00006,2024-06-17,Shopping,Shopping,discretionary_expense,Credit Card,5561.95,False
+TX00001168,U00006,S00006,2024-06-14,Streaming,Subscriptions,discretionary_expense,UPI,305.89,True
+TX00001169,U00006,S00006,2024-06-07,Entertainment,Entertainment,discretionary_expense,Debit Card,3531.84,False
+TX00001170,U00006,S00006,2024-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,10098.05,True
+TX00001171,U00006,S00006,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,5774.04,True
+TX00001172,U00007,S00007,2023-01-01,Freelance credit,Salary,income,Net Banking,99650.88,True
+TX00001173,U00007,S00007,2023-01-03,Rent,Housing & Rent,essential_expense,Wallet,19752.11,True
+TX00001174,U00007,S00007,2023-01-09,Groceries,Groceries,essential_expense,Net Banking,5987.27,True
+TX00001175,U00007,S00007,2023-01-25,Utilities,Utilities,essential_expense,Cash,2735.72,True
+TX00001176,U00007,S00007,2023-01-20,Transport Pass,Transportation,essential_expense,Credit Card,3615.08,True
+TX00001177,U00007,S00007,2023-01-29,Dining,Food & Dining,discretionary_expense,Wallet,1022.24,False
+TX00001178,U00007,S00007,2023-01-31,Shopping,Shopping,discretionary_expense,Net Banking,5782.93,False
+TX00001179,U00007,S00007,2023-01-02,Streaming,Subscriptions,discretionary_expense,Debit Card,83.51,True
+TX00001180,U00007,S00007,2023-01-14,Entertainment,Entertainment,discretionary_expense,Wallet,6118.03,False
+TX00001181,U00007,S00007,2023-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001182,U00007,S00007,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001183,U00007,S00007,2023-02-01,Freelance credit,Salary,income,Net Banking,102055.85,True
+TX00001184,U00007,S00007,2023-02-03,Rent,Housing & Rent,essential_expense,Cash,19188.26,True
+TX00001185,U00007,S00007,2023-02-01,Groceries,Groceries,essential_expense,UPI,6618.74,True
+TX00001186,U00007,S00007,2023-02-06,Utilities,Utilities,essential_expense,UPI,2556.17,True
+TX00001187,U00007,S00007,2023-02-21,Transport Pass,Transportation,essential_expense,Wallet,3832.72,True
+TX00001188,U00007,S00007,2023-02-28,Dining,Food & Dining,discretionary_expense,Credit Card,1074.27,False
+TX00001189,U00007,S00007,2023-02-23,Shopping,Shopping,discretionary_expense,Cash,1054.61,False
+TX00001190,U00007,S00007,2023-02-02,Streaming,Subscriptions,discretionary_expense,UPI,3595.9,True
+TX00001191,U00007,S00007,2023-02-16,Entertainment,Entertainment,discretionary_expense,Debit Card,6237.08,False
+TX00001192,U00007,S00007,2023-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001193,U00007,S00007,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001194,U00007,S00007,2023-03-01,Freelance credit,Salary,income,Net Banking,103053.6,True
+TX00001195,U00007,S00007,2023-03-03,Rent,Housing & Rent,essential_expense,Credit Card,19712.01,True
+TX00001196,U00007,S00007,2023-03-17,Groceries,Groceries,essential_expense,Wallet,6602.52,True
+TX00001197,U00007,S00007,2023-03-31,Utilities,Utilities,essential_expense,Credit Card,2663.71,True
+TX00001198,U00007,S00007,2023-03-06,Transport Pass,Transportation,essential_expense,Net Banking,3864.88,True
+TX00001199,U00007,S00007,2023-03-10,Dining,Food & Dining,discretionary_expense,Credit Card,3671.77,False
+TX00001200,U00007,S00007,2023-03-01,Shopping,Shopping,discretionary_expense,Debit Card,3403.56,False
+TX00001201,U00007,S00007,2023-03-13,Streaming,Subscriptions,discretionary_expense,Cash,445.45,True
+TX00001202,U00007,S00007,2023-03-07,Entertainment,Entertainment,discretionary_expense,Net Banking,4133.78,False
+TX00001203,U00007,S00007,2023-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001204,U00007,S00007,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001205,U00007,S00007,2023-04-01,Freelance credit,Salary,income,Net Banking,105361.89,True
+TX00001206,U00007,S00007,2023-04-03,Rent,Housing & Rent,essential_expense,Net Banking,20255.53,True
+TX00001207,U00007,S00007,2023-04-08,Groceries,Groceries,essential_expense,Credit Card,5907.35,True
+TX00001208,U00007,S00007,2023-04-02,Utilities,Utilities,essential_expense,Wallet,2706.44,True
+TX00001209,U00007,S00007,2023-04-13,Transport Pass,Transportation,essential_expense,Debit Card,3768.68,True
+TX00001210,U00007,S00007,2023-04-23,Dining,Food & Dining,discretionary_expense,UPI,1349.57,False
+TX00001211,U00007,S00007,2023-04-17,Shopping,Shopping,discretionary_expense,Debit Card,3492.25,False
+TX00001212,U00007,S00007,2023-04-17,Streaming,Subscriptions,discretionary_expense,UPI,945.62,True
+TX00001213,U00007,S00007,2023-04-29,Entertainment,Entertainment,discretionary_expense,Credit Card,6525.42,False
+TX00001214,U00007,S00007,2023-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001215,U00007,S00007,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001216,U00007,S00007,2023-05-01,Freelance credit,Salary,income,Net Banking,102564.59,True
+TX00001217,U00007,S00007,2023-05-03,Rent,Housing & Rent,essential_expense,Net Banking,20672.1,True
+TX00001218,U00007,S00007,2023-05-06,Groceries,Groceries,essential_expense,Debit Card,6568.9,True
+TX00001219,U00007,S00007,2023-05-20,Utilities,Utilities,essential_expense,Debit Card,2817.85,True
+TX00001220,U00007,S00007,2023-05-01,Transport Pass,Transportation,essential_expense,UPI,3992.06,True
+TX00001221,U00007,S00007,2023-05-29,Dining,Food & Dining,discretionary_expense,Cash,4240.28,False
+TX00001222,U00007,S00007,2023-05-09,Shopping,Shopping,discretionary_expense,Credit Card,5899.47,False
+TX00001223,U00007,S00007,2023-05-02,Streaming,Subscriptions,discretionary_expense,Wallet,408.58,True
+TX00001224,U00007,S00007,2023-05-04,Entertainment,Entertainment,discretionary_expense,Net Banking,1624.59,False
+TX00001225,U00007,S00007,2023-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001226,U00007,S00007,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001227,U00007,S00007,2023-06-01,Freelance credit,Salary,income,Net Banking,99776.58,True
+TX00001228,U00007,S00007,2023-06-03,Rent,Housing & Rent,essential_expense,Credit Card,18231.49,True
+TX00001229,U00007,S00007,2023-06-07,Groceries,Groceries,essential_expense,Credit Card,5922.95,True
+TX00001230,U00007,S00007,2023-06-09,Utilities,Utilities,essential_expense,Net Banking,2634.5,True
+TX00001231,U00007,S00007,2023-06-18,Transport Pass,Transportation,essential_expense,Wallet,3787.07,True
+TX00001232,U00007,S00007,2023-06-11,Dining,Food & Dining,discretionary_expense,Wallet,3183.36,False
+TX00001233,U00007,S00007,2023-06-02,Shopping,Shopping,discretionary_expense,Cash,4408.19,False
+TX00001234,U00007,S00007,2023-06-24,Streaming,Subscriptions,discretionary_expense,Cash,2324.22,True
+TX00001235,U00007,S00007,2023-06-28,Entertainment,Entertainment,discretionary_expense,Credit Card,420.16,False
+TX00001236,U00007,S00007,2023-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001237,U00007,S00007,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001238,U00007,S00007,2023-07-01,Freelance credit,Salary,income,Net Banking,103014.61,True
+TX00001239,U00007,S00007,2023-07-03,Rent,Housing & Rent,essential_expense,Wallet,20539.1,True
+TX00001240,U00007,S00007,2023-07-31,Groceries,Groceries,essential_expense,Debit Card,6477.9,True
+TX00001241,U00007,S00007,2023-07-24,Utilities,Utilities,essential_expense,UPI,2945.95,True
+TX00001242,U00007,S00007,2023-07-03,Transport Pass,Transportation,essential_expense,Credit Card,3821.5,True
+TX00001243,U00007,S00007,2023-07-21,Dining,Food & Dining,discretionary_expense,UPI,1412.59,False
+TX00001244,U00007,S00007,2023-07-02,Shopping,Shopping,discretionary_expense,Net Banking,2938.17,False
+TX00001245,U00007,S00007,2023-07-24,Streaming,Subscriptions,discretionary_expense,Net Banking,1886.03,True
+TX00001246,U00007,S00007,2023-07-25,Entertainment,Entertainment,discretionary_expense,Net Banking,4349.13,False
+TX00001247,U00007,S00007,2023-07-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001248,U00007,S00007,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001249,U00007,S00007,2023-08-01,Freelance credit,Salary,income,Net Banking,96288.41,True
+TX00001250,U00007,S00007,2023-08-03,Rent,Housing & Rent,essential_expense,Cash,18436.65,True
+TX00001251,U00007,S00007,2023-08-06,Groceries,Groceries,essential_expense,Credit Card,5919.58,True
+TX00001252,U00007,S00007,2023-08-27,Utilities,Utilities,essential_expense,Wallet,2732.57,True
+TX00001253,U00007,S00007,2023-08-29,Transport Pass,Transportation,essential_expense,Debit Card,3579.34,True
+TX00001254,U00007,S00007,2023-08-24,Dining,Food & Dining,discretionary_expense,Credit Card,1398.65,False
+TX00001255,U00007,S00007,2023-08-23,Shopping,Shopping,discretionary_expense,Cash,858.84,False
+TX00001256,U00007,S00007,2023-08-02,Streaming,Subscriptions,discretionary_expense,Debit Card,6645.59,True
+TX00001257,U00007,S00007,2023-08-15,Entertainment,Entertainment,discretionary_expense,Credit Card,4521.5,False
+TX00001258,U00007,S00007,2023-08-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001259,U00007,S00007,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001260,U00007,S00007,2023-09-01,Freelance credit,Salary,income,Net Banking,100813.38,True
+TX00001261,U00007,S00007,2023-09-03,Rent,Housing & Rent,essential_expense,Cash,18606.63,True
+TX00001262,U00007,S00007,2023-09-26,Groceries,Groceries,essential_expense,UPI,5994.24,True
+TX00001263,U00007,S00007,2023-09-05,Utilities,Utilities,essential_expense,Wallet,2799.78,True
+TX00001264,U00007,S00007,2023-09-16,Transport Pass,Transportation,essential_expense,Cash,3808.56,True
+TX00001265,U00007,S00007,2023-09-06,Dining,Food & Dining,discretionary_expense,Credit Card,2312.13,False
+TX00001266,U00007,S00007,2023-09-25,Shopping,Shopping,discretionary_expense,Credit Card,742.47,False
+TX00001267,U00007,S00007,2023-09-18,Streaming,Subscriptions,discretionary_expense,Credit Card,3580.87,True
+TX00001268,U00007,S00007,2023-09-08,Entertainment,Entertainment,discretionary_expense,UPI,7107.96,False
+TX00001269,U00007,S00007,2023-09-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001270,U00007,S00007,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001271,U00007,S00007,2023-10-01,Freelance credit,Salary,income,Net Banking,112941.9,True
+TX00001272,U00007,S00007,2023-10-03,Rent,Housing & Rent,essential_expense,Wallet,19905.74,True
+TX00001273,U00007,S00007,2023-10-12,Groceries,Groceries,essential_expense,UPI,6356.84,True
+TX00001274,U00007,S00007,2023-10-13,Utilities,Utilities,essential_expense,Wallet,2575.06,True
+TX00001275,U00007,S00007,2023-10-09,Transport Pass,Transportation,essential_expense,Wallet,3922.54,True
+TX00001276,U00007,S00007,2023-10-09,Dining,Food & Dining,discretionary_expense,Credit Card,8155.02,False
+TX00001277,U00007,S00007,2023-10-09,Shopping,Shopping,discretionary_expense,Credit Card,747.34,False
+TX00001278,U00007,S00007,2023-10-04,Streaming,Subscriptions,discretionary_expense,Cash,814.39,True
+TX00001279,U00007,S00007,2023-10-11,Entertainment,Entertainment,discretionary_expense,Net Banking,2925.05,False
+TX00001280,U00007,S00007,2023-10-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001281,U00007,S00007,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001282,U00007,S00007,2023-11-01,Freelance credit,Salary,income,Net Banking,97635.44,True
+TX00001283,U00007,S00007,2023-11-03,Rent,Housing & Rent,essential_expense,Cash,18620.79,True
+TX00001284,U00007,S00007,2023-11-28,Groceries,Groceries,essential_expense,Cash,5750.84,True
+TX00001285,U00007,S00007,2023-11-29,Utilities,Utilities,essential_expense,Debit Card,2992.17,True
+TX00001286,U00007,S00007,2023-11-10,Transport Pass,Transportation,essential_expense,Credit Card,3834.48,True
+TX00001287,U00007,S00007,2023-11-11,Dining,Food & Dining,discretionary_expense,Net Banking,4300.5,False
+TX00001288,U00007,S00007,2023-11-14,Shopping,Shopping,discretionary_expense,Net Banking,302.78,False
+TX00001289,U00007,S00007,2023-11-13,Streaming,Subscriptions,discretionary_expense,Credit Card,4772.51,True
+TX00001290,U00007,S00007,2023-11-06,Entertainment,Entertainment,discretionary_expense,Cash,1281.28,False
+TX00001291,U00007,S00007,2023-11-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001292,U00007,S00007,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001293,U00007,S00007,2023-12-01,Freelance credit,Salary,income,Net Banking,101167.27,True
+TX00001294,U00007,S00007,2023-12-03,Rent,Housing & Rent,essential_expense,Wallet,20351.56,True
+TX00001295,U00007,S00007,2023-12-13,Groceries,Groceries,essential_expense,Wallet,5714.49,True
+TX00001296,U00007,S00007,2023-12-16,Utilities,Utilities,essential_expense,UPI,2566.15,True
+TX00001297,U00007,S00007,2023-12-27,Transport Pass,Transportation,essential_expense,Credit Card,3957.06,True
+TX00001298,U00007,S00007,2023-12-30,Dining,Food & Dining,discretionary_expense,Debit Card,1428.3,False
+TX00001299,U00007,S00007,2023-12-27,Shopping,Shopping,discretionary_expense,Cash,3727.41,False
+TX00001300,U00007,S00007,2023-12-15,Streaming,Subscriptions,discretionary_expense,Credit Card,279.74,True
+TX00001301,U00007,S00007,2023-12-26,Entertainment,Entertainment,discretionary_expense,UPI,7515.83,False
+TX00001302,U00007,S00007,2023-12-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001303,U00007,S00007,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001304,U00007,S00007,2024-01-01,Freelance credit,Salary,income,Net Banking,96502.13,True
+TX00001305,U00007,S00007,2024-01-03,Rent,Housing & Rent,essential_expense,UPI,18930.57,True
+TX00001306,U00007,S00007,2024-01-12,Groceries,Groceries,essential_expense,Credit Card,6027.63,True
+TX00001307,U00007,S00007,2024-01-19,Utilities,Utilities,essential_expense,Credit Card,2636.28,True
+TX00001308,U00007,S00007,2024-01-30,Transport Pass,Transportation,essential_expense,Credit Card,3714.94,True
+TX00001309,U00007,S00007,2024-01-17,Dining,Food & Dining,discretionary_expense,UPI,1316.33,False
+TX00001310,U00007,S00007,2024-01-29,Shopping,Shopping,discretionary_expense,Wallet,4323.72,False
+TX00001311,U00007,S00007,2024-01-25,Streaming,Subscriptions,discretionary_expense,Debit Card,1606.57,True
+TX00001312,U00007,S00007,2024-01-02,Entertainment,Entertainment,discretionary_expense,Net Banking,5789.08,False
+TX00001313,U00007,S00007,2024-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001314,U00007,S00007,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001315,U00007,S00007,2024-02-01,Freelance credit,Salary,income,Net Banking,104446.65,True
+TX00001316,U00007,S00007,2024-02-03,Rent,Housing & Rent,essential_expense,Debit Card,21238.86,True
+TX00001317,U00007,S00007,2024-02-18,Groceries,Groceries,essential_expense,Cash,6098.81,True
+TX00001318,U00007,S00007,2024-02-27,Utilities,Utilities,essential_expense,Cash,2590.1,True
+TX00001319,U00007,S00007,2024-02-13,Transport Pass,Transportation,essential_expense,Net Banking,3900.39,True
+TX00001320,U00007,S00007,2024-02-18,Dining,Food & Dining,discretionary_expense,Wallet,329.61,False
+TX00001321,U00007,S00007,2024-02-16,Shopping,Shopping,discretionary_expense,Wallet,359.08,False
+TX00001322,U00007,S00007,2024-02-02,Streaming,Subscriptions,discretionary_expense,UPI,5822.61,True
+TX00001323,U00007,S00007,2024-02-03,Entertainment,Entertainment,discretionary_expense,Cash,6876.94,False
+TX00001324,U00007,S00007,2024-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001325,U00007,S00007,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001326,U00007,S00007,2024-03-01,Freelance credit,Salary,income,Net Banking,103509.44,True
+TX00001327,U00007,S00007,2024-03-03,Rent,Housing & Rent,essential_expense,Net Banking,20840.46,True
+TX00001328,U00007,S00007,2024-03-24,Groceries,Groceries,essential_expense,UPI,6285.48,True
+TX00001329,U00007,S00007,2024-03-07,Utilities,Utilities,essential_expense,Credit Card,2735.25,True
+TX00001330,U00007,S00007,2024-03-10,Transport Pass,Transportation,essential_expense,Credit Card,3669.34,True
+TX00001331,U00007,S00007,2024-03-31,Dining,Food & Dining,discretionary_expense,UPI,1275.92,False
+TX00001332,U00007,S00007,2024-03-22,Shopping,Shopping,discretionary_expense,Cash,11152.99,False
+TX00001333,U00007,S00007,2024-03-19,Streaming,Subscriptions,discretionary_expense,Credit Card,707.56,True
+TX00001334,U00007,S00007,2024-03-10,Entertainment,Entertainment,discretionary_expense,Cash,319.27,False
+TX00001335,U00007,S00007,2024-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001336,U00007,S00007,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001337,U00007,S00007,2024-04-01,Freelance credit,Salary,income,Net Banking,98183.01,True
+TX00001338,U00007,S00007,2024-04-03,Rent,Housing & Rent,essential_expense,Credit Card,20424.74,True
+TX00001339,U00007,S00007,2024-04-03,Groceries,Groceries,essential_expense,Credit Card,5690.94,True
+TX00001340,U00007,S00007,2024-04-24,Utilities,Utilities,essential_expense,Cash,2551.12,True
+TX00001341,U00007,S00007,2024-04-17,Transport Pass,Transportation,essential_expense,Debit Card,4003.88,True
+TX00001342,U00007,S00007,2024-04-09,Healthcare,Healthcare,essential_expense,Cash,98231.76,False
+TX00001343,U00007,S00007,2024-04-19,Dining,Food & Dining,discretionary_expense,Wallet,6553.69,False
+TX00001344,U00007,S00007,2024-04-19,Shopping,Shopping,discretionary_expense,Wallet,1694.15,False
+TX00001345,U00007,S00007,2024-04-25,Streaming,Subscriptions,discretionary_expense,UPI,2306.34,True
+TX00001346,U00007,S00007,2024-04-12,Entertainment,Entertainment,discretionary_expense,Debit Card,1267.6,False
+TX00001347,U00007,S00007,2024-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001348,U00007,S00007,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001349,U00007,S00007,2024-05-01,Freelance credit,Salary,income,Net Banking,100072.16,True
+TX00001350,U00007,S00007,2024-05-03,Rent,Housing & Rent,essential_expense,Net Banking,19238.18,True
+TX00001351,U00007,S00007,2024-05-03,Groceries,Groceries,essential_expense,Credit Card,5930.92,True
+TX00001352,U00007,S00007,2024-05-09,Utilities,Utilities,essential_expense,Debit Card,2626.34,True
+TX00001353,U00007,S00007,2024-05-31,Transport Pass,Transportation,essential_expense,Credit Card,4025.25,True
+TX00001354,U00007,S00007,2024-05-07,Dining,Food & Dining,discretionary_expense,UPI,4177.93,False
+TX00001355,U00007,S00007,2024-05-07,Shopping,Shopping,discretionary_expense,UPI,7124.32,False
+TX00001356,U00007,S00007,2024-05-18,Streaming,Subscriptions,discretionary_expense,Debit Card,44.27,True
+TX00001357,U00007,S00007,2024-05-16,Entertainment,Entertainment,discretionary_expense,Net Banking,356.44,False
+TX00001358,U00007,S00007,2024-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001359,U00007,S00007,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001360,U00007,S00007,2024-06-01,Freelance credit,Salary,income,Net Banking,100997.05,True
+TX00001361,U00007,S00007,2024-06-03,Rent,Housing & Rent,essential_expense,Cash,20734.58,True
+TX00001362,U00007,S00007,2024-06-21,Groceries,Groceries,essential_expense,UPI,5784.66,True
+TX00001363,U00007,S00007,2024-06-16,Utilities,Utilities,essential_expense,Net Banking,2738.88,True
+TX00001364,U00007,S00007,2024-06-29,Transport Pass,Transportation,essential_expense,Credit Card,3979.33,True
+TX00001365,U00007,S00007,2024-06-01,Dining,Food & Dining,discretionary_expense,Net Banking,7258.04,False
+TX00001366,U00007,S00007,2024-06-01,Shopping,Shopping,discretionary_expense,UPI,2283.62,False
+TX00001367,U00007,S00007,2024-06-30,Streaming,Subscriptions,discretionary_expense,Wallet,763.76,True
+TX00001368,U00007,S00007,2024-06-22,Entertainment,Entertainment,discretionary_expense,Wallet,555.22,False
+TX00001369,U00007,S00007,2024-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,17329.37,True
+TX00001370,U00007,S00007,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,8860.7,True
+TX00001371,U00008,S00008,2023-01-01,Freelance credit,Salary,income,Net Banking,57735.65,True
+TX00001372,U00008,S00008,2023-01-03,Rent,Housing & Rent,essential_expense,UPI,17048.93,True
+TX00001373,U00008,S00008,2023-01-24,Groceries,Groceries,essential_expense,Credit Card,5243.42,True
+TX00001374,U00008,S00008,2023-01-27,Utilities,Utilities,essential_expense,Debit Card,1920.72,True
+TX00001375,U00008,S00008,2023-01-02,Transport Pass,Transportation,essential_expense,UPI,3351.21,True
+TX00001376,U00008,S00008,2023-01-25,Dining,Food & Dining,discretionary_expense,Wallet,564.97,False
+TX00001377,U00008,S00008,2023-01-07,Shopping,Shopping,discretionary_expense,Cash,2171.09,False
+TX00001378,U00008,S00008,2023-01-18,Streaming,Subscriptions,discretionary_expense,UPI,1251.44,True
+TX00001379,U00008,S00008,2023-01-15,Entertainment,Entertainment,discretionary_expense,Net Banking,1112.68,False
+TX00001380,U00008,S00008,2023-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001381,U00008,S00008,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001382,U00008,S00008,2023-02-01,Freelance credit,Salary,income,Net Banking,45228.69,True
+TX00001383,U00008,S00008,2023-02-03,Rent,Housing & Rent,essential_expense,Wallet,15912.34,True
+TX00001384,U00008,S00008,2023-02-17,Groceries,Groceries,essential_expense,Debit Card,4807.82,True
+TX00001385,U00008,S00008,2023-02-22,Utilities,Utilities,essential_expense,Wallet,1839.37,True
+TX00001386,U00008,S00008,2023-02-11,Transport Pass,Transportation,essential_expense,Cash,3149.48,True
+TX00001387,U00008,S00008,2023-02-01,Dining,Food & Dining,discretionary_expense,Credit Card,1674.45,False
+TX00001388,U00008,S00008,2023-02-17,Shopping,Shopping,discretionary_expense,Credit Card,2786.39,False
+TX00001389,U00008,S00008,2023-02-28,Streaming,Subscriptions,discretionary_expense,Wallet,121.42,True
+TX00001390,U00008,S00008,2023-02-08,Entertainment,Entertainment,discretionary_expense,Debit Card,138.32,False
+TX00001391,U00008,S00008,2023-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001392,U00008,S00008,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001393,U00008,S00008,2023-03-01,Freelance credit,Salary,income,Net Banking,76613.75,True
+TX00001394,U00008,S00008,2023-03-03,Rent,Housing & Rent,essential_expense,Credit Card,16756.71,True
+TX00001395,U00008,S00008,2023-03-28,Groceries,Groceries,essential_expense,Credit Card,5171.09,True
+TX00001396,U00008,S00008,2023-03-17,Utilities,Utilities,essential_expense,Wallet,2089.67,True
+TX00001397,U00008,S00008,2023-03-17,Transport Pass,Transportation,essential_expense,Net Banking,3532.94,True
+TX00001398,U00008,S00008,2023-03-29,Dining,Food & Dining,discretionary_expense,Wallet,990.94,False
+TX00001399,U00008,S00008,2023-03-16,Shopping,Shopping,discretionary_expense,Debit Card,794.45,False
+TX00001400,U00008,S00008,2023-03-07,Streaming,Subscriptions,discretionary_expense,Cash,382.87,True
+TX00001401,U00008,S00008,2023-03-29,Entertainment,Entertainment,discretionary_expense,Debit Card,2918.81,False
+TX00001402,U00008,S00008,2023-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001403,U00008,S00008,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001404,U00008,S00008,2023-04-01,Freelance credit,Salary,income,Net Banking,76327.46,True
+TX00001405,U00008,S00008,2023-04-03,Rent,Housing & Rent,essential_expense,Wallet,15910.13,True
+TX00001406,U00008,S00008,2023-04-22,Groceries,Groceries,essential_expense,UPI,5115.03,True
+TX00001407,U00008,S00008,2023-04-03,Utilities,Utilities,essential_expense,UPI,1858.13,True
+TX00001408,U00008,S00008,2023-04-21,Transport Pass,Transportation,essential_expense,Wallet,3629.85,True
+TX00001409,U00008,S00008,2023-04-19,Dining,Food & Dining,discretionary_expense,Credit Card,298.7,False
+TX00001410,U00008,S00008,2023-04-23,Shopping,Shopping,discretionary_expense,UPI,1465.59,False
+TX00001411,U00008,S00008,2023-04-25,Streaming,Subscriptions,discretionary_expense,Wallet,3625.36,True
+TX00001412,U00008,S00008,2023-04-22,Entertainment,Entertainment,discretionary_expense,Wallet,677.0,False
+TX00001413,U00008,S00008,2023-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001414,U00008,S00008,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001415,U00008,S00008,2023-05-01,Freelance credit,Salary,income,Net Banking,50255.97,True
+TX00001416,U00008,S00008,2023-05-03,Rent,Housing & Rent,essential_expense,Cash,17134.13,True
+TX00001417,U00008,S00008,2023-05-26,Groceries,Groceries,essential_expense,Cash,5464.85,True
+TX00001418,U00008,S00008,2023-05-02,Utilities,Utilities,essential_expense,UPI,2024.28,True
+TX00001419,U00008,S00008,2023-05-15,Transport Pass,Transportation,essential_expense,Debit Card,3484.73,True
+TX00001420,U00008,S00008,2023-05-27,Dining,Food & Dining,discretionary_expense,Cash,1676.4,False
+TX00001421,U00008,S00008,2023-05-24,Shopping,Shopping,discretionary_expense,Cash,1157.3,False
+TX00001422,U00008,S00008,2023-05-11,Streaming,Subscriptions,discretionary_expense,Cash,1485.14,True
+TX00001423,U00008,S00008,2023-05-20,Entertainment,Entertainment,discretionary_expense,Net Banking,1067.15,False
+TX00001424,U00008,S00008,2023-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001425,U00008,S00008,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001426,U00008,S00008,2023-06-01,Freelance credit,Salary,income,Net Banking,60675.98,True
+TX00001427,U00008,S00008,2023-06-03,Rent,Housing & Rent,essential_expense,Credit Card,17381.2,True
+TX00001428,U00008,S00008,2023-06-03,Groceries,Groceries,essential_expense,Debit Card,5194.17,True
+TX00001429,U00008,S00008,2023-06-18,Utilities,Utilities,essential_expense,Credit Card,2008.3,True
+TX00001430,U00008,S00008,2023-06-07,Transport Pass,Transportation,essential_expense,UPI,3453.14,True
+TX00001431,U00008,S00008,2023-06-23,Dining,Food & Dining,discretionary_expense,Wallet,869.72,False
+TX00001432,U00008,S00008,2023-06-25,Shopping,Shopping,discretionary_expense,Debit Card,494.45,False
+TX00001433,U00008,S00008,2023-06-18,Streaming,Subscriptions,discretionary_expense,Wallet,671.12,True
+TX00001434,U00008,S00008,2023-06-18,Entertainment,Entertainment,discretionary_expense,Credit Card,3671.9,False
+TX00001435,U00008,S00008,2023-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001436,U00008,S00008,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001437,U00008,S00008,2023-07-01,Freelance credit,Salary,income,Net Banking,65050.08,True
+TX00001438,U00008,S00008,2023-07-03,Rent,Housing & Rent,essential_expense,Debit Card,17577.51,True
+TX00001439,U00008,S00008,2023-07-12,Groceries,Groceries,essential_expense,Cash,5274.47,True
+TX00001440,U00008,S00008,2023-07-31,Utilities,Utilities,essential_expense,Credit Card,2002.63,True
+TX00001441,U00008,S00008,2023-07-30,Transport Pass,Transportation,essential_expense,UPI,3323.86,True
+TX00001442,U00008,S00008,2023-07-08,Dining,Food & Dining,discretionary_expense,Debit Card,659.3,False
+TX00001443,U00008,S00008,2023-07-02,Shopping,Shopping,discretionary_expense,Net Banking,1427.51,False
+TX00001444,U00008,S00008,2023-07-27,Streaming,Subscriptions,discretionary_expense,Debit Card,1372.4,True
+TX00001445,U00008,S00008,2023-07-26,Entertainment,Entertainment,discretionary_expense,Net Banking,2678.72,False
+TX00001446,U00008,S00008,2023-07-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001447,U00008,S00008,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001448,U00008,S00008,2023-08-01,Freelance credit,Salary,income,Net Banking,44498.94,True
+TX00001449,U00008,S00008,2023-08-03,Rent,Housing & Rent,essential_expense,Cash,15575.59,True
+TX00001450,U00008,S00008,2023-08-07,Groceries,Groceries,essential_expense,Net Banking,5181.05,True
+TX00001451,U00008,S00008,2023-08-26,Utilities,Utilities,essential_expense,Net Banking,2142.96,True
+TX00001452,U00008,S00008,2023-08-16,Transport Pass,Transportation,essential_expense,Credit Card,3342.28,True
+TX00001453,U00008,S00008,2023-08-02,Dining,Food & Dining,discretionary_expense,Cash,31.05,False
+TX00001454,U00008,S00008,2023-08-22,Shopping,Shopping,discretionary_expense,Net Banking,612.54,False
+TX00001455,U00008,S00008,2023-08-30,Streaming,Subscriptions,discretionary_expense,Debit Card,2780.84,True
+TX00001456,U00008,S00008,2023-08-26,Entertainment,Entertainment,discretionary_expense,Net Banking,2076.72,False
+TX00001457,U00008,S00008,2023-08-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001458,U00008,S00008,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001459,U00008,S00008,2023-09-01,Freelance credit,Salary,income,Net Banking,51742.26,True
+TX00001460,U00008,S00008,2023-09-03,Rent,Housing & Rent,essential_expense,Credit Card,17780.13,True
+TX00001461,U00008,S00008,2023-09-10,Groceries,Groceries,essential_expense,Wallet,5448.63,True
+TX00001462,U00008,S00008,2023-09-11,Utilities,Utilities,essential_expense,UPI,2006.67,True
+TX00001463,U00008,S00008,2023-09-01,Transport Pass,Transportation,essential_expense,Credit Card,3472.77,True
+TX00001464,U00008,S00008,2023-09-28,Dining,Food & Dining,discretionary_expense,Cash,2375.46,False
+TX00001465,U00008,S00008,2023-09-30,Shopping,Shopping,discretionary_expense,Credit Card,1079.19,False
+TX00001466,U00008,S00008,2023-09-11,Streaming,Subscriptions,discretionary_expense,UPI,508.89,True
+TX00001467,U00008,S00008,2023-09-12,Entertainment,Entertainment,discretionary_expense,Cash,1018.43,False
+TX00001468,U00008,S00008,2023-09-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001469,U00008,S00008,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001470,U00008,S00008,2023-10-01,Freelance credit,Salary,income,Net Banking,65646.83,True
+TX00001471,U00008,S00008,2023-10-03,Rent,Housing & Rent,essential_expense,Cash,16945.14,True
+TX00001472,U00008,S00008,2023-10-22,Groceries,Groceries,essential_expense,Cash,5428.38,True
+TX00001473,U00008,S00008,2023-10-01,Utilities,Utilities,essential_expense,UPI,1884.84,True
+TX00001474,U00008,S00008,2023-10-30,Transport Pass,Transportation,essential_expense,Wallet,3620.06,True
+TX00001475,U00008,S00008,2023-10-19,Dining,Food & Dining,discretionary_expense,Credit Card,1498.29,False
+TX00001476,U00008,S00008,2023-10-25,Shopping,Shopping,discretionary_expense,UPI,1708.08,False
+TX00001477,U00008,S00008,2023-10-12,Streaming,Subscriptions,discretionary_expense,Credit Card,819.94,True
+TX00001478,U00008,S00008,2023-10-01,Entertainment,Entertainment,discretionary_expense,Net Banking,1616.14,False
+TX00001479,U00008,S00008,2023-10-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001480,U00008,S00008,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001481,U00008,S00008,2023-11-01,Freelance credit,Salary,income,Net Banking,58403.59,True
+TX00001482,U00008,S00008,2023-11-03,Rent,Housing & Rent,essential_expense,Cash,16442.4,True
+TX00001483,U00008,S00008,2023-11-08,Groceries,Groceries,essential_expense,Debit Card,4961.91,True
+TX00001484,U00008,S00008,2023-11-04,Utilities,Utilities,essential_expense,Cash,1916.41,True
+TX00001485,U00008,S00008,2023-11-23,Transport Pass,Transportation,essential_expense,Wallet,3410.41,True
+TX00001486,U00008,S00008,2023-11-10,Dining,Food & Dining,discretionary_expense,Credit Card,1027.3,False
+TX00001487,U00008,S00008,2023-11-17,Shopping,Shopping,discretionary_expense,Net Banking,933.04,False
+TX00001488,U00008,S00008,2023-11-30,Streaming,Subscriptions,discretionary_expense,UPI,448.12,True
+TX00001489,U00008,S00008,2023-11-08,Entertainment,Entertainment,discretionary_expense,Credit Card,3078.16,False
+TX00001490,U00008,S00008,2023-11-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001491,U00008,S00008,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001492,U00008,S00008,2023-12-01,Freelance credit,Salary,income,Net Banking,70173.13,True
+TX00001493,U00008,S00008,2023-12-03,Rent,Housing & Rent,essential_expense,Debit Card,15363.44,True
+TX00001494,U00008,S00008,2023-12-21,Groceries,Groceries,essential_expense,UPI,5188.39,True
+TX00001495,U00008,S00008,2023-12-31,Utilities,Utilities,essential_expense,Debit Card,2053.27,True
+TX00001496,U00008,S00008,2023-12-01,Transport Pass,Transportation,essential_expense,Cash,3529.49,True
+TX00001497,U00008,S00008,2023-12-18,Dining,Food & Dining,discretionary_expense,Cash,3065.64,False
+TX00001498,U00008,S00008,2023-12-24,Shopping,Shopping,discretionary_expense,Debit Card,1040.31,False
+TX00001499,U00008,S00008,2023-12-26,Streaming,Subscriptions,discretionary_expense,Debit Card,553.73,True
+TX00001500,U00008,S00008,2023-12-17,Entertainment,Entertainment,discretionary_expense,UPI,106.54,False
+TX00001501,U00008,S00008,2023-12-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001502,U00008,S00008,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001503,U00008,S00008,2024-01-01,Freelance credit,Salary,income,Net Banking,54195.45,True
+TX00001504,U00008,S00008,2024-01-03,Rent,Housing & Rent,essential_expense,Cash,17563.84,True
+TX00001505,U00008,S00008,2024-01-27,Groceries,Groceries,essential_expense,Debit Card,4784.75,True
+TX00001506,U00008,S00008,2024-01-07,Utilities,Utilities,essential_expense,UPI,2132.45,True
+TX00001507,U00008,S00008,2024-01-07,Transport Pass,Transportation,essential_expense,Debit Card,3137.95,True
+TX00001508,U00008,S00008,2024-01-03,Dining,Food & Dining,discretionary_expense,Debit Card,2807.07,False
+TX00001509,U00008,S00008,2024-01-27,Shopping,Shopping,discretionary_expense,Net Banking,360.53,False
+TX00001510,U00008,S00008,2024-01-20,Streaming,Subscriptions,discretionary_expense,Wallet,2079.0,True
+TX00001511,U00008,S00008,2024-01-25,Entertainment,Entertainment,discretionary_expense,Cash,80.7,False
+TX00001512,U00008,S00008,2024-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001513,U00008,S00008,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001514,U00008,S00008,2024-02-01,Freelance credit,Salary,income,Net Banking,70655.78,True
+TX00001515,U00008,S00008,2024-02-03,Rent,Housing & Rent,essential_expense,Debit Card,17708.29,True
+TX00001516,U00008,S00008,2024-02-01,Groceries,Groceries,essential_expense,UPI,4757.41,True
+TX00001517,U00008,S00008,2024-02-05,Utilities,Utilities,essential_expense,Debit Card,1966.57,True
+TX00001518,U00008,S00008,2024-02-18,Transport Pass,Transportation,essential_expense,Net Banking,3635.85,True
+TX00001519,U00008,S00008,2024-02-07,Dining,Food & Dining,discretionary_expense,Net Banking,3391.77,False
+TX00001520,U00008,S00008,2024-02-20,Shopping,Shopping,discretionary_expense,UPI,292.61,False
+TX00001521,U00008,S00008,2024-02-11,Streaming,Subscriptions,discretionary_expense,Credit Card,1883.74,True
+TX00001522,U00008,S00008,2024-02-26,Entertainment,Entertainment,discretionary_expense,Wallet,259.97,False
+TX00001523,U00008,S00008,2024-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001524,U00008,S00008,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001525,U00008,S00008,2024-03-01,Freelance credit,Salary,income,Net Banking,29786.2,True
+TX00001526,U00008,S00008,2024-03-03,Rent,Housing & Rent,essential_expense,Net Banking,17335.1,True
+TX00001527,U00008,S00008,2024-03-11,Groceries,Groceries,essential_expense,Credit Card,4906.03,True
+TX00001528,U00008,S00008,2024-03-19,Utilities,Utilities,essential_expense,Wallet,1994.49,True
+TX00001529,U00008,S00008,2024-03-28,Transport Pass,Transportation,essential_expense,Cash,3231.1,True
+TX00001530,U00008,S00008,2024-03-05,Dining,Food & Dining,discretionary_expense,Debit Card,3158.19,False
+TX00001531,U00008,S00008,2024-03-23,Shopping,Shopping,discretionary_expense,Cash,2008.36,False
+TX00001532,U00008,S00008,2024-03-11,Streaming,Subscriptions,discretionary_expense,Debit Card,442.69,True
+TX00001533,U00008,S00008,2024-03-02,Entertainment,Entertainment,discretionary_expense,Credit Card,553.8,False
+TX00001534,U00008,S00008,2024-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001535,U00008,S00008,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001536,U00008,S00008,2024-04-01,Freelance credit,Salary,income,Net Banking,86678.35,True
+TX00001537,U00008,S00008,2024-04-03,Rent,Housing & Rent,essential_expense,Debit Card,15500.13,True
+TX00001538,U00008,S00008,2024-04-06,Groceries,Groceries,essential_expense,Net Banking,5089.71,True
+TX00001539,U00008,S00008,2024-04-22,Utilities,Utilities,essential_expense,Net Banking,2120.18,True
+TX00001540,U00008,S00008,2024-04-23,Transport Pass,Transportation,essential_expense,Wallet,3466.16,True
+TX00001541,U00008,S00008,2024-04-18,Dining,Food & Dining,discretionary_expense,Credit Card,1159.47,False
+TX00001542,U00008,S00008,2024-04-26,Shopping,Shopping,discretionary_expense,Credit Card,1539.88,False
+TX00001543,U00008,S00008,2024-04-09,Streaming,Subscriptions,discretionary_expense,Net Banking,2833.88,True
+TX00001544,U00008,S00008,2024-04-27,Entertainment,Entertainment,discretionary_expense,Debit Card,407.75,False
+TX00001545,U00008,S00008,2024-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001546,U00008,S00008,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001547,U00008,S00008,2024-05-01,Freelance credit,Salary,income,Net Banking,61044.64,True
+TX00001548,U00008,S00008,2024-05-03,Rent,Housing & Rent,essential_expense,Net Banking,17047.24,True
+TX00001549,U00008,S00008,2024-05-13,Groceries,Groceries,essential_expense,Cash,5374.71,True
+TX00001550,U00008,S00008,2024-05-17,Utilities,Utilities,essential_expense,UPI,2153.82,True
+TX00001551,U00008,S00008,2024-05-24,Transport Pass,Transportation,essential_expense,Credit Card,3352.08,True
+TX00001552,U00008,S00008,2024-05-10,Dining,Food & Dining,discretionary_expense,Wallet,2209.02,False
+TX00001553,U00008,S00008,2024-05-22,Shopping,Shopping,discretionary_expense,Debit Card,1011.77,False
+TX00001554,U00008,S00008,2024-05-29,Streaming,Subscriptions,discretionary_expense,Debit Card,945.81,True
+TX00001555,U00008,S00008,2024-05-18,Entertainment,Entertainment,discretionary_expense,Credit Card,1078.11,False
+TX00001556,U00008,S00008,2024-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001557,U00008,S00008,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001558,U00008,S00008,2024-06-01,Freelance credit,Salary,income,Net Banking,45288.98,True
+TX00001559,U00008,S00008,2024-06-03,Rent,Housing & Rent,essential_expense,Credit Card,17422.59,True
+TX00001560,U00008,S00008,2024-06-18,Groceries,Groceries,essential_expense,Credit Card,5414.49,True
+TX00001561,U00008,S00008,2024-06-16,Utilities,Utilities,essential_expense,UPI,1859.01,True
+TX00001562,U00008,S00008,2024-06-15,Transport Pass,Transportation,essential_expense,Net Banking,3436.1,True
+TX00001563,U00008,S00008,2024-06-25,Dining,Food & Dining,discretionary_expense,Net Banking,1904.14,False
+TX00001564,U00008,S00008,2024-06-23,Shopping,Shopping,discretionary_expense,UPI,297.87,False
+TX00001565,U00008,S00008,2024-06-11,Streaming,Subscriptions,discretionary_expense,Cash,1568.72,True
+TX00001566,U00008,S00008,2024-06-25,Entertainment,Entertainment,discretionary_expense,Cash,1599.83,False
+TX00001567,U00008,S00008,2024-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,7795.82,True
+TX00001568,U00008,S00008,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,3145.27,True
+TX00001569,U00009,S00009,2023-01-01,Salary credit,Salary,income,Net Banking,66963.45,True
+TX00001570,U00009,S00009,2023-01-03,Rent,Housing & Rent,essential_expense,UPI,18928.45,True
+TX00001571,U00009,S00009,2023-01-15,Groceries,Groceries,essential_expense,Cash,4578.83,True
+TX00001572,U00009,S00009,2023-01-28,Utilities,Utilities,essential_expense,Credit Card,2282.58,True
+TX00001573,U00009,S00009,2023-01-08,Transport Pass,Transportation,essential_expense,Debit Card,4034.19,True
+TX00001574,U00009,S00009,2023-01-06,Dining,Food & Dining,discretionary_expense,Cash,5720.27,False
+TX00001575,U00009,S00009,2023-01-20,Shopping,Shopping,discretionary_expense,Net Banking,580.96,False
+TX00001576,U00009,S00009,2023-01-31,Streaming,Subscriptions,discretionary_expense,UPI,520.53,True
+TX00001577,U00009,S00009,2023-01-08,Entertainment,Entertainment,discretionary_expense,Credit Card,1430.05,False
+TX00001578,U00009,S00009,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001579,U00009,S00009,2023-02-01,Salary credit,Salary,income,Net Banking,66014.96,True
+TX00001580,U00009,S00009,2023-02-03,Rent,Housing & Rent,essential_expense,Credit Card,19046.3,True
+TX00001581,U00009,S00009,2023-02-19,Groceries,Groceries,essential_expense,Debit Card,4732.66,True
+TX00001582,U00009,S00009,2023-02-12,Utilities,Utilities,essential_expense,Credit Card,2323.4,True
+TX00001583,U00009,S00009,2023-02-08,Transport Pass,Transportation,essential_expense,Net Banking,4107.39,True
+TX00001584,U00009,S00009,2023-02-24,Dining,Food & Dining,discretionary_expense,Net Banking,45.88,False
+TX00001585,U00009,S00009,2023-02-09,Shopping,Shopping,discretionary_expense,UPI,2615.98,False
+TX00001586,U00009,S00009,2023-02-05,Streaming,Subscriptions,discretionary_expense,Debit Card,2335.23,True
+TX00001587,U00009,S00009,2023-02-15,Entertainment,Entertainment,discretionary_expense,Wallet,2429.56,False
+TX00001588,U00009,S00009,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001589,U00009,S00009,2023-03-01,Salary credit,Salary,income,Net Banking,65685.51,True
+TX00001590,U00009,S00009,2023-03-03,Rent,Housing & Rent,essential_expense,Wallet,17427.64,True
+TX00001591,U00009,S00009,2023-03-03,Groceries,Groceries,essential_expense,Credit Card,4992.91,True
+TX00001592,U00009,S00009,2023-03-27,Utilities,Utilities,essential_expense,Cash,2260.58,True
+TX00001593,U00009,S00009,2023-03-06,Transport Pass,Transportation,essential_expense,Credit Card,3669.39,True
+TX00001594,U00009,S00009,2023-03-24,Dining,Food & Dining,discretionary_expense,Wallet,1996.26,False
+TX00001595,U00009,S00009,2023-03-12,Shopping,Shopping,discretionary_expense,Debit Card,1051.9,False
+TX00001596,U00009,S00009,2023-03-25,Streaming,Subscriptions,discretionary_expense,Credit Card,2589.03,True
+TX00001597,U00009,S00009,2023-03-07,Entertainment,Entertainment,discretionary_expense,Net Banking,2301.9,False
+TX00001598,U00009,S00009,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001599,U00009,S00009,2023-04-01,Salary credit,Salary,income,Net Banking,62549.15,True
+TX00001600,U00009,S00009,2023-04-03,Rent,Housing & Rent,essential_expense,Credit Card,16661.75,True
+TX00001601,U00009,S00009,2023-04-16,Groceries,Groceries,essential_expense,Net Banking,4731.79,True
+TX00001602,U00009,S00009,2023-04-18,Utilities,Utilities,essential_expense,Cash,2405.45,True
+TX00001603,U00009,S00009,2023-04-14,Transport Pass,Transportation,essential_expense,Cash,4013.87,True
+TX00001604,U00009,S00009,2023-04-23,Dining,Food & Dining,discretionary_expense,Wallet,67.84,False
+TX00001605,U00009,S00009,2023-04-19,Shopping,Shopping,discretionary_expense,UPI,2104.74,False
+TX00001606,U00009,S00009,2023-04-18,Streaming,Subscriptions,discretionary_expense,Credit Card,3251.0,True
+TX00001607,U00009,S00009,2023-04-01,Entertainment,Entertainment,discretionary_expense,UPI,2802.3,False
+TX00001608,U00009,S00009,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001609,U00009,S00009,2023-05-01,Salary credit,Salary,income,Net Banking,67863.69,True
+TX00001610,U00009,S00009,2023-05-03,Rent,Housing & Rent,essential_expense,Cash,17849.75,True
+TX00001611,U00009,S00009,2023-05-11,Groceries,Groceries,essential_expense,Cash,5088.17,True
+TX00001612,U00009,S00009,2023-05-21,Utilities,Utilities,essential_expense,Cash,2448.96,True
+TX00001613,U00009,S00009,2023-05-16,Transport Pass,Transportation,essential_expense,UPI,4107.47,True
+TX00001614,U00009,S00009,2023-05-09,Dining,Food & Dining,discretionary_expense,Cash,115.33,False
+TX00001615,U00009,S00009,2023-05-05,Shopping,Shopping,discretionary_expense,Debit Card,1595.33,False
+TX00001616,U00009,S00009,2023-05-04,Streaming,Subscriptions,discretionary_expense,Net Banking,6327.82,True
+TX00001617,U00009,S00009,2023-05-04,Entertainment,Entertainment,discretionary_expense,UPI,317.05,False
+TX00001618,U00009,S00009,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001619,U00009,S00009,2023-06-01,Salary credit,Salary,income,Net Banking,68051.14,True
+TX00001620,U00009,S00009,2023-06-03,Rent,Housing & Rent,essential_expense,Cash,17191.02,True
+TX00001621,U00009,S00009,2023-06-07,Groceries,Groceries,essential_expense,Wallet,5101.27,True
+TX00001622,U00009,S00009,2023-06-25,Utilities,Utilities,essential_expense,Wallet,2391.64,True
+TX00001623,U00009,S00009,2023-06-03,Transport Pass,Transportation,essential_expense,Cash,3832.16,True
+TX00001624,U00009,S00009,2023-06-16,Dining,Food & Dining,discretionary_expense,Cash,3277.69,False
+TX00001625,U00009,S00009,2023-06-26,Shopping,Shopping,discretionary_expense,Debit Card,1385.78,False
+TX00001626,U00009,S00009,2023-06-17,Streaming,Subscriptions,discretionary_expense,Net Banking,1944.58,True
+TX00001627,U00009,S00009,2023-06-23,Entertainment,Entertainment,discretionary_expense,Net Banking,1714.26,False
+TX00001628,U00009,S00009,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001629,U00009,S00009,2023-07-01,Salary credit,Salary,income,Net Banking,70161.18,True
+TX00001630,U00009,S00009,2023-07-03,Rent,Housing & Rent,essential_expense,UPI,17985.73,True
+TX00001631,U00009,S00009,2023-07-02,Groceries,Groceries,essential_expense,Credit Card,4601.92,True
+TX00001632,U00009,S00009,2023-07-28,Utilities,Utilities,essential_expense,Credit Card,2357.84,True
+TX00001633,U00009,S00009,2023-07-22,Transport Pass,Transportation,essential_expense,Debit Card,3576.15,True
+TX00001634,U00009,S00009,2023-07-02,Dining,Food & Dining,discretionary_expense,Debit Card,2410.94,False
+TX00001635,U00009,S00009,2023-07-01,Shopping,Shopping,discretionary_expense,Debit Card,526.49,False
+TX00001636,U00009,S00009,2023-07-18,Streaming,Subscriptions,discretionary_expense,Cash,3145.8,True
+TX00001637,U00009,S00009,2023-07-09,Entertainment,Entertainment,discretionary_expense,Net Banking,901.99,False
+TX00001638,U00009,S00009,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001639,U00009,S00009,2023-08-01,Salary credit,Salary,income,Net Banking,63558.54,True
+TX00001640,U00009,S00009,2023-08-03,Rent,Housing & Rent,essential_expense,Cash,19227.09,True
+TX00001641,U00009,S00009,2023-08-26,Groceries,Groceries,essential_expense,Net Banking,4781.29,True
+TX00001642,U00009,S00009,2023-08-17,Utilities,Utilities,essential_expense,Net Banking,2388.78,True
+TX00001643,U00009,S00009,2023-08-05,Transport Pass,Transportation,essential_expense,Credit Card,3536.56,True
+TX00001644,U00009,S00009,2023-08-27,Dining,Food & Dining,discretionary_expense,Debit Card,3296.71,False
+TX00001645,U00009,S00009,2023-08-17,Shopping,Shopping,discretionary_expense,Debit Card,2355.8,False
+TX00001646,U00009,S00009,2023-08-07,Streaming,Subscriptions,discretionary_expense,Net Banking,696.25,True
+TX00001647,U00009,S00009,2023-08-24,Entertainment,Entertainment,discretionary_expense,Net Banking,762.79,False
+TX00001648,U00009,S00009,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001649,U00009,S00009,2023-09-01,Salary credit,Salary,income,Net Banking,65280.18,True
+TX00001650,U00009,S00009,2023-09-03,Rent,Housing & Rent,essential_expense,Debit Card,18439.13,True
+TX00001651,U00009,S00009,2023-09-18,Groceries,Groceries,essential_expense,Wallet,4767.56,True
+TX00001652,U00009,S00009,2023-09-07,Utilities,Utilities,essential_expense,Cash,2274.55,True
+TX00001653,U00009,S00009,2023-09-02,Transport Pass,Transportation,essential_expense,UPI,3531.45,True
+TX00001654,U00009,S00009,2023-09-24,Dining,Food & Dining,discretionary_expense,Net Banking,3512.29,False
+TX00001655,U00009,S00009,2023-09-12,Shopping,Shopping,discretionary_expense,Cash,1218.03,False
+TX00001656,U00009,S00009,2023-09-12,Streaming,Subscriptions,discretionary_expense,Credit Card,2262.12,True
+TX00001657,U00009,S00009,2023-09-13,Entertainment,Entertainment,discretionary_expense,Credit Card,94.5,False
+TX00001658,U00009,S00009,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001659,U00009,S00009,2023-10-01,Salary credit,Salary,income,Net Banking,68393.67,True
+TX00001660,U00009,S00009,2023-10-03,Rent,Housing & Rent,essential_expense,Net Banking,18750.9,True
+TX00001661,U00009,S00009,2023-10-17,Groceries,Groceries,essential_expense,UPI,5297.39,True
+TX00001662,U00009,S00009,2023-10-13,Utilities,Utilities,essential_expense,Debit Card,2381.99,True
+TX00001663,U00009,S00009,2023-10-26,Transport Pass,Transportation,essential_expense,UPI,3766.66,True
+TX00001664,U00009,S00009,2023-10-27,Dining,Food & Dining,discretionary_expense,Debit Card,2893.36,False
+TX00001665,U00009,S00009,2023-10-21,Shopping,Shopping,discretionary_expense,Cash,868.89,False
+TX00001666,U00009,S00009,2023-10-10,Streaming,Subscriptions,discretionary_expense,Wallet,1874.11,True
+TX00001667,U00009,S00009,2023-10-07,Entertainment,Entertainment,discretionary_expense,UPI,1702.81,False
+TX00001668,U00009,S00009,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001669,U00009,S00009,2023-11-01,Salary credit,Salary,income,Net Banking,68838.94,True
+TX00001670,U00009,S00009,2023-11-03,Rent,Housing & Rent,essential_expense,UPI,17885.68,True
+TX00001671,U00009,S00009,2023-11-05,Groceries,Groceries,essential_expense,Credit Card,4569.42,True
+TX00001672,U00009,S00009,2023-11-03,Utilities,Utilities,essential_expense,Credit Card,2229.16,True
+TX00001673,U00009,S00009,2023-11-17,Transport Pass,Transportation,essential_expense,Credit Card,3575.82,True
+TX00001674,U00009,S00009,2023-11-10,Dining,Food & Dining,discretionary_expense,Debit Card,614.02,False
+TX00001675,U00009,S00009,2023-11-17,Shopping,Shopping,discretionary_expense,Credit Card,2865.86,False
+TX00001676,U00009,S00009,2023-11-07,Streaming,Subscriptions,discretionary_expense,Debit Card,1323.14,True
+TX00001677,U00009,S00009,2023-11-01,Entertainment,Entertainment,discretionary_expense,Debit Card,1798.45,False
+TX00001678,U00009,S00009,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001679,U00009,S00009,2023-12-01,Salary credit,Salary,income,Net Banking,63859.04,True
+TX00001680,U00009,S00009,2023-12-03,Rent,Housing & Rent,essential_expense,Wallet,16932.36,True
+TX00001681,U00009,S00009,2023-12-18,Groceries,Groceries,essential_expense,Debit Card,4669.42,True
+TX00001682,U00009,S00009,2023-12-04,Utilities,Utilities,essential_expense,Debit Card,2501.04,True
+TX00001683,U00009,S00009,2023-12-14,Transport Pass,Transportation,essential_expense,Wallet,3879.98,True
+TX00001684,U00009,S00009,2023-12-10,Dining,Food & Dining,discretionary_expense,UPI,2183.12,False
+TX00001685,U00009,S00009,2023-12-14,Shopping,Shopping,discretionary_expense,Wallet,4745.2,False
+TX00001686,U00009,S00009,2023-12-15,Streaming,Subscriptions,discretionary_expense,Debit Card,467.86,True
+TX00001687,U00009,S00009,2023-12-21,Entertainment,Entertainment,discretionary_expense,Cash,654.19,False
+TX00001688,U00009,S00009,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001689,U00009,S00009,2024-01-01,Salary credit,Salary,income,Net Banking,67701.0,True
+TX00001690,U00009,S00009,2024-01-03,Rent,Housing & Rent,essential_expense,Net Banking,16732.81,True
+TX00001691,U00009,S00009,2024-01-08,Groceries,Groceries,essential_expense,Credit Card,5284.18,True
+TX00001692,U00009,S00009,2024-01-27,Utilities,Utilities,essential_expense,Wallet,2347.42,True
+TX00001693,U00009,S00009,2024-01-02,Transport Pass,Transportation,essential_expense,Credit Card,3932.83,True
+TX00001694,U00009,S00009,2024-01-22,Dining,Food & Dining,discretionary_expense,Net Banking,258.45,False
+TX00001695,U00009,S00009,2024-01-31,Shopping,Shopping,discretionary_expense,Cash,1600.8,False
+TX00001696,U00009,S00009,2024-01-01,Streaming,Subscriptions,discretionary_expense,Wallet,2503.75,True
+TX00001697,U00009,S00009,2024-01-05,Entertainment,Entertainment,discretionary_expense,UPI,2597.14,False
+TX00001698,U00009,S00009,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001699,U00009,S00009,2024-02-01,Salary credit,Salary,income,Net Banking,64114.44,True
+TX00001700,U00009,S00009,2024-02-03,Rent,Housing & Rent,essential_expense,Net Banking,18266.15,True
+TX00001701,U00009,S00009,2024-02-27,Groceries,Groceries,essential_expense,Net Banking,5095.03,True
+TX00001702,U00009,S00009,2024-02-23,Utilities,Utilities,essential_expense,Debit Card,2354.97,True
+TX00001703,U00009,S00009,2024-02-22,Transport Pass,Transportation,essential_expense,Credit Card,3726.14,True
+TX00001704,U00009,S00009,2024-02-21,Dining,Food & Dining,discretionary_expense,UPI,2316.5,False
+TX00001705,U00009,S00009,2024-02-27,Shopping,Shopping,discretionary_expense,Credit Card,1928.75,False
+TX00001706,U00009,S00009,2024-02-20,Streaming,Subscriptions,discretionary_expense,UPI,61.66,True
+TX00001707,U00009,S00009,2024-02-05,Entertainment,Entertainment,discretionary_expense,Wallet,4346.32,False
+TX00001708,U00009,S00009,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001709,U00009,S00009,2024-03-01,Salary credit,Salary,income,Net Banking,63333.49,True
+TX00001710,U00009,S00009,2024-03-03,Rent,Housing & Rent,essential_expense,UPI,18914.67,True
+TX00001711,U00009,S00009,2024-03-25,Groceries,Groceries,essential_expense,Credit Card,4686.92,True
+TX00001712,U00009,S00009,2024-03-05,Utilities,Utilities,essential_expense,Debit Card,2241.82,True
+TX00001713,U00009,S00009,2024-03-29,Transport Pass,Transportation,essential_expense,Net Banking,3758.49,True
+TX00001714,U00009,S00009,2024-03-17,Dining,Food & Dining,discretionary_expense,Credit Card,329.46,False
+TX00001715,U00009,S00009,2024-03-11,Shopping,Shopping,discretionary_expense,Net Banking,865.98,False
+TX00001716,U00009,S00009,2024-03-05,Streaming,Subscriptions,discretionary_expense,Cash,2771.58,True
+TX00001717,U00009,S00009,2024-03-01,Entertainment,Entertainment,discretionary_expense,Credit Card,2989.84,False
+TX00001718,U00009,S00009,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001719,U00009,S00009,2024-04-01,Salary credit,Salary,income,Net Banking,64568.78,True
+TX00001720,U00009,S00009,2024-04-03,Rent,Housing & Rent,essential_expense,Credit Card,18863.92,True
+TX00001721,U00009,S00009,2024-04-30,Groceries,Groceries,essential_expense,Credit Card,5321.35,True
+TX00001722,U00009,S00009,2024-04-08,Utilities,Utilities,essential_expense,Debit Card,2173.88,True
+TX00001723,U00009,S00009,2024-04-06,Transport Pass,Transportation,essential_expense,Cash,3864.46,True
+TX00001724,U00009,S00009,2024-04-08,Dining,Food & Dining,discretionary_expense,UPI,1327.59,False
+TX00001725,U00009,S00009,2024-04-08,Shopping,Shopping,discretionary_expense,Wallet,1382.67,False
+TX00001726,U00009,S00009,2024-04-29,Streaming,Subscriptions,discretionary_expense,Cash,989.28,True
+TX00001727,U00009,S00009,2024-04-13,Entertainment,Entertainment,discretionary_expense,Net Banking,4236.17,False
+TX00001728,U00009,S00009,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001729,U00009,S00009,2024-05-01,Salary credit,Salary,income,Net Banking,66703.72,True
+TX00001730,U00009,S00009,2024-05-03,Rent,Housing & Rent,essential_expense,Debit Card,18612.5,True
+TX00001731,U00009,S00009,2024-05-02,Groceries,Groceries,essential_expense,Wallet,5120.47,True
+TX00001732,U00009,S00009,2024-05-18,Utilities,Utilities,essential_expense,Wallet,2461.59,True
+TX00001733,U00009,S00009,2024-05-05,Transport Pass,Transportation,essential_expense,Credit Card,3877.51,True
+TX00001734,U00009,S00009,2024-05-19,Dining,Food & Dining,discretionary_expense,Cash,3051.71,False
+TX00001735,U00009,S00009,2024-05-25,Shopping,Shopping,discretionary_expense,Wallet,727.3,False
+TX00001736,U00009,S00009,2024-05-26,Streaming,Subscriptions,discretionary_expense,UPI,2538.38,True
+TX00001737,U00009,S00009,2024-05-10,Entertainment,Entertainment,discretionary_expense,Wallet,843.77,False
+TX00001738,U00009,S00009,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001739,U00009,S00009,2024-06-01,Salary credit,Salary,income,Net Banking,66221.4,True
+TX00001740,U00009,S00009,2024-06-03,Rent,Housing & Rent,essential_expense,Cash,17929.33,True
+TX00001741,U00009,S00009,2024-06-03,Groceries,Groceries,essential_expense,UPI,5072.15,True
+TX00001742,U00009,S00009,2024-06-12,Utilities,Utilities,essential_expense,Net Banking,2214.5,True
+TX00001743,U00009,S00009,2024-06-20,Transport Pass,Transportation,essential_expense,Cash,4100.31,True
+TX00001744,U00009,S00009,2024-06-17,Dining,Food & Dining,discretionary_expense,UPI,321.76,False
+TX00001745,U00009,S00009,2024-06-10,Shopping,Shopping,discretionary_expense,UPI,4570.24,False
+TX00001746,U00009,S00009,2024-06-23,Streaming,Subscriptions,discretionary_expense,Net Banking,2304.69,True
+TX00001747,U00009,S00009,2024-06-08,Entertainment,Entertainment,discretionary_expense,Credit Card,1139.24,False
+TX00001748,U00009,S00009,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,9772.42,True
+TX00001749,U00010,S00010,2023-01-01,Salary credit,Salary,income,Net Banking,185957.55,True
+TX00001750,U00010,S00010,2023-01-03,Rent,Housing & Rent,essential_expense,Cash,37857.29,True
+TX00001751,U00010,S00010,2023-01-20,Groceries,Groceries,essential_expense,Wallet,11988.69,True
+TX00001752,U00010,S00010,2023-01-12,Utilities,Utilities,essential_expense,Credit Card,5491.8,True
+TX00001753,U00010,S00010,2023-01-29,Transport Pass,Transportation,essential_expense,Net Banking,7630.59,True
+TX00001754,U00010,S00010,2023-01-24,Dining,Food & Dining,discretionary_expense,Debit Card,5132.61,False
+TX00001755,U00010,S00010,2023-01-14,Shopping,Shopping,discretionary_expense,Debit Card,8395.5,False
+TX00001756,U00010,S00010,2023-01-24,Streaming,Subscriptions,discretionary_expense,Credit Card,5434.43,True
+TX00001757,U00010,S00010,2023-01-31,Entertainment,Entertainment,discretionary_expense,Credit Card,77.68,False
+TX00001758,U00010,S00010,2023-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001759,U00010,S00010,2023-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001760,U00010,S00010,2023-02-01,Salary credit,Salary,income,Net Banking,163716.06,True
+TX00001761,U00010,S00010,2023-02-03,Rent,Housing & Rent,essential_expense,Debit Card,39741.98,True
+TX00001762,U00010,S00010,2023-02-06,Groceries,Groceries,essential_expense,UPI,11735.7,True
+TX00001763,U00010,S00010,2023-02-24,Utilities,Utilities,essential_expense,Credit Card,5572.97,True
+TX00001764,U00010,S00010,2023-02-15,Transport Pass,Transportation,essential_expense,Credit Card,7674.01,True
+TX00001765,U00010,S00010,2023-02-07,Dining,Food & Dining,discretionary_expense,Cash,5627.56,False
+TX00001766,U00010,S00010,2023-02-23,Shopping,Shopping,discretionary_expense,Debit Card,8636.88,False
+TX00001767,U00010,S00010,2023-02-04,Streaming,Subscriptions,discretionary_expense,Credit Card,5644.8,True
+TX00001768,U00010,S00010,2023-02-05,Entertainment,Entertainment,discretionary_expense,Wallet,1863.29,False
+TX00001769,U00010,S00010,2023-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001770,U00010,S00010,2023-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001771,U00010,S00010,2023-03-01,Salary credit,Salary,income,Net Banking,190663.85,True
+TX00001772,U00010,S00010,2023-03-03,Rent,Housing & Rent,essential_expense,UPI,36925.32,True
+TX00001773,U00010,S00010,2023-03-27,Groceries,Groceries,essential_expense,UPI,12050.73,True
+TX00001774,U00010,S00010,2023-03-29,Utilities,Utilities,essential_expense,Cash,4981.28,True
+TX00001775,U00010,S00010,2023-03-11,Transport Pass,Transportation,essential_expense,UPI,8506.15,True
+TX00001776,U00010,S00010,2023-03-19,Dining,Food & Dining,discretionary_expense,UPI,1574.22,False
+TX00001777,U00010,S00010,2023-03-19,Shopping,Shopping,discretionary_expense,Net Banking,439.8,False
+TX00001778,U00010,S00010,2023-03-09,Streaming,Subscriptions,discretionary_expense,Credit Card,11456.61,True
+TX00001779,U00010,S00010,2023-03-07,Entertainment,Entertainment,discretionary_expense,Credit Card,8972.06,False
+TX00001780,U00010,S00010,2023-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001781,U00010,S00010,2023-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001782,U00010,S00010,2023-04-01,Salary credit,Salary,income,Net Banking,161271.21,True
+TX00001783,U00010,S00010,2023-04-03,Rent,Housing & Rent,essential_expense,UPI,38921.08,True
+TX00001784,U00010,S00010,2023-04-06,Groceries,Groceries,essential_expense,Wallet,12737.91,True
+TX00001785,U00010,S00010,2023-04-12,Utilities,Utilities,essential_expense,Wallet,5094.08,True
+TX00001786,U00010,S00010,2023-04-04,Transport Pass,Transportation,essential_expense,Debit Card,7815.37,True
+TX00001787,U00010,S00010,2023-04-28,Dining,Food & Dining,discretionary_expense,UPI,2497.58,False
+TX00001788,U00010,S00010,2023-04-08,Shopping,Shopping,discretionary_expense,UPI,2585.26,False
+TX00001789,U00010,S00010,2023-04-10,Streaming,Subscriptions,discretionary_expense,Debit Card,7794.23,True
+TX00001790,U00010,S00010,2023-04-19,Entertainment,Entertainment,discretionary_expense,Credit Card,10780.22,False
+TX00001791,U00010,S00010,2023-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001792,U00010,S00010,2023-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001793,U00010,S00010,2023-05-01,Salary credit,Salary,income,Net Banking,159220.03,True
+TX00001794,U00010,S00010,2023-05-03,Rent,Housing & Rent,essential_expense,UPI,39947.81,True
+TX00001795,U00010,S00010,2023-05-30,Groceries,Groceries,essential_expense,Credit Card,11631.51,True
+TX00001796,U00010,S00010,2023-05-10,Utilities,Utilities,essential_expense,Net Banking,5634.12,True
+TX00001797,U00010,S00010,2023-05-08,Transport Pass,Transportation,essential_expense,Debit Card,8544.48,True
+TX00001798,U00010,S00010,2023-05-23,Dining,Food & Dining,discretionary_expense,Cash,6724.55,False
+TX00001799,U00010,S00010,2023-05-21,Shopping,Shopping,discretionary_expense,UPI,6042.2,False
+TX00001800,U00010,S00010,2023-05-14,Streaming,Subscriptions,discretionary_expense,Debit Card,2494.14,True
+TX00001801,U00010,S00010,2023-05-20,Entertainment,Entertainment,discretionary_expense,UPI,3794.36,False
+TX00001802,U00010,S00010,2023-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001803,U00010,S00010,2023-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001804,U00010,S00010,2023-06-01,Salary credit,Salary,income,Net Banking,159781.97,True
+TX00001805,U00010,S00010,2023-06-03,Rent,Housing & Rent,essential_expense,UPI,35879.89,True
+TX00001806,U00010,S00010,2023-06-08,Groceries,Groceries,essential_expense,UPI,11782.97,True
+TX00001807,U00010,S00010,2023-06-19,Utilities,Utilities,essential_expense,Net Banking,4964.68,True
+TX00001808,U00010,S00010,2023-06-22,Transport Pass,Transportation,essential_expense,Wallet,7982.19,True
+TX00001809,U00010,S00010,2023-06-04,Dining,Food & Dining,discretionary_expense,Debit Card,3574.16,False
+TX00001810,U00010,S00010,2023-06-08,Shopping,Shopping,discretionary_expense,Wallet,2372.09,False
+TX00001811,U00010,S00010,2023-06-17,Streaming,Subscriptions,discretionary_expense,UPI,6202.94,True
+TX00001812,U00010,S00010,2023-06-21,Entertainment,Entertainment,discretionary_expense,UPI,9146.28,False
+TX00001813,U00010,S00010,2023-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001814,U00010,S00010,2023-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001815,U00010,S00010,2023-07-01,Salary credit,Salary,income,Net Banking,177681.3,True
+TX00001816,U00010,S00010,2023-07-03,Rent,Housing & Rent,essential_expense,UPI,38802.5,True
+TX00001817,U00010,S00010,2023-07-23,Groceries,Groceries,essential_expense,UPI,12898.54,True
+TX00001818,U00010,S00010,2023-07-23,Utilities,Utilities,essential_expense,UPI,4876.2,True
+TX00001819,U00010,S00010,2023-07-27,Transport Pass,Transportation,essential_expense,Credit Card,8565.57,True
+TX00001820,U00010,S00010,2023-07-06,Dining,Food & Dining,discretionary_expense,Debit Card,9588.89,False
+TX00001821,U00010,S00010,2023-07-01,Shopping,Shopping,discretionary_expense,UPI,295.29,False
+TX00001822,U00010,S00010,2023-07-19,Streaming,Subscriptions,discretionary_expense,Credit Card,7732.43,True
+TX00001823,U00010,S00010,2023-07-11,Entertainment,Entertainment,discretionary_expense,Net Banking,4295.66,False
+TX00001824,U00010,S00010,2023-07-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001825,U00010,S00010,2023-07-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001826,U00010,S00010,2023-08-01,Salary credit,Salary,income,Net Banking,160058.71,True
+TX00001827,U00010,S00010,2023-08-03,Rent,Housing & Rent,essential_expense,UPI,36244.25,True
+TX00001828,U00010,S00010,2023-08-03,Groceries,Groceries,essential_expense,Cash,11386.6,True
+TX00001829,U00010,S00010,2023-08-03,Utilities,Utilities,essential_expense,Net Banking,4876.28,True
+TX00001830,U00010,S00010,2023-08-08,Transport Pass,Transportation,essential_expense,UPI,8748.14,True
+TX00001831,U00010,S00010,2023-08-03,Dining,Food & Dining,discretionary_expense,Credit Card,1051.34,False
+TX00001832,U00010,S00010,2023-08-17,Shopping,Shopping,discretionary_expense,UPI,12737.92,False
+TX00001833,U00010,S00010,2023-08-25,Streaming,Subscriptions,discretionary_expense,Cash,6308.53,True
+TX00001834,U00010,S00010,2023-08-10,Entertainment,Entertainment,discretionary_expense,Wallet,2290.41,False
+TX00001835,U00010,S00010,2023-08-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001836,U00010,S00010,2023-08-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001837,U00010,S00010,2023-09-01,Salary credit,Salary,income,Net Banking,158022.36,True
+TX00001838,U00010,S00010,2023-09-03,Rent,Housing & Rent,essential_expense,Net Banking,38502.98,True
+TX00001839,U00010,S00010,2023-09-08,Groceries,Groceries,essential_expense,Net Banking,13175.42,True
+TX00001840,U00010,S00010,2023-09-15,Utilities,Utilities,essential_expense,Net Banking,5397.84,True
+TX00001841,U00010,S00010,2023-09-06,Transport Pass,Transportation,essential_expense,UPI,7598.73,True
+TX00001842,U00010,S00010,2023-09-02,Dining,Food & Dining,discretionary_expense,Wallet,17387.36,False
+TX00001843,U00010,S00010,2023-09-03,Shopping,Shopping,discretionary_expense,Wallet,2726.24,False
+TX00001844,U00010,S00010,2023-09-22,Streaming,Subscriptions,discretionary_expense,UPI,79.56,True
+TX00001845,U00010,S00010,2023-09-26,Entertainment,Entertainment,discretionary_expense,UPI,3596.35,False
+TX00001846,U00010,S00010,2023-09-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001847,U00010,S00010,2023-09-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001848,U00010,S00010,2023-10-01,Salary credit,Salary,income,Net Banking,173078.31,True
+TX00001849,U00010,S00010,2023-10-03,Rent,Housing & Rent,essential_expense,UPI,35429.46,True
+TX00001850,U00010,S00010,2023-10-18,Groceries,Groceries,essential_expense,Wallet,11301.74,True
+TX00001851,U00010,S00010,2023-10-17,Utilities,Utilities,essential_expense,Net Banking,5293.23,True
+TX00001852,U00010,S00010,2023-10-10,Transport Pass,Transportation,essential_expense,Wallet,8464.54,True
+TX00001853,U00010,S00010,2023-10-26,Dining,Food & Dining,discretionary_expense,Wallet,8507.19,False
+TX00001854,U00010,S00010,2023-10-23,Shopping,Shopping,discretionary_expense,Cash,5047.56,False
+TX00001855,U00010,S00010,2023-10-17,Streaming,Subscriptions,discretionary_expense,Wallet,4248.89,True
+TX00001856,U00010,S00010,2023-10-27,Entertainment,Entertainment,discretionary_expense,Debit Card,1047.25,False
+TX00001857,U00010,S00010,2023-10-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001858,U00010,S00010,2023-10-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001859,U00010,S00010,2023-11-01,Salary credit,Salary,income,Net Banking,165611.06,True
+TX00001860,U00010,S00010,2023-11-03,Rent,Housing & Rent,essential_expense,Credit Card,34640.08,True
+TX00001861,U00010,S00010,2023-11-11,Groceries,Groceries,essential_expense,Cash,11463.4,True
+TX00001862,U00010,S00010,2023-11-01,Utilities,Utilities,essential_expense,Net Banking,4908.56,True
+TX00001863,U00010,S00010,2023-11-09,Transport Pass,Transportation,essential_expense,UPI,8007.55,True
+TX00001864,U00010,S00010,2023-11-10,Dining,Food & Dining,discretionary_expense,Wallet,5814.3,False
+TX00001865,U00010,S00010,2023-11-09,Shopping,Shopping,discretionary_expense,Cash,6494.0,False
+TX00001866,U00010,S00010,2023-11-25,Streaming,Subscriptions,discretionary_expense,UPI,8829.85,True
+TX00001867,U00010,S00010,2023-11-23,Entertainment,Entertainment,discretionary_expense,Credit Card,1458.13,False
+TX00001868,U00010,S00010,2023-11-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001869,U00010,S00010,2023-11-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001870,U00010,S00010,2023-12-01,Salary credit,Salary,income,Net Banking,167617.92,True
+TX00001871,U00010,S00010,2023-12-03,Rent,Housing & Rent,essential_expense,Net Banking,39081.48,True
+TX00001872,U00010,S00010,2023-12-16,Groceries,Groceries,essential_expense,UPI,12574.01,True
+TX00001873,U00010,S00010,2023-12-01,Utilities,Utilities,essential_expense,UPI,4992.1,True
+TX00001874,U00010,S00010,2023-12-14,Transport Pass,Transportation,essential_expense,Wallet,8396.52,True
+TX00001875,U00010,S00010,2023-12-08,Dining,Food & Dining,discretionary_expense,Credit Card,3277.77,False
+TX00001876,U00010,S00010,2023-12-08,Shopping,Shopping,discretionary_expense,Debit Card,9956.57,False
+TX00001877,U00010,S00010,2023-12-23,Streaming,Subscriptions,discretionary_expense,Credit Card,1209.24,True
+TX00001878,U00010,S00010,2023-12-21,Entertainment,Entertainment,discretionary_expense,Wallet,4064.25,False
+TX00001879,U00010,S00010,2023-12-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001880,U00010,S00010,2023-12-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001881,U00010,S00010,2024-01-01,Salary credit,Salary,income,Net Banking,155669.92,True
+TX00001882,U00010,S00010,2024-01-03,Rent,Housing & Rent,essential_expense,Cash,39744.93,True
+TX00001883,U00010,S00010,2024-01-18,Groceries,Groceries,essential_expense,Debit Card,11835.97,True
+TX00001884,U00010,S00010,2024-01-09,Utilities,Utilities,essential_expense,Wallet,4924.92,True
+TX00001885,U00010,S00010,2024-01-16,Transport Pass,Transportation,essential_expense,Net Banking,8275.95,True
+TX00001886,U00010,S00010,2024-01-02,Dining,Food & Dining,discretionary_expense,Credit Card,13507.36,False
+TX00001887,U00010,S00010,2024-01-25,Shopping,Shopping,discretionary_expense,UPI,5982.1,False
+TX00001888,U00010,S00010,2024-01-04,Streaming,Subscriptions,discretionary_expense,Net Banking,3113.84,True
+TX00001889,U00010,S00010,2024-01-10,Entertainment,Entertainment,discretionary_expense,Credit Card,1402.91,False
+TX00001890,U00010,S00010,2024-01-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001891,U00010,S00010,2024-01-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001892,U00010,S00010,2024-02-01,Salary credit,Salary,income,Net Banking,172449.17,True
+TX00001893,U00010,S00010,2024-02-03,Rent,Housing & Rent,essential_expense,Cash,34739.87,True
+TX00001894,U00010,S00010,2024-02-10,Groceries,Groceries,essential_expense,UPI,12611.07,True
+TX00001895,U00010,S00010,2024-02-28,Utilities,Utilities,essential_expense,Wallet,4888.77,True
+TX00001896,U00010,S00010,2024-02-10,Transport Pass,Transportation,essential_expense,Cash,8172.09,True
+TX00001897,U00010,S00010,2024-02-06,Dining,Food & Dining,discretionary_expense,Cash,17910.75,False
+TX00001898,U00010,S00010,2024-02-21,Shopping,Shopping,discretionary_expense,Net Banking,1932.83,False
+TX00001899,U00010,S00010,2024-02-17,Streaming,Subscriptions,discretionary_expense,Net Banking,2940.9,True
+TX00001900,U00010,S00010,2024-02-17,Entertainment,Entertainment,discretionary_expense,Net Banking,1096.7,False
+TX00001901,U00010,S00010,2024-02-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001902,U00010,S00010,2024-02-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001903,U00010,S00010,2024-03-01,Salary credit,Salary,income,Net Banking,177521.08,True
+TX00001904,U00010,S00010,2024-03-03,Rent,Housing & Rent,essential_expense,UPI,37445.74,True
+TX00001905,U00010,S00010,2024-03-20,Groceries,Groceries,essential_expense,UPI,11882.73,True
+TX00001906,U00010,S00010,2024-03-14,Utilities,Utilities,essential_expense,UPI,4916.88,True
+TX00001907,U00010,S00010,2024-03-03,Transport Pass,Transportation,essential_expense,UPI,8418.24,True
+TX00001908,U00010,S00010,2024-03-14,Dining,Food & Dining,discretionary_expense,Debit Card,2352.69,False
+TX00001909,U00010,S00010,2024-03-11,Shopping,Shopping,discretionary_expense,Cash,3854.51,False
+TX00001910,U00010,S00010,2024-03-23,Streaming,Subscriptions,discretionary_expense,Net Banking,6221.95,True
+TX00001911,U00010,S00010,2024-03-18,Entertainment,Entertainment,discretionary_expense,Cash,9478.3,False
+TX00001912,U00010,S00010,2024-03-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001913,U00010,S00010,2024-03-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001914,U00010,S00010,2024-04-01,Salary credit,Salary,income,Net Banking,175789.09,True
+TX00001915,U00010,S00010,2024-04-03,Rent,Housing & Rent,essential_expense,Debit Card,40025.84,True
+TX00001916,U00010,S00010,2024-04-03,Groceries,Groceries,essential_expense,Net Banking,12728.8,True
+TX00001917,U00010,S00010,2024-04-11,Utilities,Utilities,essential_expense,UPI,5245.82,True
+TX00001918,U00010,S00010,2024-04-28,Transport Pass,Transportation,essential_expense,UPI,8174.9,True
+TX00001919,U00010,S00010,2024-04-07,Dining,Food & Dining,discretionary_expense,UPI,138.31,False
+TX00001920,U00010,S00010,2024-04-15,Shopping,Shopping,discretionary_expense,Cash,18705.52,False
+TX00001921,U00010,S00010,2024-04-10,Streaming,Subscriptions,discretionary_expense,UPI,2391.71,True
+TX00001922,U00010,S00010,2024-04-04,Entertainment,Entertainment,discretionary_expense,Wallet,2947.66,False
+TX00001923,U00010,S00010,2024-04-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001924,U00010,S00010,2024-04-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001925,U00010,S00010,2024-05-01,Salary credit,Salary,income,Net Banking,159862.5,True
+TX00001926,U00010,S00010,2024-05-03,Rent,Housing & Rent,essential_expense,Wallet,37521.4,True
+TX00001927,U00010,S00010,2024-05-14,Groceries,Groceries,essential_expense,Net Banking,12455.58,True
+TX00001928,U00010,S00010,2024-05-22,Utilities,Utilities,essential_expense,UPI,5073.61,True
+TX00001929,U00010,S00010,2024-05-25,Transport Pass,Transportation,essential_expense,Cash,7629.95,True
+TX00001930,U00010,S00010,2024-05-19,Healthcare,Healthcare,essential_expense,Credit Card,104031.39,False
+TX00001931,U00010,S00010,2024-05-27,Dining,Food & Dining,discretionary_expense,Wallet,9196.23,False
+TX00001932,U00010,S00010,2024-05-13,Shopping,Shopping,discretionary_expense,UPI,290.19,False
+TX00001933,U00010,S00010,2024-05-27,Streaming,Subscriptions,discretionary_expense,Wallet,1058.32,True
+TX00001934,U00010,S00010,2024-05-16,Entertainment,Entertainment,discretionary_expense,Cash,7411.21,False
+TX00001935,U00010,S00010,2024-05-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001936,U00010,S00010,2024-05-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True
+TX00001937,U00010,S00010,2024-06-01,Salary credit,Salary,income,Net Banking,175406.56,True
+TX00001938,U00010,S00010,2024-06-03,Rent,Housing & Rent,essential_expense,Credit Card,35905.88,True
+TX00001939,U00010,S00010,2024-06-06,Groceries,Groceries,essential_expense,Debit Card,11300.46,True
+TX00001940,U00010,S00010,2024-06-23,Utilities,Utilities,essential_expense,Net Banking,5032.27,True
+TX00001941,U00010,S00010,2024-06-12,Transport Pass,Transportation,essential_expense,UPI,8027.22,True
+TX00001942,U00010,S00010,2024-06-06,Dining,Food & Dining,discretionary_expense,UPI,1919.28,False
+TX00001943,U00010,S00010,2024-06-21,Shopping,Shopping,discretionary_expense,Cash,3430.42,False
+TX00001944,U00010,S00010,2024-06-14,Streaming,Subscriptions,discretionary_expense,Net Banking,13597.02,True
+TX00001945,U00010,S00010,2024-06-25,Entertainment,Entertainment,discretionary_expense,Net Banking,2216.44,False
+TX00001946,U00010,S00010,2024-06-05,Loan EMI,Debt & EMI,debt_payment,Net Banking,5014.32,True
+TX00001947,U00010,S00010,2024-06-28,Savings transfer,Savings Transfer,savings_transfer,Net Banking,13438.09,True

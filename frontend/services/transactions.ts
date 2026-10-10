@@ -14,6 +14,8 @@ export interface Transaction {
   id: string;
   user_id?: string;
   account_id?: string;
+  bank_key?: string;
+  account_name?: string;
   amount: number;
   type: 'debit' | 'credit'; // 'debit' = expense, 'credit' = income
   category: string;
@@ -24,6 +26,7 @@ export interface Transaction {
   is_recurring?: boolean;
   is_fixed?: boolean;
   is_discretionary?: boolean;
+  is_internal_transfer?: boolean;
   source_type?: string;
   created_at?: string;
 }
@@ -145,11 +148,14 @@ const INITIAL_BASELINE: Transaction[] = [
   },
   {
     id: 'tx-salary-01',
+    account_id: 'acc-hdfc-4821',
+    bank_key: 'hdfc',
+    account_name: 'HDFC Bank',
     merchant_name: 'TechCorp Solutions',
     category: 'Salary',
     transaction_date: '1 Oct, 09:00 AM',
     payment_method: 'Bank',
-    amount: 85000,
+    amount: 45000,
     type: 'credit',
     description: 'Monthly salary credit',
     source_type: 'aa',
@@ -341,6 +347,18 @@ export const TransactionService = {
         continue;
       }
 
+      // Recognize and exclude internal transfers between user's own linked accounts
+      // Prevents self transfers from inflating both cash in and cash out!
+      const isInternal =
+        Boolean(tx.is_internal_transfer) ||
+        tx.category === 'Transfer' ||
+        tx.merchant_name.toLowerCase().includes('self transfer') ||
+        tx.merchant_name.toLowerCase().includes('internal transfer');
+
+      if (isInternal) {
+        continue;
+      }
+
       const amt = Number(tx.amount) || 0;
       if (tx.type === 'credit') {
         cashIn += amt;
@@ -351,9 +369,9 @@ export const TransactionService = {
       }
     }
 
-    // Fallback baseline for demo realism if no transactions yet
-    if (cashIn === 0) cashIn = 85000;
-    if (cashOut === 0) cashOut = 32450;
+    // Baseline fallback for realism if empty
+    if (cashIn === 0) cashIn = 45000;
+    if (cashOut === 0) cashOut = 28500;
 
     const remainingThisMonth = Math.max(0, cashIn - cashOut);
 
@@ -373,6 +391,121 @@ export const TransactionService = {
       remainingThisMonth,
       categorySpending,
     };
+  },
+
+  importAccountTransactions(accountId: string, bankKey: string, bankName: string): Transaction[] {
+    const existingIds = new Set(memoryTransactions.map((t) => t.id));
+    const newTxs: Transaction[] = [];
+
+    if (bankKey.toLowerCase().includes('icici')) {
+      const iciciTxs: Transaction[] = [
+        {
+          id: `tx-${accountId}-dining-01`,
+          account_id: accountId,
+          bank_key: 'icici',
+          account_name: 'ICICI Bank',
+          merchant_name: 'Social Dining & Cafe',
+          category: 'Food & Dining',
+          transaction_date: 'Today, 7:10 PM',
+          payment_method: 'UPI',
+          amount: 8200,
+          type: 'debit',
+          description: 'Weekend dinner with team',
+          source_type: 'aa',
+        },
+        {
+          id: `tx-${accountId}-shopping-02`,
+          account_id: accountId,
+          bank_key: 'icici',
+          account_name: 'ICICI Bank',
+          merchant_name: 'Zara Lifestyle',
+          category: 'Shopping',
+          transaction_date: 'Yesterday, 4:15 PM',
+          payment_method: 'Card',
+          amount: 6450,
+          type: 'debit',
+          description: 'Autumn jacket & shoes',
+          source_type: 'aa',
+        },
+        {
+          id: `tx-${accountId}-bills-03`,
+          account_id: accountId,
+          bank_key: 'icici',
+          account_name: 'ICICI Bank',
+          merchant_name: 'Tata Power',
+          category: 'Bills & Utilities',
+          transaction_date: '4 Oct, 11:00 AM',
+          payment_method: 'UPI',
+          amount: 3850,
+          type: 'debit',
+          description: 'Electricity utility bill',
+          source_type: 'aa',
+        },
+        {
+          id: `tx-${accountId}-transfer-04`,
+          account_id: accountId,
+          bank_key: 'icici',
+          account_name: 'ICICI Bank',
+          merchant_name: 'Self Transfer from HDFC',
+          category: 'Transfer',
+          transaction_date: '2 Oct, 02:00 PM',
+          payment_method: 'Bank',
+          amount: 10000,
+          type: 'credit',
+          description: 'Internal transfer between linked accounts',
+          source_type: 'aa',
+          is_internal_transfer: true,
+        },
+      ];
+      for (const t of iciciTxs) {
+        if (!existingIds.has(t.id)) {
+          newTxs.push(t);
+        }
+      }
+    } else {
+      const genericTxs: Transaction[] = [
+        {
+          id: `tx-${accountId}-gen-01`,
+          account_id: accountId,
+          bank_key: bankKey,
+          account_name: bankName,
+          merchant_name: `${bankName} Interest Yield`,
+          category: 'Investment',
+          transaction_date: 'Yesterday, 10:00 AM',
+          payment_method: 'Bank',
+          amount: 1250,
+          type: 'credit',
+          description: 'Quarterly savings interest',
+          source_type: 'aa',
+        },
+        {
+          id: `tx-${accountId}-gen-02`,
+          account_id: accountId,
+          bank_key: bankKey,
+          account_name: bankName,
+          merchant_name: 'Lifestyle Retail',
+          category: 'Shopping',
+          transaction_date: '3 Oct, 03:20 PM',
+          payment_method: 'Card',
+          amount: 3200,
+          type: 'debit',
+          description: 'Apparel purchase',
+          source_type: 'aa',
+        },
+      ];
+      for (const t of genericTxs) {
+        if (!existingIds.has(t.id)) {
+          newTxs.push(t);
+        }
+      }
+    }
+
+    if (newTxs.length > 0) {
+      memoryTransactions = [...newTxs, ...memoryTransactions];
+      persistState(memoryTransactions);
+      notifyListeners();
+    }
+    return memoryTransactions;
   },
 
   subscribe(listener: TransactionListener): () => void {

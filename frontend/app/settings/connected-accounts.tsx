@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   Modal,
-  Platform,
   StatusBar,
   Text,
   ActivityIndicator,
@@ -19,16 +17,12 @@ import {
   RefreshCw,
   Trash2,
   FileCheck2,
-  Calendar,
-  Layers,
   AlertTriangle,
   CheckCircle2,
-  Plus,
   Lock,
   Building2,
   X,
-  Clock,
-  KeyRound,
+  ChevronRight,
 } from 'lucide-react-native';
 import { Typography } from '../../components/Typography';
 import { Button } from '../../components/Button';
@@ -46,30 +40,50 @@ export default function ConnectedAccountsScreen() {
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
-  // Default connected account or fallback to HDFC
-  const primaryAccount = aaState.connected_accounts.length > 0
-    ? aaState.connected_accounts[0]
-    : SANDBOX_ACCOUNTS[0];
+  // Active accounts that are not marked disconnected
+  const activeAccounts = aaState.connected_accounts.filter(
+    (a) => a.status !== 'disconnected'
+  );
 
-  const handleSyncNow = async () => {
+  const [selectedAccountId, setSelectedAccountId] = useState<string>(() => {
+    return activeAccounts[0]?.id || aaState.connected_accounts[0]?.id || SANDBOX_ACCOUNTS[0].id;
+  });
+
+  // Sync selectedAccountId if active accounts change
+  useEffect(() => {
+    if (activeAccounts.length > 0 && !activeAccounts.some((a) => a.id === selectedAccountId)) {
+      setSelectedAccountId(activeAccounts[0].id);
+    }
+  }, [activeAccounts, selectedAccountId]);
+
+  const selectedAccount =
+    activeAccounts.find((a) => a.id === selectedAccountId) ||
+    activeAccounts[0] ||
+    aaState.connected_accounts[0] ||
+    SANDBOX_ACCOUNTS[0];
+
+  const handleSyncAccount = async (accId: string) => {
     setIsSyncing(true);
     setSyncFeedback(null);
     try {
-      const newTime = await AAService.syncNow();
-      setSyncFeedback(`Synchronized successfully at ${newTime.replace('Today, ', '')}`);
+      const newTime = await AAService.syncAccount(accId);
+      setSyncFeedback(`${selectedAccount.bankName} synchronized successfully at ${newTime.replace('Today, ', '')}`);
       setTimeout(() => setSyncFeedback(null), 3500);
     } finally {
       setIsSyncing(false);
     }
   };
 
-  const handleConfirmDisconnect = () => {
-    AAService.disconnectAccount();
+  const handleConfirmDisconnect = async () => {
+    const disconnectedName = selectedAccount.bankName;
+    await AAService.disconnectAccountById(selectedAccount.id);
     setShowDisconnectModal(false);
+    setSyncFeedback(`${disconnectedName} disconnected. Historical transactions preserved.`);
+    setTimeout(() => setSyncFeedback(null), 3500);
   };
 
   const handleReconnect = () => {
-    AAService.reconnectAccount([SANDBOX_ACCOUNTS[0]]);
+    router.push('/connect/add-bank');
   };
 
   return (
@@ -117,57 +131,108 @@ export default function ConnectedAccountsScreen() {
         )}
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            STATE A: ACCOUNT CONNECTED
+            STATE A: ONE OR MORE ACCOUNTS CONNECTED
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {aaState.aa_connected ? (
+        {activeAccounts.length > 0 ? (
           <View style={styles.sectionContainer}>
-            {/* Account Card */}
-            <View style={styles.accountCard}>
-              <View style={styles.accountTopRow}>
-                <View style={styles.bankLeft}>
-                  <MerchantLogo name={primaryAccount.bankKey} size={42} />
-                  <View style={styles.bankDetails}>
-                    <Typography variant="bodyBold" color={COLORS.primary}>
-                      {primaryAccount.bankName}
-                    </Typography>
-                    <Typography variant="secondary" color={COLORS.textSecondary}>
-                      {primaryAccount.maskedNumber}
-                    </Typography>
-                  </View>
-                </View>
+            {/* Render each connected bank card separately */}
+            <View style={styles.accountsListCol}>
+              {activeAccounts.map((account) => {
+                const isSelected = account.id === selectedAccount.id;
 
-                <View style={styles.connectedBadge}>
-                  <View style={styles.greenDot} />
-                  <Text style={styles.connectedBadgeText}>Connected</Text>
-                </View>
-              </View>
+                return (
+                  <TouchableOpacity
+                    key={account.id}
+                    style={[
+                      styles.accountCard,
+                      isSelected && styles.accountCardSelected,
+                    ]}
+                    activeOpacity={0.85}
+                    onPress={() => setSelectedAccountId(account.id)}
+                  >
+                    <View style={styles.accountTopRow}>
+                      <View style={styles.bankLeft}>
+                        <MerchantLogo name={account.bankKey} size={42} />
+                        <View style={styles.bankDetails}>
+                          <Typography variant="bodyBold" color={COLORS.primary}>
+                            {account.bankName}
+                          </Typography>
+                          <Typography variant="secondary" color={COLORS.textSecondary}>
+                            {account.maskedNumber}
+                          </Typography>
+                        </View>
+                      </View>
 
-              <View style={styles.cardDivider} />
+                      <View style={styles.connectedBadge}>
+                        <View style={styles.greenDot} />
+                        <Text style={styles.connectedBadgeText}>Connected</Text>
+                      </View>
+                    </View>
 
-              <View style={styles.syncMetaRow}>
-                <View style={styles.syncMetaCol}>
-                  <Text style={styles.metaLabel}>Last synced</Text>
-                  <Text style={styles.metaVal}>{aaState.aa_last_synced || 'Today, 2:30 PM'}</Text>
-                </View>
+                    <View style={styles.cardDivider} />
 
-                <View style={styles.syncMetaCol}>
-                  <Text style={styles.metaLabel}>Available balance</Text>
-                  <Text style={styles.metaValBalance}>{primaryAccount.formattedBalance}</Text>
-                </View>
-              </View>
+                    <View style={styles.syncMetaRow}>
+                      <View style={styles.syncMetaCol}>
+                        <Text style={styles.metaLabel}>Last synced</Text>
+                        <Text style={styles.metaVal}>{account.lastSynced || aaState.aa_last_synced || 'Today, 8:20 PM'}</Text>
+                      </View>
+
+                      <View style={styles.syncMetaCol}>
+                        <Text style={styles.metaLabel}>Available balance</Text>
+                        <Text style={styles.metaValBalance}>{account.formattedBalance || `₹${account.balance.toLocaleString('en-IN')}`}</Text>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
-            {/* Action Buttons */}
+            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                + ADD BANK ACCOUNT BUTTON
+                Prominent Navy card below cards & above actions
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+            <TouchableOpacity
+              style={styles.addAccountCard}
+              activeOpacity={0.8}
+              onPress={() => router.push('/connect/add-bank')}
+            >
+              <View style={styles.addAccountLeft}>
+                <View style={styles.addAccountIconWrap}>
+                  <Building2 size={22} color={COLORS.gold} strokeWidth={2} />
+                </View>
+                <View style={styles.addAccountTextCol}>
+                  <Typography variant="bodyBold" color={COLORS.white} style={styles.addAccountTitle}>
+                    + Add Bank Account
+                  </Typography>
+                  <Typography variant="caption" style={styles.addAccountSubtitle}>
+                    Connect another account to see your finances together
+                  </Typography>
+                </View>
+              </View>
+              <ChevronRight size={20} color={COLORS.gold} />
+            </TouchableOpacity>
+
+            {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                PER-ACCOUNT ACTIONS
+                Clearly associated with selectedAccount
+                ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
             <View style={styles.actionsCard}>
-              <Typography variant="caption" color={COLORS.textSecondary} style={styles.actionsHeading}>
-                ACCOUNT ACTIONS
-              </Typography>
+              <View style={styles.actionsHeaderRow}>
+                <Typography variant="caption" color={COLORS.textSecondary} style={styles.actionsHeading}>
+                  ACCOUNT ACTIONS
+                </Typography>
+                {activeAccounts.length > 1 && (
+                  <View style={styles.targetAccountTag}>
+                    <Text style={styles.targetAccountTagText}>{selectedAccount.bankName}</Text>
+                  </View>
+                )}
+              </View>
 
               {/* Action 1: Sync Now */}
               <TouchableOpacity
                 style={styles.actionRow}
                 activeOpacity={0.7}
-                onPress={handleSyncNow}
+                onPress={() => handleSyncAccount(selectedAccount.id)}
                 disabled={isSyncing}
               >
                 <View style={styles.actionIconWrapper}>
@@ -179,7 +244,7 @@ export default function ConnectedAccountsScreen() {
                 </View>
                 <View style={styles.actionTextCol}>
                   <Typography variant="bodyMedium" color={COLORS.primary}>
-                    {isSyncing ? 'Fetching Latest Statement...' : 'Sync Now'}
+                    {isSyncing ? `Syncing ${selectedAccount.bankName}...` : 'Sync Now'}
                   </Typography>
                   <Typography variant="caption" color={COLORS.textSecondary}>
                     Fetch recent transactions & normalize balances
@@ -268,7 +333,7 @@ export default function ConnectedAccountsScreen() {
       </ScrollView>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          MODAL: MANAGE CONSENT DETAILS
+          MODAL: MANAGE CONSENT DETAILS (Per Account)
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <Modal
         visible={showConsentModal}
@@ -292,13 +357,17 @@ export default function ConnectedAccountsScreen() {
 
             <View style={styles.consentArtifactBox}>
               <View style={styles.artifactRow}>
+                <Text style={styles.artifactKey}>Bank:</Text>
+                <Text style={styles.artifactVal}>{selectedAccount.bankName}</Text>
+              </View>
+              <View style={styles.artifactRow}>
                 <Text style={styles.artifactKey}>Consent Handle:</Text>
-                <Text style={styles.artifactVal}>{aaState.consent_details.consentId}</Text>
+                <Text style={styles.artifactVal}>AA-{selectedAccount.bankKey.toUpperCase()}-2026-9812</Text>
               </View>
               <View style={styles.artifactRow}>
                 <Text style={styles.artifactKey}>Status:</Text>
                 <View style={styles.activePill}>
-                  <Text style={styles.activePillText}>{aaState.aa_consent_status}</Text>
+                  <Text style={styles.activePillText}>ACTIVE</Text>
                 </View>
               </View>
               <View style={styles.artifactRow}>
@@ -320,7 +389,7 @@ export default function ConnectedAccountsScreen() {
             </View>
 
             <Typography variant="caption" color={COLORS.textSecondary} style={{ marginTop: 12, marginBottom: 20 }}>
-              You may revoke this consent artifact at any time. Revocation immediately ceases new statement fetching.
+              You may revoke this consent artifact for {selectedAccount.bankName} at any time. Revocation immediately ceases new statement fetching for this specific account.
             </Typography>
 
             <Button
@@ -334,7 +403,7 @@ export default function ConnectedAccountsScreen() {
       </Modal>
 
       {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-          MODAL: CONFIRM DISCONNECT
+          MODAL: CONFIRM DISCONNECT (Per Account)
           ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
       <Modal
         visible={showDisconnectModal}
@@ -349,16 +418,16 @@ export default function ConnectedAccountsScreen() {
             </View>
 
             <Typography variant="h3" color={COLORS.primary} align="center" style={{ marginBottom: 8 }}>
-              Disconnect this account?
+              Disconnect {selectedAccount.bankName}?
             </Typography>
 
             <Typography variant="body" color={COLORS.textSecondary} align="center" style={{ marginBottom: 24, lineHeight: 22 }}>
-              ASSAY will no longer receive new financial information from this account. Your past historical analysis will be preserved.
+              ASSAY will no longer receive new financial statements from {selectedAccount.bankName} ({selectedAccount.maskedNumber}). Any other connected accounts and your historical transaction records will remain preserved.
             </Typography>
 
             <View style={{ gap: 10 }}>
               <Button
-                title="Disconnect Account"
+                title={`Disconnect ${selectedAccount.bankName}`}
                 variant="primary"
                 size="lg"
                 onPress={handleConfirmDisconnect}
@@ -457,12 +526,19 @@ const styles = StyleSheet.create({
   sectionContainer: {
     gap: 16,
   },
+  accountsListCol: {
+    gap: 12,
+  },
   accountCard: {
     backgroundColor: COLORS.surface,
     borderRadius: SIZES.cardRadius,
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 18,
+  },
+  accountCardSelected: {
+    borderColor: COLORS.gold,
+    borderWidth: 1.5,
   },
   accountTopRow: {
     flexDirection: 'row',
@@ -527,6 +603,43 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
   },
+  addAccountCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.primary,
+    borderRadius: SIZES.cardRadius,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(214, 169, 40, 0.3)',
+  },
+  addAccountLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+  },
+  addAccountIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(214, 169, 40, 0.18)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addAccountTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  addAccountTitle: {
+    fontSize: 15,
+    fontFamily: FONTS.bodyBold,
+  },
+  addAccountSubtitle: {
+    color: 'rgba(255, 255, 255, 0.72)',
+    fontSize: 12,
+    lineHeight: 16,
+  },
   actionsCard: {
     backgroundColor: COLORS.surface,
     borderRadius: SIZES.cardRadius,
@@ -534,10 +647,26 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     padding: 18,
   },
+  actionsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   actionsHeading: {
     letterSpacing: 0.8,
-    marginBottom: 12,
     fontFamily: FONTS.bodySemiBold,
+  },
+  targetAccountTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: 'rgba(15, 23, 42, 0.06)',
+  },
+  targetAccountTagText: {
+    fontFamily: FONTS.bodyMedium,
+    fontSize: 11,
+    color: COLORS.primary,
   },
   actionRow: {
     flexDirection: 'row',

@@ -1,0 +1,11 @@
+UserID,Currency,IncomeType,BaseMonthlyIncome,IncomeVolatility,StartingBalance,MinimumReserve,MonthlyEMI,SavingsTarget,ScenarioID,ScenarioType
+U00001,INR,salary,95057.73,0.076338,46523.2,38455.83,7718.48,662205.22,S00001,infeasible_savings_target
+U00002,INR,mixed,153119.36,0.059684,69496.13,61098.14,8574.43,1294497.67,S00002,infeasible_savings_target
+U00003,INR,salary,72267.17,0.030883,121520.78,26515.41,9333.8,40178.9,S00003,unexpected_essential_expense
+U00004,INR,salary,68926.79,0.063905,28454.51,17097.34,15701.61,282602.47,S00004,infeasible_savings_target
+U00005,INR,salary,158091.78,0.018532,128823.75,65587.04,0.0,91474.81,S00005,stable_income
+U00006,INR,salary,83860.41,0.041917,133175.61,28601.04,10098.05,37712.67,S00006,income_reduction
+U00007,INR,freelance,100937.76,0.043982,22530.24,36628.01,17329.37,53649.71,S00007,unexpected_essential_expense
+U00008,INR,freelance,57005.38,0.229006,215603.09,16357.16,7795.82,18745.08,S00008,high_income_uncertainty
+U00009,INR,salary,65721.45,0.02748,82048.32,25489.04,0.0,65228.28,S00009,stable_income
+U00010,INR,salary,165055.75,0.06491,80472.42,63016.45,5014.32,71951.84,S00010,unexpected_essential_expense
