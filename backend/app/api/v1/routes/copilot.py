@@ -1,67 +1,83 @@
-"""
-Copilot Query API Router.
-Integrates Hugging Face open-model inference with deterministic financial calculation
-and post-generation regex faithfulness audit.
-"""
+from typing import Any, Dict, List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.orm import Session
 
-import re
-from fastapi import APIRouter
-from app.schemas.financial_health import CopilotQueryRequest, CopilotQueryResponse
-from app.providers.llm.copilot_explainer import CopilotExplainer
+from app.core.database import get_db
+from app.models.copilot_audit import CopilotAuditLog
+from app.schemas.financial_health import (
+    CopilotInsightItem,
+    CopilotQueryRequest,
+    CopilotQueryResponse,
+)
+from app.services.financial_intelligence.copilot_engine import (
+    execute_audited_copilot_query,
+    get_proactive_audited_insights,
+)
 
 router = APIRouter(prefix="/copilot", tags=["copilot"])
-explainer = CopilotExplainer()
 
 
 @router.post("/query", response_model=CopilotQueryResponse)
-async def query_copilot(request: CopilotQueryRequest):
+def query_copilot(
+    request: CopilotQueryRequest,
+    db: Session = Depends(get_db),
+):
     """
     Copilot query endpoint.
-    Extracts financial parameters, verifies mathematical facts,
-    and returns a grounded, audit-checked LLM explanation.
+    Retrieves authorized financial facts, computes deterministic metrics,
+    and returns an audited explanation with supporting evidence.
     """
-    question = request.question
-    
-    # Extract target expense amount from natural language (e.g. "Can I buy a ₹30,000 phone?")
-    amount_match = re.search(r'(?:₹|rs\.?|inr)?\s*([\d,]+)', question, re.IGNORECASE)
-    item_cost = 30000.0
-    if amount_match:
-        try:
-            cleaned = amount_match.group(1).replace(",", "")
-            if cleaned.isdigit() and float(cleaned) > 0:
-                item_cost = float(cleaned)
-        except Exception:
-            pass
+    if not request.question or not request.question.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Question must not be empty.",
+        )
 
-    # Dynamically bind user balance and projected buffer from active ledger
-    try:
-        from app.services.financial_intelligence.ledger import get_user_profile, get_ledger_transactions
-        from app.services.financial_intelligence.engine import build_financial_health
-
-        profile = get_user_profile()
-        health = build_financial_health(get_ledger_transactions(historical_only=True))
-        current_balance = float(profile.get("starting_balance") or 42850.0)
-        projected_buffer = float(health.get("projected_month_end_balance") or 27650.0)
-    except Exception:
-        current_balance = 42850.0
-        projected_buffer = 27650.0
-
-    result = await explainer.explain_affordability_grounded(
-        question=question,
-        current_balance=current_balance,
-        projected_buffer=projected_buffer,
-        item_cost=item_cost,
+    result = execute_audited_copilot_query(
+        question=request.question,
+        db=db,
+        user_id=request.user_id,
+        context=request.context,
     )
+    return CopilotQueryResponse(**result)
 
 
-    return CopilotQueryResponse(
-        intent=result.get("intent", "affordability"),
-        answer=result.get("answer", ""),
-        observed=result.get("observed", []),
-        analysis=result.get("analysis", {}),
-        recommendation=result.get("recommendation"),
-        confidence=result.get("confidence", 0.95),
-        limitations=result.get("limitations", []),
-        audit_passed=result.get("audit_passed", True),
-        provider=result.get("provider", "huggingface"),
-    )
+@router.get("/insights", response_model=List[CopilotInsightItem])
+def get_copilot_insights(
+    user_id: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve prioritized, proactive audited financial insights for the authenticated user.
+    """
+    return get_proactive_audited_insights(db=db, user_id=user_id)
+
+
+@router.get("/audit/{audit_id}")
+def get_copilot_audit_record(
+    audit_id: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Retrieve audit verification record for a specific insight or recommendation.
+    """
+    record = db.query(CopilotAuditLog).filter(CopilotAuditLog.id == audit_id).first()
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Audit record '{audit_id}' not found.",
+        )
+    return {
+        "id": record.id,
+        "insight_id": record.insight_id,
+        "intent": record.intent,
+        "query": record.query,
+        "model_version": record.model_version,
+        "data_snapshot": record.data_snapshot,
+        "assumptions": record.assumptions,
+        "findings": record.findings,
+        "recommendation": record.recommendation,
+        "limitations": record.limitations,
+        "created_at": record.created_at.isoformat() if record.created_at else None,
+    }
+

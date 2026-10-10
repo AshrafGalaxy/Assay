@@ -1,280 +1,144 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  TextInput, 
-  KeyboardAvoidingView, 
-  Platform,
-  ActivityIndicator
-} from 'react-native';
+import React from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Svg, { Path } from 'react-native-svg';
 import { Typography } from '../../components/Typography';
-import { COLORS } from '../../constants/theme';
-import { api, endpoints } from '../../services/api';
-import { 
-  Send, 
-  BarChart2, 
-  TrendingUp, 
-  Target, 
-  Bot,
-  ChevronLeft
+import { COLORS, FONTS } from '../../constants/theme';
+import { FeatureCard } from '../../components/fi/FeatureCard';
+import { FinancialGrowthIllustration } from '../../components/fi/FinancialGrowthIllustration';
+import {
+  ChevronLeft,
+  TrendingUp,
+  Sliders,
+  ShieldCheck,
+  Sparkles,
+  Lightbulb,
+  ChevronRight,
 } from 'lucide-react-native';
 
-interface Message {
-  id: string;
-  sender: 'bot' | 'user';
-  text: string;
-  time: string;
-  hasDetailsButton?: boolean;
-  detailsTarget?: { pathname: string; params?: Record<string, string> };
-}
-
-export default function CopilotChatScreen() {
+export default function FinancialIntelligenceHub() {
   const router = useRouter();
-  const [inputText, setInputText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      sender: 'bot',
-      text: 'Hey Ashish! 👋\nI am your Assay Financial Copilot. Ask me about your cash buffer, bills, or whether you can afford upcoming purchases.',
-      time: '9:41 AM',
-    },
-    {
-      id: '2',
-      sender: 'user',
-      text: 'Can I afford a ₹30,000 phone?',
-      time: '9:42 AM',
-    },
-    {
-      id: '3',
-      sender: 'bot',
-      text: 'Purchasing a ₹30,000 phone upfront would pressure your cash buffer before next payday. Splitting into a 3-month No-Cost EMI keeps your trough safe at +₹17,650.',
-      time: '9:42 AM',
-      hasDetailsButton: true,
-      detailsTarget: { pathname: '/copilot/affordability' },
-    },
-  ]);
-
-  const handleSend = async () => {
-    const query = inputText.trim();
-    if (!query || isTyping) return;
-
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      sender: 'user',
-      text: query,
-      time: timeStr,
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
-    setInputText('');
-    setIsTyping(true);
-
-    try {
-      const res = await api.post(endpoints.copilot.query, { question: query });
-      const data = res.data;
-
-      const lower = query.toLowerCase();
-      const isAfford = lower.includes('afford') || lower.includes('buy') || lower.includes('phone') || lower.includes('spend');
-
-      const botReply: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'bot',
-        text: data.answer || 'Based on your financial ledger, your spending is pacing within normal limits.',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        hasDetailsButton: true,
-        detailsTarget: isAfford ? { pathname: '/copilot/affordability' } : { pathname: '/copilot/analysis' },
-      };
-      setMessages((prev) => [...prev, botReply]);
-    } catch (err) {
-      const botReply: Message = {
-        id: (Date.now() + 1).toString(),
-        sender: 'bot',
-        text: 'Based on your bank accounts, your discretionary balance is stable. You can simulate full cash-flow trajectories in the Decision Studio.',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        hasDetailsButton: true,
-        detailsTarget: { pathname: '/copilot/affordability' },
-      };
-      setMessages((prev) => [...prev, botReply]);
-    } finally {
-      setIsTyping(false);
-    }
-  };
-
-  const handleSuggestionPress = (promptText: string) => {
-    setInputText(promptText);
-  };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Top Copilot Header */}
+    <SafeAreaView style={styles.container} edges={['top']}>
+      {/* Subtle Background Golden Wave Ribbon Watermarks */}
+      <View style={styles.watermarkLayer} pointerEvents="none">
+        <Svg width="100%" height="100%" viewBox="0 0 390 844" fill="none">
+          <Path
+            d="M -30 200 C 60 260, 20 420, -10 600"
+            stroke="rgba(214, 169, 40, 0.08)"
+            strokeWidth="1.5"
+          />
+          <Path
+            d="M 390 320 C 310 400, 340 560, 420 700"
+            stroke="rgba(214, 169, 40, 0.08)"
+            strokeWidth="1.5"
+          />
+        </Svg>
+      </View>
+
+      {/* Top Header with Back Navigation */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backBtn}
           onPress={() => router.back()}
           activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <ChevronLeft color={COLORS.text} size={24} />
+          <ChevronLeft color={COLORS.primary} size={24} />
         </TouchableOpacity>
-
-        <View style={styles.robotAvatar}>
-          <Bot color="#FFFFFF" size={26} />
-        </View>
-
-        <View style={styles.headerTextCol}>
-          <Typography variant="h3" style={styles.botTitle}>
-            Copilot AI
-          </Typography>
-          <Typography variant="caption" style={styles.botSubtitle}>
-            Your money copilot ✨
-          </Typography>
-        </View>
       </View>
 
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
       >
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.chatScroll}
-        >
-          {messages.map((msg) => {
-            if (msg.sender === 'user') {
-              return (
-                <View key={msg.id} style={styles.userMsgWrapper}>
-                  <View style={styles.userBubble}>
-                    <Typography variant="body" color="#111827" style={styles.userText}>
-                      {msg.text}
-                    </Typography>
-                  </View>
-                  <Typography variant="caption" color={COLORS.textSecondary} style={styles.userTimestamp}>
-                    {msg.time}
-                  </Typography>
-                </View>
-              );
-            }
+        {/* 1. Header Section with Serif Title & Subtle Gold Financial Growth Illustration */}
+        <View style={styles.headerSection}>
+          <View style={styles.headerTextCol}>
+            <Typography variant="h1" color={COLORS.primary} style={styles.title}>
+              Financial{'\n'}Intelligence
+            </Typography>
+            <Typography variant="body" color={COLORS.textSecondary} style={styles.subtitle}>
+              Plan smarter. Make better financial decisions with AI powered insights.
+            </Typography>
+          </View>
 
-            return (
-              <View key={msg.id} style={styles.botMsgWrapper}>
-                <View style={styles.botRow}>
-                  <View style={styles.botSmallAvatar}>
-                    <Bot color="#FFFFFF" size={18} />
-                  </View>
-
-                  <View style={styles.botBubble}>
-                    <Typography variant="body" color={COLORS.text} style={styles.botText}>
-                      {msg.text}
-                    </Typography>
-
-                    {msg.hasDetailsButton && (
-                      <TouchableOpacity
-                        style={styles.viewDetailsBtn}
-                        activeOpacity={0.75}
-                        onPress={() => {
-                          if (msg.detailsTarget) {
-                            router.push(msg.detailsTarget as any);
-                          } else {
-                            router.push('/copilot/analysis');
-                          }
-                        }}
-                      >
-                        <Typography variant="bodyBold" color={COLORS.text} style={styles.viewDetailsText}>
-                          View details
-                        </Typography>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
-
-                <Typography variant="caption" color={COLORS.textSecondary} style={styles.botTimestamp}>
-                  {msg.time}
-                </Typography>
-              </View>
-            );
-          })}
-
-          {isTyping && (
-            <View style={styles.botMsgWrapper}>
-              <View style={styles.botRow}>
-                <View style={styles.botSmallAvatar}>
-                  <Bot color="#FFFFFF" size={18} />
-                </View>
-                <View style={[styles.botBubble, { paddingVertical: 12, paddingHorizontal: 16 }]}>
-                  <ActivityIndicator size="small" color="#D6A928" />
-                </View>
-              </View>
-            </View>
-          )}
-        </ScrollView>
-
-        {/* Quick Suggestion Chips */}
-        <View style={styles.suggestionsContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.suggestionsRow}>
-            <TouchableOpacity
-              style={styles.suggestionChip}
-              onPress={() => handleSuggestionPress('Top merchants this month')}
-              activeOpacity={0.7}
-            >
-              <BarChart2 color="#B45309" size={16} style={{ marginRight: 6 }} />
-              <Typography variant="caption" style={styles.suggestionText}>
-                Top merchants
-              </Typography>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.suggestionChip}
-              onPress={() => router.push('/copilot/analysis')}
-              activeOpacity={0.7}
-            >
-              <TrendingUp color="#D97706" size={16} style={{ marginRight: 6 }} />
-              <Typography variant="caption" style={styles.suggestionText}>
-                Spending trend
-              </Typography>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.suggestionChip}
-              onPress={() => router.push('/copilot/affordability')}
-              activeOpacity={0.7}
-            >
-              <Target color="#B45309" size={16} style={{ marginRight: 6 }} />
-              <Typography variant="caption" style={styles.suggestionText}>
-                Budget check
-              </Typography>
-            </TouchableOpacity>
-          </ScrollView>
-        </View>
-
-        {/* Bottom Input Field */}
-        <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.textInput}
-              placeholder="Ask anything about your spending..."
-              placeholderTextColor="#9CA3AF"
-              value={inputText}
-              onChangeText={setInputText}
-              onSubmitEditing={handleSend}
-            />
-            <TouchableOpacity 
-              style={[styles.sendButton, !inputText.trim() && styles.sendButtonDisabled]}
-              onPress={handleSend}
-              disabled={!inputText.trim()}
-              activeOpacity={0.8}
-            >
-              <Send color="#FFFFFF" size={18} />
-            </TouchableOpacity>
+          {/* Gold Financial Growth Illustration */}
+          <View style={styles.illustrationWrapper}>
+            <FinancialGrowthIllustration />
           </View>
         </View>
-      </KeyboardAvoidingView>
+
+        {/* 2. Premium "YOUR FINANCIAL FOCUS" Card */}
+        <TouchableOpacity
+          style={styles.focusCard}
+          activeOpacity={0.8}
+          onPress={() => router.push('/cashflow-detail')}
+        >
+          {/* Circular Gold Badge with Lightbulb */}
+          <View style={styles.bulbBadge}>
+            <Lightbulb size={22} color="#CFA42A" strokeWidth={2} />
+          </View>
+
+          {/* Center Copy */}
+          <View style={styles.focusCopyCol}>
+            <Typography variant="caption" style={styles.focusTag}>
+              YOUR FINANCIAL FOCUS
+            </Typography>
+            <Typography variant="bodyBold" color={COLORS.primary} style={styles.focusHeadline}>
+              Stay ahead of your next financial decision.
+            </Typography>
+            <Typography variant="body" color={COLORS.textSecondary} style={styles.focusSubtext}>
+              Explore your forecast, test scenarios and understand your options.
+            </Typography>
+          </View>
+
+          {/* Right Chevron */}
+          <View style={styles.focusChevron}>
+            <ChevronRight size={18} color="#CFA42A" strokeWidth={2.2} />
+          </View>
+        </TouchableOpacity>
+
+        {/* 3. The 4 Feature Cards */}
+        <View style={styles.cardsContainer}>
+          {/* Card 1: Cash Flow Forecast (Highlighted with thin gold border) */}
+          <FeatureCard
+            title="Cash Flow Forecast"
+            description="See where your money is heading"
+            icon={<TrendingUp size={22} color="#D6A928" strokeWidth={2.2} />}
+            highlighted={true}
+            onPress={() => router.push('/cashflow-detail')}
+          />
+
+          {/* Card 2: What-If Simulator */}
+          <FeatureCard
+            title="What-If Simulator"
+            description="Test different scenarios"
+            icon={<Sliders size={22} color="#D6A928" strokeWidth={2.2} />}
+            onPress={() => router.push('/simulator')}
+          />
+
+          {/* Card 3: Affordability Check */}
+          <FeatureCard
+            title="Affordability Check"
+            description="Check if you can afford a purchase"
+            icon={<ShieldCheck size={22} color="#D6A928" strokeWidth={2.2} />}
+            onPress={() => router.push('/copilot/affordability')}
+          />
+
+          {/* Card 4: ASSAY Copilot */}
+          <FeatureCard
+            title="ASSAY Copilot"
+            description="Get audited insights and recommendations"
+            icon={<Sparkles size={22} color="#D6A928" strokeWidth={2.2} />}
+            onPress={() => router.push('/copilot/analysis')}
+          />
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -282,172 +146,124 @@ export default function CopilotChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FAF9F6',
+  },
+  watermarkLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEB',
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   backBtn: {
-    marginRight: 10,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
-  robotAvatar: {
+  scrollContent: {
+    paddingHorizontal: 20,
+    paddingTop: 4,
+  },
+  headerSection: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 18,
+    minHeight: 130,
+  },
+  headerTextCol: {
+    flex: 1,
+    paddingRight: 6,
+  },
+  title: {
+    fontSize: 34,
+    lineHeight: 39,
+    fontFamily: FONTS.heading,
+    letterSpacing: -0.5,
+    marginBottom: 8,
+    color: '#0F172A',
+  },
+  subtitle: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: '#6B7280',
+    maxWidth: 215,
+    fontFamily: FONTS.body,
+  },
+  illustrationWrapper: {
+    width: 138,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  focusCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1.2,
+    borderColor: '#F0EFEA',
+    marginBottom: 14,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.04,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.03)',
+      },
+    }),
+  },
+  bulbBadge: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#0F172A',
-    justifyContent: 'center',
+    backgroundColor: '#FCF7EC',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTextCol: {
     justifyContent: 'center',
+    marginRight: 14,
   },
-  botTitle: {
-    fontSize: 20,
-    color: COLORS.text,
-  },
-  botSubtitle: {
-    color: '#D6A928',
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 2,
-  },
-  keyboardAvoid: {
+  focusCopyCol: {
     flex: 1,
   },
-  chatScroll: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
+  focusTag: {
+    fontFamily: FONTS.bodyBold,
+    fontSize: 10.5,
+    color: '#CFA42A',
+    letterSpacing: 0.6,
+    marginBottom: 3,
   },
-  userMsgWrapper: {
-    alignItems: 'flex-end',
-    marginBottom: 20,
+  focusHeadline: {
+    fontSize: 14.5,
+    lineHeight: 19,
+    fontFamily: FONTS.bodyBold,
+    color: '#0F172A',
   },
-  userBubble: {
-    backgroundColor: '#E0E7FF',
-    borderRadius: 20,
-    borderBottomRightRadius: 4,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    maxWidth: '82%',
+  focusSubtext: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: '#6B7280',
+    fontFamily: FONTS.body,
+    marginTop: 3,
   },
-  userText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  userTimestamp: {
-    marginTop: 4,
-    fontSize: 11,
-    marginRight: 4,
-  },
-  botMsgWrapper: {
-    marginBottom: 20,
-  },
-  botRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  botSmallAvatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: '#0F172A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-    marginTop: 4,
-  },
-  botBubble: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    borderTopLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    maxWidth: '82%',
-  },
-  botText: {
-    fontSize: 15,
-    lineHeight: 22,
-  },
-  viewDetailsBtn: {
-    marginTop: 12,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 14,
-    paddingVertical: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  viewDetailsText: {
-    fontSize: 14,
-  },
-  botTimestamp: {
-    marginLeft: 44,
-    marginTop: 4,
-    fontSize: 11,
-  },
-  suggestionsContainer: {
-    paddingVertical: 10,
-  },
-  suggestionsRow: {
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  suggestionChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 18,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-  },
-  suggestionText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  inputContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 16,
-    paddingTop: 8,
-  },
-  inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 26,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingLeft: 20,
-    paddingRight: 6,
-    paddingVertical: 6,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 15,
-    color: COLORS.text,
-    paddingVertical: 6,
-  },
-  sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#0F172A',
+  focusChevron: {
+    marginLeft: 6,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sendButtonDisabled: {
-    opacity: 0.4,
+  cardsContainer: {
+    gap: 0,
   },
 });

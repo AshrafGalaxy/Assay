@@ -114,9 +114,16 @@ export const endpoints = {
     obligations: '/analytics/obligations',
     spending: '/analytics/spending',
     moneyLeaks: '/analytics/money-leaks',
+    scenarios: '/analytics/cash-flow/scenarios',
+    affordability: '/analytics/affordability',
+  },
+  settings: {
+    forecast: '/settings/forecast',
   },
   copilot: {
     query: '/copilot/query',
+    insights: '/copilot/insights',
+    audit: (id: string) => `/copilot/audit/${id}`,
   },
   recommendations: {
     list: '/recommendations',
