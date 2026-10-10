@@ -1,0 +1,11 @@
+ScenarioID,UserID,ScenarioType,ForecastStartMonth,ForecastHorizonMonths,ShockMonth,IncomeReductionPct,UnexpectedEssentialExpense,SavingsTarget,MinimumReserve,InitialForecastBalance,FinalActualBalance,MinimumActualBalance,ReserveViolated,TargetFeasibleUnderRealizedSavings
+S00001,U00001,infeasible_savings_target,2024-01,6,,0.0,0.0,662205.22,38455.83,518779.85,521960.04,387109.16,False,False
+S00002,U00002,infeasible_savings_target,2024-01,6,,0.0,0.0,1294497.67,61098.14,1071817.71,1082530.04,796577.26,False,False
+S00003,U00003,unexpected_essential_expense,2024-01,6,2024-02,0.0,81620.99,40178.9,26515.41,310124.02,205281.42,180881.9,False,True
+S00004,U00004,infeasible_savings_target,2024-01,6,,0.0,0.0,282602.47,17097.34,177643.03,185824.1,140090.98,False,False
+S00005,U00005,stable_income,2024-01,6,,0.0,0.0,91474.81,65587.04,1041374.07,1026224.44,782936.22,False,True
+S00006,U00006,income_reduction,2024-01,6,2024-01,0.346063,0.0,37712.67,28601.04,378781.51,202060.04,202060.04,False,True
+S00007,U00007,unexpected_essential_expense,2024-01,6,2024-04,0.0,98231.76,53649.71,36628.01,589516.75,478197.52,417130.19,False,True
+S00008,U00008,high_income_uncertainty,2024-01,6,,0.0,0.0,18745.08,16357.16,514284.47,497462.14,425032.08,False,True
+S00009,U00009,stable_income,2024-01,6,,0.0,0.0,65228.28,25489.04,442256.73,433239.13,344858.45,False,True
+S00010,U00010,unexpected_essential_expense,2024-01,6,2024-05,0.0,104031.39,71951.84,63016.45,1264309.4,1161573.51,918126.61,False,True

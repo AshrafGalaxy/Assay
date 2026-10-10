@@ -79,3 +79,81 @@ class CashFlowForecastOut(BaseModel):
     is_projection: bool = True
     limitations: List[str] = Field(default_factory=list)
     data_quality: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ForecastSettingsIn(BaseModel):
+    horizon_months: int = Field(default=6, description="1, 3, 6, or 12")
+    minimum_reserve: float = Field(default=15000.0, ge=0)
+    include_income: bool = True
+    include_essential: bool = True
+    include_discretionary: bool = True
+    include_debt: bool = True
+    include_obligations: bool = True
+
+
+class ForecastSettingsOut(BaseModel):
+    id: Optional[str] = None
+    user_id: Optional[str] = None
+    horizon_months: int = 6
+    minimum_reserve: float = 15000.0
+    include_income: bool = True
+    include_essential: bool = True
+    include_discretionary: bool = True
+    include_debt: bool = True
+    include_obligations: bool = True
+    updated_at: Optional[str] = None
+
+
+class ScenarioDetail(BaseModel):
+    type: str  # "best" | "expected" | "worst"
+    title: str
+    description: str
+    projected_outcome: str
+    ending_balance: float
+    lowest_balance: float
+    reserve_breached: bool
+    assumptions_summary: str
+    difference_explanation: str
+    periods: List[Dict[str, Any]] = Field(default_factory=list)
+
+
+class ForecastScenariosResponse(BaseModel):
+    horizon_months: int
+    minimum_reserve: float
+    scenarios: List[ScenarioDetail]
+    probability_of_running_out_of_cash: float
+    calculation_basis: str
+    limitations: List[str] = Field(default_factory=list)
+
+
+class AffordabilityRequest(BaseModel):
+    purchase_amount: float = Field(..., gt=0, description="Cost of purchase in INR")
+    purchase_date: str = Field(..., description="Target purchase date (YYYY-MM-DD or descriptive)")
+    expense_type: str = Field(default="onetime", description="'onetime' or 'recurring'")
+    recurring_frequency: Optional[str] = Field(default="monthly", description="If recurring: 'monthly' | 'yearly'")
+
+
+class AffordabilityResponse(BaseModel):
+    purchase_amount: float
+    purchase_date: str
+    expense_type: str
+    current_balance: float
+    post_purchase_balance: float
+    minimum_reserve: float
+    upcoming_obligations_total: float
+    trough_before_payday: float
+    headroom_above_reserve: float
+    verdict: str  # "affordable" | "caution" | "shortfall"
+    status_headline: str
+    finding_explanation: str
+    conflicting_obligations: List[Dict[str, Any]] = Field(default_factory=list)
+    alternatives: List[Dict[str, Any]] = Field(default_factory=list)
+    limitations: List[str] = Field(default_factory=list)
+
+
+class UpcomingObligationsResponse(BaseModel):
+    horizon_months: int
+    total_commitments: float
+    count: int
+    obligations: List[Dict[str, Any]] = Field(default_factory=list)
+

@@ -1,18 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import {
-  View,
-  ScrollView,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { MerchantLogo } from '../../components/ui/MerchantLogo';
-import { COLORS, FONTS } from '../../constants/theme';
+import { COLORS, SIZES, FONTS } from '../../constants/theme';
 import { Search } from 'lucide-react-native';
 import { useTransactions, Transaction } from '../../services/transactions';
 
@@ -27,6 +19,8 @@ interface TransactionItemData {
   category?: string;
   notes?: string;
   sourceType?: string;
+  bankKey?: string;
+  accountName?: string;
 }
 
 interface DateGroup {
@@ -85,6 +79,8 @@ function groupTransactionsByDate(txList: Transaction[]): DateGroup[] {
       category: tx.category,
       notes: tx.description,
       sourceType: tx.source_type,
+      bankKey: tx.bank_key,
+      accountName: tx.account_name,
     });
   }
 
@@ -97,11 +93,10 @@ function groupTransactionsByDate(txList: Transaction[]): DateGroup[] {
 export default function TransactionsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ query?: string; filter?: string }>();
-  const { transactions, loading, refresh } = useTransactions();
+  const { transactions } = useTransactions();
 
   const [activeFilter, setActiveFilter] = useState<string>(params.filter || 'All');
   const [searchQuery, setSearchQuery] = useState(params.query || '');
-  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (params.query) {
@@ -111,15 +106,6 @@ export default function TransactionsScreen() {
       setActiveFilter(params.filter);
     }
   }, [params.query, params.filter]);
-
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    try {
-      await refresh();
-    } finally {
-      setRefreshing(false);
-    }
-  }, [refresh]);
 
   const rawGroups = useMemo(() => groupTransactionsByDate(transactions), [transactions]);
 
@@ -136,7 +122,8 @@ export default function TransactionsScreen() {
             item.name.toLowerCase().includes(query) ||
             item.amount.includes(query) ||
             item.method.toLowerCase().includes(query) ||
-            (item.category && item.category.toLowerCase().includes(query));
+            (item.category && item.category.toLowerCase().includes(query)) ||
+            (item.accountName && item.accountName.toLowerCase().includes(query));
           return matchesFilter && matchesSearch;
         });
         return { ...group, items };
@@ -199,20 +186,8 @@ export default function TransactionsScreen() {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-        }
       >
-        {loading && transactions.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <ActivityIndicator color={COLORS.primary} />
-            <Typography variant="caption" color={COLORS.textSecondary} style={{ marginTop: 8 }}>
-              Loading transactions…
-            </Typography>
-          </View>
-        ) : null}
-
-        {filteredGroups.length === 0 && (!loading || transactions.length > 0) ? (
+        {filteredGroups.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Typography variant="bodyMedium" color={COLORS.textSecondary}>
               No transactions match your search.
@@ -263,7 +238,7 @@ export default function TransactionsScreen() {
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
-                    {item.time} • {item.method} • {item.category}
+                    {item.time} • {item.method} • {item.category}{item.accountName ? ` • ${item.accountName}` : ''}
                   </Typography>
                 </View>
 

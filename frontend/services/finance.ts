@@ -244,11 +244,156 @@ export type CashFlowForecast = {
   };
 };
 
+export type ForecastSettings = {
+  id?: string;
+  user_id?: string | null;
+  horizon_months: 1 | 3 | 6 | 12;
+  minimum_reserve: number;
+  include_income: boolean;
+  include_essential: boolean;
+  include_discretionary: boolean;
+  include_debt: boolean;
+  include_obligations: boolean;
+  updated_at?: string | null;
+};
+
+export async function fetchForecastSettings(): Promise<ForecastSettings> {
+  const { data } = await api.get<ForecastSettings>(endpoints.settings.forecast);
+  return data;
+}
+
+export async function saveForecastSettings(
+  settings: Partial<ForecastSettings>,
+): Promise<ForecastSettings> {
+  const { data } = await api.post<ForecastSettings>(endpoints.settings.forecast, settings);
+  return data;
+}
+
+export type ScenarioDetail = {
+  type: 'best' | 'expected' | 'worst';
+  title: string;
+  description: string;
+  projected_outcome: string;
+  ending_balance: number;
+  lowest_balance: number;
+  reserve_breached: boolean;
+  assumptions_summary: string;
+  difference_explanation: string;
+  periods: ForecastPeriod[];
+};
+
+export type ForecastScenariosResponse = {
+  horizon_months: number;
+  minimum_reserve: number;
+  scenarios: ScenarioDetail[];
+  probability_of_running_out_of_cash: number;
+  calculation_basis: string;
+  limitations: string[];
+};
+
+export async function fetchForecastScenarios(
+  horizonMonths: 1 | 3 | 6 | 12 = 6,
+  minimumReserve?: number,
+): Promise<ForecastScenariosResponse> {
+  const { data } = await api.get<ForecastScenariosResponse>(
+    endpoints.financialHealth.scenarios,
+    {
+      params: {
+        horizon_months: horizonMonths,
+        minimum_reserve: minimumReserve,
+      },
+    },
+  );
+  return data;
+}
+
+export type AffordabilityRequest = {
+  purchase_amount: number;
+  purchase_date: string;
+  expense_type?: string;
+  recurring_frequency?: string;
+};
+
+export type AffordabilityResponse = {
+  purchase_amount: number;
+  purchase_date: string;
+  expense_type: string;
+  current_balance: number;
+  post_purchase_balance: number;
+  minimum_reserve: number;
+  upcoming_obligations_total: number;
+  trough_before_payday: number;
+  headroom_above_reserve: number;
+  verdict: 'affordable' | 'caution' | 'shortfall';
+  status_headline: string;
+  finding_explanation: string;
+  conflicting_obligations: Array<{ name: string; amount: number; due: string }>;
+  alternatives: Array<{
+    id: string;
+    name: string;
+    description: string;
+    monthly_commitment?: number;
+    recommended_date?: string;
+  }>;
+  limitations: string[];
+};
+
+export async function checkAffordability(
+  request: AffordabilityRequest,
+): Promise<AffordabilityResponse> {
+  const { data } = await api.post<AffordabilityResponse>(
+    endpoints.financialHealth.affordability,
+    request,
+  );
+  return data;
+}
+
+export type UpcomingObligationItem = {
+  id: string;
+  name: string;
+  due_date: string;
+  due_date_iso?: string;
+  amount: number;
+  type: string;
+  recurrence: string;
+  status: string;
+};
+
+export async function fetchUpcomingObligations(
+  horizonMonths: 6 | 12 = 6,
+): Promise<{
+  horizon_months: number;
+  total_commitments: number;
+  count: number;
+  obligations: UpcomingObligationItem[];
+}> {
+  const { data } = await api.get(endpoints.financialHealth.obligations, {
+    params: { horizon_months: horizonMonths },
+  });
+  return data;
+}
+
 export async function fetchCashFlowForecast(
-  horizonMonths: 1 | 3 | 6 = 6,
+  horizonMonths: 1 | 3 | 6 | 12 = 6,
+  options?: {
+    minimum_reserve?: number;
+    include_income?: boolean;
+    include_essential?: boolean;
+    include_discretionary?: boolean;
+    include_debt?: boolean;
+    include_obligations?: boolean;
+  },
 ): Promise<CashFlowForecast> {
   const { data } = await api.get<CashFlowForecast>(endpoints.financialHealth.cashFlowForecast, {
-    params: { horizon_months: horizonMonths },
+    params: {
+      horizon_months: horizonMonths,
+      minimum_reserve: options?.minimum_reserve,
+      include_income: options?.include_income,
+      include_essential: options?.include_essential,
+      include_discretionary: options?.include_discretionary,
+      include_debt: options?.include_debt,
+      include_obligations: options?.include_obligations,
+    },
   });
   return data;
 }
@@ -346,6 +491,62 @@ export async function runWhatIfSimulation(
   return data;
 }
 
+export type MoneyLeakItem = {
+  title: string;
+  amount: number;
+  count: number;
+  label: string;
+};
+
+export type MoneyLeaksResponse = {
+  target_month: string;
+  total_amount: number;
+  total_count: number;
+  leaks: MoneyLeakItem[];
+  note: string;
+};
+
+export async function fetchMoneyLeaks(threshold: number = 250): Promise<MoneyLeaksResponse> {
+  const { data } = await api.get<MoneyLeaksResponse>(endpoints.financialHealth.moneyLeaks, {
+    params: { threshold },
+  });
+  return data;
+}
+
+export type ConformalForecastPeriod = {
+  period_id: number;
+  month_label: string;
+  income_p10: number;
+  income_p50: number;
+  income_p90: number;
+  essential_p10: number;
+  essential_p50: number;
+  essential_p90: number;
+  net_cash_p50: number;
+  reserve_threshold: number;
+};
+
+export type ConformalForecastResponse = {
+  horizon_months: number;
+  uncertainty_method: string;
+  conformal_coverage_pct: number;
+  periods: ConformalForecastPeriod[];
+  summary: Record<string, any>;
+};
+
+export async function fetchConformalForecast(
+  horizonMonths: number = 6,
+  confidenceLevel: number = 0.80,
+): Promise<ConformalForecastResponse> {
+  const { data } = await api.get<ConformalForecastResponse>(endpoints.planning.forecast, {
+    params: {
+      horizon_months: horizonMonths,
+      confidence_level: confidenceLevel,
+    },
+  });
+  return data;
+}
+
 export function groupTransactionsByDate(items: ApiTransaction[]) {
   const groups = new Map<string, ApiTransaction[]>();
   const sorted = [...items].sort((a, b) =>
@@ -386,3 +587,76 @@ function formatDateLabel(isoDate: string): string {
     year: 'numeric',
   });
 }
+
+export type CopilotEvidenceItem = {
+  label: string;
+  value: string;
+  detail?: string;
+  source?: string;
+};
+
+export type CopilotRecommendation = {
+  action: string;
+  impact: string;
+  action_url?: string;
+  action_label?: string;
+};
+
+export type CopilotAuditInfo = {
+  audit_id: string;
+  insight_id: string;
+  model_version: string;
+  calculation_basis: string;
+  generated_at: string;
+  data_freshness: string;
+  limitations: string[];
+};
+
+export type CopilotQueryResponse = {
+  intent: string;
+  headline?: string;
+  answer: string;
+  what_we_know: CopilotEvidenceItem[];
+  what_may_happen?: string;
+  what_you_can_do?: CopilotRecommendation;
+  why_this_answer?: CopilotAuditInfo;
+  observed?: Array<{ label: string; value: string }>;
+  analysis?: Record<string, any>;
+  recommendation?: Record<string, any>;
+  confidence?: number;
+  limitations?: string[];
+};
+
+export type CopilotInsightItem = {
+  id: string;
+  category: string;
+  severity: string;
+  title: string;
+  summary: string;
+  evidence: string[];
+  recommendation: string;
+  action_url?: string;
+  action_label?: string;
+};
+
+export async function queryCopilot(
+  question: string,
+  context?: Record<string, any>,
+): Promise<CopilotQueryResponse> {
+  const { data } = await api.post<CopilotQueryResponse>(endpoints.copilot.query, {
+    question,
+    context,
+  });
+  return data;
+}
+
+export async function fetchCopilotInsights(): Promise<CopilotInsightItem[]> {
+  const { data } = await api.get<CopilotInsightItem[]>(endpoints.copilot.insights);
+  return data;
+}
+
+export async function fetchCopilotAudit(auditId: string): Promise<Record<string, any>> {
+  const { data } = await api.get<Record<string, any>>(endpoints.copilot.audit(auditId));
+  return data;
+}
+

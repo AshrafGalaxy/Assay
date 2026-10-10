@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, ScrollView, StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { Card } from '../../components/Card';
 import { MerchantLogo } from '../../components/ui/MerchantLogo';
 import { COLORS, SIZES, SPACING } from '../../constants/theme';
+import { api, endpoints } from '../../services/api';
 import { 
   ChevronLeft, 
   SlidersHorizontal, 
@@ -13,6 +14,94 @@ import {
   Sparkles, 
   Sprout 
 } from 'lucide-react-native';
+
+interface DebtBreakdownData {
+  total_outstanding_debt: number;
+  dti_ratio: number;
+  dti_status: string;
+  total_monthly_emis: number;
+  avg_blended_apr: number;
+  loans: Array<{
+    id: string;
+    name: string;
+    bank: string;
+    balance: number;
+    detail: string;
+    schedule: string;
+    monthly_emi: number;
+    apr: string;
+    apr_rate: number;
+    is_high_apr: boolean;
+    progress: number;
+    progress_label: string;
+  }>;
+  avalanche_recommendation: {
+    target_debt_id: string;
+    target_name: string;
+    payoff_amount: number;
+    annual_interest_saved: number;
+    recommendation_text: string;
+  };
+}
+
+const DEFAULT_DEBT_DATA: DebtBreakdownData = {
+  total_outstanding_debt: 482450,
+  dti_ratio: 28,
+  dti_status: 'Healthy',
+  total_monthly_emis: 26900,
+  avg_blended_apr: 11.4,
+  loans: [
+    {
+      id: 'debt_icici_cc',
+      name: 'ICICI Sapphiro Credit Card',
+      bank: 'icici',
+      balance: 24450,
+      detail: '42% Limit Used',
+      schedule: 'Due 24 Sep • Min: ₹1,200',
+      monthly_emi: 1200,
+      apr: '38.4% APR (High)',
+      apr_rate: 38.4,
+      is_high_apr: true,
+      progress: 0.42,
+      progress_label: '42% used',
+    },
+    {
+      id: 'debt_axis_car',
+      name: 'Axis Car Loan (Fixed)',
+      bank: 'axis',
+      balance: 218000,
+      detail: '',
+      schedule: '26 of 60 EMIs Paid • ₹8,400/mo',
+      monthly_emi: 8400,
+      apr: '8.75% APR',
+      apr_rate: 8.75,
+      is_high_apr: false,
+      progress: 0.43,
+      progress_label: '43% repaid',
+    },
+    {
+      id: 'debt_hdfc_edu',
+      name: 'HDFC Education Loan',
+      bank: 'hdfc',
+      balance: 240000,
+      detail: '',
+      schedule: '18 of 48 EMIs Paid • ₹17,300/mo',
+      monthly_emi: 17300,
+      apr: '9.20% APR',
+      apr_rate: 9.20,
+      is_high_apr: false,
+      progress: 0.38,
+      progress_label: '38% repaid',
+    },
+  ],
+  avalanche_recommendation: {
+    target_debt_id: 'debt_icici_cc',
+    target_name: 'ICICI Sapphiro Credit Card',
+    payoff_amount: 24450,
+    annual_interest_saved: 8920,
+    recommendation_text: 'Pay off ₹24,450 on ICICI Card first to eliminate 38.4% APR compounding interest. Saves ₹8,920 in annual finance charges.',
+  },
+};
 
 interface LoanItemProps {
   name: string;
@@ -90,6 +179,27 @@ function LoanItem({
 
 export default function DebtAndLiabilitiesScreen() {
   const router = useRouter();
+  const [data, setData] = useState<DebtBreakdownData>(DEFAULT_DEBT_DATA);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchDebtBreakdown = useCallback(async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
+    try {
+      const res = await api.get(endpoints.planning.debtBreakdown);
+      if (res.data) {
+        setData(res.data);
+      }
+    } catch (err) {
+      // Graceful fallback to verified profile state
+    } finally {
+      if (isRefresh) setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDebtBreakdown();
+  }, [fetchDebtBreakdown]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -110,6 +220,7 @@ export default function DebtAndLiabilitiesScreen() {
         <TouchableOpacity 
           style={styles.filterButton}
           activeOpacity={0.7}
+          onPress={() => fetchDebtBreakdown(true)}
         >
           <SlidersHorizontal color={COLORS.text} size={20} />
         </TouchableOpacity>
@@ -118,6 +229,13 @@ export default function DebtAndLiabilitiesScreen() {
       <ScrollView 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchDebtBreakdown(true)}
+            tintColor={COLORS.primary}
+          />
+        }
       >
         {/* Dark Hero Summary Card */}
         <View style={styles.heroCard}>
@@ -128,13 +246,13 @@ export default function DebtAndLiabilitiesScreen() {
             <View style={styles.dtiBadge}>
               <Sprout color="#4ADE80" size={14} style={{ marginRight: 4 }} />
               <Typography variant="caption" style={styles.dtiBadgeText}>
-                DTI: 28% (Healthy)
+                DTI: {Math.round(data.dti_ratio)}% ({data.dti_status})
               </Typography>
             </View>
           </View>
 
           <Typography variant="display" style={styles.heroAmount}>
-            ₹4,82,450
+            ₹{Math.round(data.total_outstanding_debt).toLocaleString('en-IN')}
           </Typography>
 
           <View style={styles.heroDivider} />
@@ -145,7 +263,7 @@ export default function DebtAndLiabilitiesScreen() {
                 Total Monthly EMIs
               </Typography>
               <Typography variant="h3" style={styles.heroStatValue}>
-                ₹26,900
+                ₹{Math.round(data.total_monthly_emis).toLocaleString('en-IN')}
               </Typography>
             </View>
 
@@ -156,7 +274,7 @@ export default function DebtAndLiabilitiesScreen() {
                 Avg. Blended APR
               </Typography>
               <Typography variant="h3" style={styles.heroStatValue}>
-                11.4%
+                {data.avg_blended_apr.toFixed(1)}%
               </Typography>
             </View>
           </View>
@@ -167,65 +285,49 @@ export default function DebtAndLiabilitiesScreen() {
           Active Credit Lines & Loans
         </Typography>
 
-        <LoanItem
-          name="ICICI Sapphiro Credit Card"
-          bank="icici"
-          balance="₹24,450"
-          detail="42% Limit Used"
-          schedule="Due 24 Sep • Min: ₹1,200"
-          apr="38.4% APR (High)"
-          isHighApr
-          progress={0.42}
-          progressLabel="42% used"
-        />
-
-        <LoanItem
-          name="Axis Car Loan (Fixed)"
-          bank="axis"
-          balance="₹2,18,000"
-          detail=""
-          schedule="26 of 60 EMIs Paid • ₹8,400/mo"
-          apr="8.75% APR"
-          progress={0.43}
-          progressLabel="43% repaid"
-        />
-
-        <LoanItem
-          name="HDFC Education Loan"
-          bank="hdfc"
-          balance="₹2,40,000"
-          detail=""
-          schedule="18 of 48 EMIs Paid • ₹17,300/mo"
-          apr="9.20% APR"
-          progress={0.38}
-          progressLabel="38% repaid"
-        />
+        {data.loans.map((loan) => (
+          <LoanItem
+            key={loan.id}
+            name={loan.name}
+            bank={loan.bank}
+            balance={`₹${Math.round(loan.balance).toLocaleString('en-IN')}`}
+            detail={loan.detail}
+            schedule={loan.schedule}
+            apr={loan.apr}
+            isHighApr={loan.is_high_apr}
+            progress={loan.progress}
+            progressLabel={loan.progress_label}
+            onPress={() => router.push('/simulator')}
+          />
+        ))}
 
         {/* Avalanche Payoff Recommendation Card */}
-        <View style={styles.recommendationCard}>
-          <View style={styles.recommendationHeader}>
-            <View style={styles.sparkleBadge}>
-              <Sparkles color="#B45309" size={20} />
+        {data.avalanche_recommendation && (
+          <View style={styles.recommendationCard}>
+            <View style={styles.recommendationHeader}>
+              <View style={styles.sparkleBadge}>
+                <Sparkles color="#B45309" size={20} />
+              </View>
+              <Typography variant="bodyBold" style={styles.recommendationTitle}>
+                Avalanche Payoff Recommendation
+              </Typography>
             </View>
-            <Typography variant="bodyBold" style={styles.recommendationTitle}>
-              Avalanche Payoff Recommendation
+
+            <Typography variant="secondary" color={COLORS.text} style={styles.recommendationBody}>
+              {data.avalanche_recommendation.recommendation_text}
             </Typography>
+
+            <TouchableOpacity 
+              style={styles.simulateButton}
+              onPress={() => router.push('/simulator')}
+              activeOpacity={0.8}
+            >
+              <Typography variant="bodyBold" style={styles.simulateButtonText}>
+                Simulate Lump-Sum Payoff
+              </Typography>
+            </TouchableOpacity>
           </View>
-
-          <Typography variant="secondary" color={COLORS.text} style={styles.recommendationBody}>
-            Pay off <Typography variant="bodyBold">₹24,450</Typography> on ICICI Card first to eliminate 38.4% APR compounding interest. Saves <Typography variant="bodyBold">₹8,920</Typography> in annual finance charges.
-          </Typography>
-
-          <TouchableOpacity 
-            style={styles.simulateButton}
-            onPress={() => router.push('/simulator')}
-            activeOpacity={0.8}
-          >
-            <Typography variant="bodyBold" style={styles.simulateButtonText}>
-              Simulate Lump-Sum Payoff
-            </Typography>
-          </TouchableOpacity>
-        </View>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

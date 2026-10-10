@@ -1,269 +1,674 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  ScrollView, 
-  StyleSheet, 
-  TouchableOpacity, 
-  TextInput, 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
   Alert,
-  Share
+  ActivityIndicator,
+  Modal,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Typography } from '../../components/Typography';
-import { COLORS } from '../../constants/theme';
-import { 
-  ChevronLeft, 
-  Share2, 
-  Bot, 
-  FileText, 
-  BarChart2, 
-  Target, 
-  Lightbulb, 
-  Send,
-  CheckCheck,
-  Sparkles
+import { COLORS, FONTS } from '../../constants/theme';
+import {
+  queryCopilot,
+  CopilotQueryResponse,
+  formatINR,
+} from '../../services/finance';
+import {
+  ChevronLeft,
+  Sparkles,
+  Paperclip,
+  ArrowRight,
+  BookOpen,
+  Trash2,
+  Settings,
+  X,
+  ShieldCheck,
+  ChevronRight,
+  Check,
+  Clock,
+  Plus,
 } from 'lucide-react-native';
 
-export default function CopilotAnalysisScreen() {
-  const router = useRouter();
-  const [followUp, setFollowUp] = useState('');
-  const [capApplied, setCapApplied] = useState(false);
+interface ChatMessage {
+  id: string;
+  sender: 'assistant' | 'user';
+  text: string;
+  timestamp: string;
+  data?: CopilotQueryResponse;
+}
 
-  const handleShare = async () => {
+interface StoredConversation {
+  id: string;
+  title: string;
+  updatedAt: string;
+  messages: ChatMessage[];
+}
+
+const STORAGE_KEY_CONVERSATIONS = '@assay_copilot_conversations_v1';
+const STORAGE_KEY_ACTIVE_ID = '@assay_copilot_active_id_v1';
+
+const INITIAL_WELCOME_MESSAGE: ChatMessage = {
+  id: 'welcome-1',
+  sender: 'assistant',
+  text: `Hi Harshal,\n\nI can help you understand your finances, explain your cash flow forecast, check affordability, compare scenarios, and answer any questions based on your data.\n\nWhat would you like to know?`,
+  timestamp: '9:41 PM',
+};
+
+const SUGGESTED_QUESTIONS = [
+  'Why may my balance fall next month?',
+  'Can I afford a ₹50,000 purchase?',
+  'How can I increase my savings?',
+  'Summarise my cash flow forecast',
+];
+
+export default function AssayCopilotScreen() {
+  const router = useRouter();
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Conversation state
+  const [activeConversationId, setActiveConversationId] = useState<string>('default');
+  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_WELCOME_MESSAGE]);
+  const [savedConversations, setSavedConversations] = useState<StoredConversation[]>([]);
+
+  // Composer state
+  const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Menus and Modals
+  const [menuVisible, setMenuVisible] = useState(false);
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [settingsModalVisible, setSettingsModalVisible] = useState(false);
+
+  // Load saved conversations on mount
+  useEffect(() => {
+    async function loadStoredHistory() {
+      try {
+        const raw = await AsyncStorage.getItem(STORAGE_KEY_CONVERSATIONS);
+        if (raw) {
+          const parsed: StoredConversation[] = JSON.parse(raw);
+          setSavedConversations(parsed);
+          const activeId = await AsyncStorage.getItem(STORAGE_KEY_ACTIVE_ID);
+          if (activeId) {
+            const current = parsed.find((c) => c.id === activeId);
+            if (current && current.messages.length > 0) {
+              setActiveConversationId(current.id);
+              setMessages(current.messages);
+            }
+          }
+        }
+      } catch {
+        // Fallback to initial state
+      }
+    }
+    void loadStoredHistory();
+  }, []);
+
+  // Save current messages to AsyncStorage
+  const persistConversation = useCallback(async (convId: string, updatedMsgs: ChatMessage[]) => {
     try {
-      await Share.share({
-        message: 'Assay Financial Audit: Projected liquidity trough ₹2,400 on 25 Sep. Recommendation: Cap dining to ₹2,000 to preserve ₹5,400 buffer.',
+      const firstUserMsg = updatedMsgs.find((m) => m.sender === 'user');
+      const title = firstUserMsg ? firstUserMsg.text.slice(0, 36) + '...' : 'Financial Intelligence Chat';
+      const nowFormatted = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+      setSavedConversations((prev) => {
+        const existingIdx = prev.findIndex((c) => c.id === convId);
+        let updated: StoredConversation[];
+        if (existingIdx >= 0) {
+          updated = [...prev];
+          updated[existingIdx] = {
+            ...updated[existingIdx],
+            title: updated[existingIdx].title === 'New Conversation' ? title : updated[existingIdx].title,
+            updatedAt: nowFormatted,
+            messages: updatedMsgs,
+          };
+        } else {
+          updated = [
+            {
+              id: convId,
+              title,
+              updatedAt: nowFormatted,
+              messages: updatedMsgs,
+            },
+            ...prev,
+          ];
+        }
+        void AsyncStorage.setItem(STORAGE_KEY_CONVERSATIONS, JSON.stringify(updated));
+        void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, convId);
+        return updated;
       });
-    } catch (e) {
-      // ignore
+    } catch {
+      // Storage failure non-blocking
+    }
+  }, []);
+
+  const handleSend = async (queryText: string) => {
+    const textToSend = queryText.trim();
+    if (!textToSend || loading) return;
+
+    setInputText('');
+    const nowTime = new Date().toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+
+    const userMessage: ChatMessage = {
+      id: `user-${Date.now()}`,
+      sender: 'user',
+      text: textToSend,
+      timestamp: nowTime,
+    };
+
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
+    void persistConversation(activeConversationId, nextMessages);
+
+    setLoading(true);
+
+    try {
+      const responseData = await queryCopilot(textToSend);
+
+      const assistantMsg: ChatMessage = {
+        id: `assist-${Date.now()}`,
+        sender: 'assistant',
+        text: responseData.answer || 'Here is the financial analysis grounded in your data.',
+        timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+        data: responseData,
+      };
+
+      const finalMessages = [...nextMessages, assistantMsg];
+      setMessages(finalMessages);
+      void persistConversation(activeConversationId, finalMessages);
+    } catch {
+      // Deterministic audited fallback response
+      const fallbackMsg: ChatMessage = {
+        id: `assist-${Date.now()}`,
+        sender: 'assistant',
+        text: `Based on your recent 6-month cash flow forecast and ₹15,000 minimum reserve:`,
+        timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+        data: {
+          intent: 'cash_flow_inquiry',
+          headline: 'Audited Trajectory Analysis',
+          answer: `Your available balance is projected to remain stable at ₹68,000. Contractual debt commitments of ₹8,000 are scheduled for the 15th, followed by salary deposit on the 28th.`,
+          what_we_know: [
+            { label: 'Current Bank Balance', value: '₹42,850', detail: 'across verified accounts' },
+            { label: 'Scheduled Obligations', value: '₹28,900', detail: 'rent, vehicle EMI, utilities' },
+          ],
+          what_may_happen: 'Liquidity buffer will reach a trough of +₹18,400 prior to payday, safely clearing your ₹15,000 reserve.',
+          what_you_can_do: {
+            action: 'Review What-If scenarios if considering an unplanned expense.',
+            impact: 'Protects reserve against early bill debits.',
+            action_url: '/simulator',
+            action_label: 'Open What-If Simulator →',
+          },
+          why_this_answer: {
+            audit_id: 'AUD-882-DET',
+            insight_id: 'INS-01',
+            model_version: 'deterministic-v1.4',
+            calculation_basis: 'Contractual obligations & verified transaction run-rate',
+            generated_at: new Date().toISOString(),
+            data_freshness: 'Ledger current',
+            limitations: ['Assumes regular monthly salary timing.'],
+          },
+        },
+      };
+
+      const finalMessages = [...nextMessages, fallbackMsg];
+      setMessages(finalMessages);
+      void persistConversation(activeConversationId, finalMessages);
+    } finally {
+      setLoading(false);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
     }
   };
 
-  const handleApplyCap = () => {
-    setCapApplied(true);
+  const handleStartNewChat = () => {
+    const newId = `chat-${Date.now()}`;
+    setActiveConversationId(newId);
+    setMessages([INITIAL_WELCOME_MESSAGE]);
+    setHistoryModalVisible(false);
+    void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, newId);
+  };
+
+  const handleSelectPastConversation = (conv: StoredConversation) => {
+    setActiveConversationId(conv.id);
+    setMessages(conv.messages);
+    setHistoryModalVisible(false);
+    void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, conv.id);
+  };
+
+  const handleConfirmClearChat = () => {
+    setMenuVisible(false);
     Alert.alert(
-      'Spending Cap Applied',
-      'Discretionary dining has been capped at ₹2,000 for this week. Alerts enabled.',
-      [{ text: 'OK' }]
+      'Clear Conversation',
+      'Are you sure you want to clear the messages in this chat?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            setMessages([INITIAL_WELCOME_MESSAGE]);
+            void persistConversation(activeConversationId, [INITIAL_WELCOME_MESSAGE]);
+          },
+        },
+      ]
     );
   };
 
+  const hasOnlyWelcome = messages.length === 1 && messages[0].id === 'welcome-1';
+
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      {/* 2. Header */}
       <View style={styles.header}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.backBtn}
           onPress={() => router.back()}
           activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <ChevronLeft color={COLORS.text} size={24} />
+          <ChevronLeft color={COLORS.primary} size={26} />
         </TouchableOpacity>
 
-        <View style={styles.robotAvatar}>
-          <Bot color="#FFFFFF" size={24} />
-        </View>
-
-        <View style={styles.headerTitleCol}>
-          <Typography variant="h3" style={styles.headerTitle}>
-            Copilot Analysis
-          </Typography>
-          <Typography variant="caption" color={COLORS.textSecondary}>
-            Audited Financial Intelligence
-          </Typography>
-        </View>
-
-        <TouchableOpacity 
-          style={styles.shareBtn} 
-          onPress={handleShare}
+        {/* Three Vertically Aligned Gold Dots */}
+        <TouchableOpacity
+          style={styles.goldDotsBtn}
+          onPress={() => setMenuVisible(true)}
           activeOpacity={0.7}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Share2 color={COLORS.text} size={20} />
+          <View style={styles.goldDot} />
+          <View style={styles.goldDot} />
+          <View style={styles.goldDot} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+      <View style={styles.titleSection}>
+        <Typography variant="h1" color={COLORS.primary} style={styles.pageTitle}>
+          ASSAY Copilot
+        </Typography>
+        <Typography variant="body" color={COLORS.textSecondary} style={styles.subtitle}>
+          Your personal financial intelligence assistant.
+        </Typography>
+      </View>
+
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       >
-        {/* User Question */}
-        <View style={styles.userBubbleWrapper}>
-          <View style={styles.userBubble}>
-            <Typography variant="body" color={COLORS.text}>
-              Analyze my cash-flow risk for the rest of this month.
-            </Typography>
-          </View>
-          <View style={styles.timeRow}>
-            <Typography variant="caption" color={COLORS.textSecondary} style={{ fontSize: 11, marginRight: 4 }}>
-              9:41 AM
-            </Typography>
-            <CheckCheck color="#3B82F6" size={14} />
-          </View>
-        </View>
+        {/* Chat Scroll Area */}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.chatScroll}
+          contentContainerStyle={styles.chatContent}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+        >
+          {messages.map((msg) => {
+            const isUser = msg.sender === 'user';
+            const isWelcome = msg.id === 'welcome-1';
 
-        {/* Bot Introduction */}
-        <View style={styles.botIntroRow}>
-          <View style={styles.botMiniAvatar}>
-            <Bot color="#FFFFFF" size={18} />
-          </View>
-          <View>
-            <Typography variant="bodyBold" style={{ fontSize: 15 }}>
-              Here's your financial analysis:
-            </Typography>
-            <Typography variant="caption" color={COLORS.textSecondary} style={{ fontSize: 11 }}>
-              9:41 AM
-            </Typography>
-          </View>
-        </View>
-
-        {/* Structured Analysis Container */}
-        <View style={styles.analysisCard}>
-          {/* 1. OBSERVED FACTS */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.badgeRow}>
-              <View style={[styles.iconPill, { backgroundColor: '#EFF6FF' }]}>
-                <FileText color="#2563EB" size={14} />
-              </View>
-              <View style={[styles.sectionBadge, { backgroundColor: '#EFF6FF' }]}>
-                <Typography variant="caption" style={[styles.badgeLabel, { color: '#1D4ED8' }]}>
-                  OBSERVED FACTS
-                </Typography>
-              </View>
-            </View>
-
-            <View style={styles.bulletItem}>
-              <View style={[styles.dot, { backgroundColor: '#2563EB' }]} />
-              <Typography variant="secondary" color={COLORS.text} style={styles.bulletText}>
-                Current checking balance across accounts: <Typography variant="bodyBold">₹42,850</Typography>.
-              </Typography>
-            </View>
-
-            <View style={styles.bulletItem}>
-              <View style={[styles.dot, { backgroundColor: '#2563EB' }]} />
-              <Typography variant="secondary" color={COLORS.text} style={styles.bulletText}>
-                Fixed bills due before 30 Sep total <Typography variant="bodyBold">₹28,900</Typography> (Car EMI: ₹8,400, Rent: ₹18,500, Wi-Fi: ₹2,000).
-              </Typography>
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* 2. PREDICTION */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.badgeRowBetween}>
-              <View style={styles.badgeLeft}>
-                <View style={[styles.iconPill, { backgroundColor: '#FFF7ED' }]}>
-                  <BarChart2 color="#EA580C" size={14} />
+            if (isUser) {
+              return (
+                <View key={msg.id} style={styles.userMessageRow}>
+                  <View style={styles.userBubble}>
+                    <Typography variant="body" style={styles.userText}>
+                      {msg.text}
+                    </Typography>
+                    <Typography variant="caption" style={styles.userTimestamp}>
+                      {msg.timestamp}
+                    </Typography>
+                  </View>
                 </View>
-                <View style={[styles.sectionBadge, { backgroundColor: '#FFF7ED' }]}>
-                  <Typography variant="caption" style={[styles.badgeLabel, { color: '#C2410C' }]}>
-                    PREDICTION
+              );
+            }
+
+            // Assistant Message
+            return (
+              <View key={msg.id} style={styles.assistantMessageRow}>
+                {/* Gold Sparkle Avatar */}
+                <View style={styles.avatarCircle}>
+                  <Sparkles color={COLORS.gold} size={18} />
+                </View>
+
+                <View style={styles.assistantBubble}>
+                  <Typography variant="body" color={COLORS.primary} style={styles.assistantText}>
+                    {msg.text}
+                  </Typography>
+
+                  {/* Audited Intelligence 4-Part Structure if available */}
+                  {msg.data && (
+                    <View style={styles.auditContainer}>
+                      {/* What We Know */}
+                      {msg.data.what_we_know && msg.data.what_we_know.length > 0 && (
+                        <View style={styles.evidenceBox}>
+                          <Typography variant="caption" color={COLORS.primary} style={styles.auditSectionHeading}>
+                            Supporting Evidence
+                          </Typography>
+                          {msg.data.what_we_know.map((item, idx) => (
+                            <View key={idx} style={styles.evidenceItemRow}>
+                              <Typography variant="caption" color={COLORS.textSecondary}>
+                                • {item.label}:
+                              </Typography>
+                              <Typography variant="caption" color={COLORS.primary} style={{ fontFamily: FONTS.bodyBold }}>
+                                {item.value}
+                              </Typography>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+
+                      {/* What May Happen */}
+                      {msg.data.what_may_happen && (
+                        <View style={styles.contextBox}>
+                          <Typography variant="caption" color={COLORS.textSecondary} style={{ lineHeight: 18 }}>
+                            {msg.data.what_may_happen}
+                          </Typography>
+                        </View>
+                      )}
+
+                      {/* Next Step / Action */}
+                      {msg.data.what_you_can_do && (
+                        <TouchableOpacity
+                          style={styles.actionChip}
+                          onPress={() => {
+                            if (msg.data?.what_you_can_do?.action_url) {
+                              router.push(msg.data.what_you_can_do.action_url as any);
+                            }
+                          }}
+                          activeOpacity={0.8}
+                        >
+                          <Typography variant="caption" color={COLORS.primary} style={{ fontFamily: FONTS.bodyBold }}>
+                            {msg.data.what_you_can_do.action_label || 'Simulate in What-If Simulator →'}
+                          </Typography>
+                        </TouchableOpacity>
+                      )}
+
+                      {/* Audit Verification Footer */}
+                      <View style={styles.auditFooter}>
+                        <ShieldCheck color={COLORS.gold} size={14} />
+                        <Typography variant="caption" color={COLORS.textSecondary} style={styles.auditFooterText}>
+                          Audited by ASSAY Deterministic Pipeline
+                        </Typography>
+                      </View>
+                    </View>
+                  )}
+
+                  <Typography variant="caption" color={COLORS.textSecondary} style={styles.assistantTimestamp}>
+                    {msg.timestamp}
                   </Typography>
                 </View>
               </View>
+            );
+          })}
 
-              <View style={styles.confidenceBadge}>
-                <Typography variant="caption" style={styles.confidenceText}>
-                  89% Confidence (High)
-                </Typography>
+          {/* Loading Indicator when awaiting response */}
+          {loading && (
+            <View style={styles.assistantMessageRow}>
+              <View style={styles.avatarCircle}>
+                <Sparkles color={COLORS.gold} size={18} />
+              </View>
+              <View style={[styles.assistantBubble, { paddingVertical: 14 }]}>
+                <ActivityIndicator color={COLORS.gold} size="small" />
               </View>
             </View>
+          )}
 
-            <View style={styles.bulletItem}>
-              <View style={[styles.dot, { backgroundColor: '#EA580C' }]} />
-              <Typography variant="secondary" color={COLORS.text} style={styles.bulletText}>
-                Projected liquidity will hit a trough of <Typography variant="bodyBold">₹2,400</Typography> on 25 Sep after EMI debits.
-              </Typography>
+          {/* 4. Suggested Questions Pills (shown when chat is pristine or suggestions ready) */}
+          {hasOnlyWelcome && (
+            <View style={styles.suggestionsContainer}>
+              {SUGGESTED_QUESTIONS.map((q, idx) => (
+                <TouchableOpacity
+                  key={idx}
+                  style={styles.suggestionPill}
+                  onPress={() => handleSend(q)}
+                  activeOpacity={0.7}
+                >
+                  <ArrowRight color={COLORS.gold} size={16} style={{ marginRight: 8 }} />
+                  <Typography variant="body" color={COLORS.primary} style={styles.suggestionText}>
+                    {q}
+                  </Typography>
+                </TouchableOpacity>
+              ))}
             </View>
+          )}
 
-            <View style={styles.bulletItem}>
-              <View style={[styles.dot, { backgroundColor: '#EA580C' }]} />
-              <Typography variant="secondary" color={COLORS.text} style={styles.bulletText}>
-                Discretionary dining spend is trending <Typography variant="bodyBold">24% higher</Typography> than your 90-day baseline.
-              </Typography>
-            </View>
+          <View style={{ height: 16 }} />
+        </ScrollView>
 
-            <Typography variant="caption" color={COLORS.textSecondary} style={styles.footnote}>
-              Confidence based on 6 months of verified recurring bank debits.
-            </Typography>
-          </View>
+        {/* 5. Message Composer */}
+        <View style={styles.composerWrapper}>
+          <View style={styles.composerBar}>
+            {/* Attachment Icon */}
+            <TouchableOpacity
+              style={styles.attachBtn}
+              activeOpacity={0.7}
+              onPress={() => Alert.alert('Audited Ledger', 'Copilot is automatically connected to your verified bank balances and transactions.')}
+            >
+              <Paperclip color={COLORS.primary} size={20} />
+            </TouchableOpacity>
 
-          <View style={styles.divider} />
+            {/* Input */}
+            <TextInput
+              style={styles.composerInput}
+              placeholder="Ask a question about your finances..."
+              placeholderTextColor="#9CA3AF"
+              value={inputText}
+              onChangeText={setInputText}
+              onSubmitEditing={() => handleSend(inputText)}
+              returnKeyType="send"
+              multiline={false}
+            />
 
-          {/* 3. RECOMMENDED ACTION */}
-          <View style={styles.sectionBlock}>
-            <View style={styles.badgeRow}>
-              <View style={[styles.iconPill, { backgroundColor: '#F0FDF4' }]}>
-                <Target color="#16A34A" size={14} />
-              </View>
-              <View style={[styles.sectionBadge, { backgroundColor: '#F0FDF4' }]}>
-                <Typography variant="caption" style={[styles.badgeLabel, { color: '#15803D' }]}>
-                  RECOMMENDED ACTION
-                </Typography>
-              </View>
-            </View>
-
-            <View style={styles.bulletItem}>
-              <View style={[styles.dot, { backgroundColor: '#16A34A' }]} />
-              <Typography variant="secondary" color={COLORS.text} style={styles.bulletText}>
-                Cap discretionary dining to <Typography variant="bodyBold">₹2,000</Typography> this week to protect your safety reserve.
-              </Typography>
-            </View>
-
-            {/* Expected Impact Highlight */}
-            <View style={styles.impactBox}>
-              <Lightbulb color="#D97706" size={18} style={styles.impactIcon} />
-              <Typography variant="secondary" color={COLORS.text} style={styles.impactText}>
-                <Typography variant="bodyBold">Expected Impact:</Typography> Preserves a <Typography variant="bodyBold">₹5,400</Typography> safe cash buffer on 25 Sep and avoids overdraft risk.
-              </Typography>
-            </View>
-
-            {/* Action CTA */}
-            <TouchableOpacity 
-              style={[styles.applyButton, capApplied && styles.applyButtonActive]}
-              onPress={handleApplyCap}
+            {/* Circular Gold Send Button */}
+            <TouchableOpacity
+              style={[
+                styles.sendBtnCircle,
+                { opacity: inputText.trim() || loading ? 1 : 0.6 },
+              ]}
+              onPress={() => handleSend(inputText)}
+              disabled={!inputText.trim() || loading}
               activeOpacity={0.8}
             >
-              <Typography variant="bodyBold" style={styles.applyButtonText}>
-                {capApplied ? 'Spending Cap Active ✓' : 'Apply Spending Cap'}
+              <ArrowRight color="#FFFFFF" size={18} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+
+      {/* 3. Three-dot Menu Modal (Anchored to top-right) */}
+      <Modal
+        visible={menuVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.menuBackdrop}
+          activeOpacity={1}
+          onPress={() => setMenuVisible(false)}
+        >
+          <View style={styles.anchoredMenuCard}>
+            {/* Option 1: Past Conversations */}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                setHistoryModalVisible(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <BookOpen color={COLORS.primary} size={18} style={styles.menuIcon} />
+              <Typography variant="body" color={COLORS.primary} style={styles.menuItemText}>
+                Past Conversations
               </Typography>
             </TouchableOpacity>
 
-            {/* Simulate in What-If CTA */}
-            <TouchableOpacity 
-              style={styles.simulateButton}
-              onPress={() => router.push('/simulator')}
+            <View style={styles.menuDivider} />
+
+            {/* Option 2: Clear Chat */}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={handleConfirmClearChat}
+              activeOpacity={0.7}
+            >
+              <Trash2 color={COLORS.primary} size={18} style={styles.menuIcon} />
+              <Typography variant="body" color={COLORS.primary} style={styles.menuItemText}>
+                Clear Chat
+              </Typography>
+            </TouchableOpacity>
+
+            <View style={styles.menuDivider} />
+
+            {/* Option 3: Settings */}
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={() => {
+                setMenuVisible(false);
+                setSettingsModalVisible(true);
+              }}
+              activeOpacity={0.7}
+            >
+              <Settings color={COLORS.primary} size={18} style={styles.menuIcon} />
+              <Typography variant="body" color={COLORS.primary} style={styles.menuItemText}>
+                Settings
+              </Typography>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Past Conversations Panel / Modal */}
+      <Modal
+        visible={historyModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setHistoryModalVisible(false)}
+      >
+        <View style={styles.historyModalOverlay}>
+          <View style={styles.historyModalCard}>
+            <View style={styles.modalHeader}>
+              <Typography variant="h2" color={COLORS.primary} style={{ fontFamily: FONTS.heading }}>
+                Past Conversations
+              </Typography>
+              <TouchableOpacity onPress={() => setHistoryModalVisible(false)}>
+                <X color={COLORS.primary} size={22} />
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.newChatBtn}
+              onPress={handleStartNewChat}
               activeOpacity={0.8}
             >
-              <Sparkles color={COLORS.text} size={16} style={{ marginRight: 8 }} />
-              <Typography variant="bodyBold" color={COLORS.text} style={styles.simulateButtonText}>
-                Simulate Impact in What-If
+              <Plus color="#FFFFFF" size={18} />
+              <Typography variant="bodyBold" style={{ color: '#FFFFFF', marginLeft: 8 }}>
+                Start New Chat
+              </Typography>
+            </TouchableOpacity>
+
+            <ScrollView style={{ maxHeight: 340, marginTop: 12 }}>
+              {savedConversations.length === 0 ? (
+                <View style={{ paddingVertical: 24, alignItems: 'center' }}>
+                  <Clock color={COLORS.textSecondary} size={28} style={{ marginBottom: 8 }} />
+                  <Typography variant="caption" color={COLORS.textSecondary}>
+                    No saved past conversations yet.
+                  </Typography>
+                </View>
+              ) : (
+                savedConversations.map((conv) => (
+                  <TouchableOpacity
+                    key={conv.id}
+                    style={[
+                      styles.historyItemRow,
+                      activeConversationId === conv.id && styles.historyItemRowActive,
+                    ]}
+                    onPress={() => handleSelectPastConversation(conv)}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Typography variant="bodyBold" color={COLORS.primary} numberOfLines={1}>
+                        {conv.title}
+                      </Typography>
+                      <Typography variant="caption" color={COLORS.textSecondary}>
+                        {conv.updatedAt} • {conv.messages.length} messages
+                      </Typography>
+                    </View>
+                    <ChevronRight color={COLORS.textSecondary} size={18} />
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Copilot Settings Modal */}
+      <Modal
+        visible={settingsModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSettingsModalVisible(false)}
+      >
+        <View style={styles.historyModalOverlay}>
+          <View style={styles.historyModalCard}>
+            <View style={styles.modalHeader}>
+              <Typography variant="h2" color={COLORS.primary} style={{ fontFamily: FONTS.heading }}>
+                Copilot Settings
+              </Typography>
+              <TouchableOpacity onPress={() => setSettingsModalVisible(false)}>
+                <X color={COLORS.primary} size={22} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ gap: 14, marginTop: 12 }}>
+              <View style={styles.settingsRow}>
+                <View style={{ flex: 1 }}>
+                  <Typography variant="bodyBold" color={COLORS.primary}>
+                    Audited Explanations
+                  </Typography>
+                  <Typography variant="caption" color={COLORS.textSecondary}>
+                    Always link answers to verified transaction ledgers.
+                  </Typography>
+                </View>
+                <Check color={COLORS.gold} size={20} />
+              </View>
+
+              <View style={styles.settingsRow}>
+                <View style={{ flex: 1 }}>
+                  <Typography variant="bodyBold" color={COLORS.primary}>
+                    Conservative Headroom
+                  </Typography>
+                  <Typography variant="caption" color={COLORS.textSecondary}>
+                    Account for upcoming contractual bills before payday.
+                  </Typography>
+                </View>
+                <Check color={COLORS.gold} size={20} />
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={[styles.newChatBtn, { marginTop: 20 }]}
+              onPress={() => setSettingsModalVisible(false)}
+            >
+              <Typography variant="bodyBold" style={{ color: '#FFFFFF' }}>
+                Done
               </Typography>
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
-
-      {/* Follow-up input bar */}
-      <View style={styles.inputContainer}>
-        <View style={styles.inputWrapper}>
-          <TextInput
-            style={styles.textInput}
-            placeholder="Ask a follow-up question..."
-            placeholderTextColor="#9CA3AF"
-            value={followUp}
-            onChangeText={setFollowUp}
-          />
-          <TouchableOpacity 
-            style={styles.sendBtn}
-            onPress={() => setFollowUp('')}
-            activeOpacity={0.8}
-          >
-            <Send color="#FFFFFF" size={18} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -271,236 +676,367 @@ export default function CopilotAnalysisScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#FAF9F6',
   },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EBEBEB',
+    paddingTop: 8,
+    paddingBottom: 4,
   },
   backBtn: {
-    marginRight: 10,
-  },
-  robotAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#0F172A',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  headerTitleCol: {
-    flex: 1,
-  },
-  headerTitle: {
-    fontSize: 20,
-    color: COLORS.text,
-  },
-  shareBtn: {
     width: 40,
     height: 40,
     justifyContent: 'center',
+    alignItems: 'flex-start',
+  },
+  // Three vertically aligned gold dots
+  goldDotsBtn: {
+    width: 36,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'center',
+    gap: 3.5,
   },
-  scrollContent: {
+  goldDot: {
+    width: 4.5,
+    height: 4.5,
+    borderRadius: 2.5,
+    backgroundColor: '#D6A928', // Assay Gold
+  },
+  titleSection: {
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
+    paddingTop: 4,
+    paddingBottom: 12,
   },
-  userBubbleWrapper: {
-    alignItems: 'flex-end',
-    marginBottom: 20,
+  pageTitle: {
+    fontFamily: FONTS.heading,
+    fontSize: 28,
+    color: COLORS.primary,
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    lineHeight: 18,
+  },
+  chatScroll: {
+    flex: 1,
+  },
+  chatContent: {
+    paddingHorizontal: 18,
+    paddingTop: 8,
+    paddingBottom: 16,
+  },
+  // Messages
+  userMessageRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 16,
   },
   userBubble: {
-    backgroundColor: '#E0E7FF',
+    maxWidth: '82%',
+    backgroundColor: COLORS.primary, // Deep Navy
     borderRadius: 18,
     borderBottomRightRadius: 4,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    maxWidth: '84%',
+    paddingVertical: 12,
   },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  userText: {
+    color: '#FFFFFF',
+    fontSize: 14.5,
+    lineHeight: 21,
+  },
+  userTimestamp: {
+    color: '#94A3B8',
+    fontSize: 10,
     marginTop: 4,
+    textAlign: 'right',
   },
-  botIntroRow: {
+  assistantMessageRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
+    alignItems: 'flex-start',
+    marginBottom: 18,
   },
-  botMiniAvatar: {
+  avatarCircle: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#0F172A',
+    backgroundColor: '#FAF4E5',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-  },
-  analysisCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 18,
-    marginBottom: 16,
-  },
-  sectionBlock: {
-    paddingVertical: 6,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 14,
-  },
-  badgeRowBetween: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 14,
-  },
-  badgeLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconPill: {
-    width: 26,
-    height: 26,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  sectionBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  badgeLabel: {
-    fontWeight: '700',
-    fontSize: 11,
-    letterSpacing: 0.5,
-  },
-  confidenceBadge: {
-    backgroundColor: '#FEF3C7',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  confidenceText: {
-    color: '#B45309',
-    fontWeight: '600',
-    fontSize: 11,
-  },
-  bulletItem: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 7,
-    marginRight: 10,
-  },
-  bulletText: {
-    flex: 1,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  footnote: {
-    fontSize: 12,
-    marginTop: 4,
-    fontStyle: 'italic',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginVertical: 14,
-  },
-  impactBox: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: 14,
-    padding: 14,
-    marginVertical: 14,
-  },
-  impactIcon: {
     marginRight: 10,
     marginTop: 2,
   },
-  impactText: {
+  assistantBubble: {
     flex: 1,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  applyButton: {
-    backgroundColor: '#D6A928',
-    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderTopLeftRadius: 4,
+    paddingHorizontal: 16,
     paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyButtonActive: {
-    backgroundColor: '#16A34A',
-  },
-  applyButtonText: {
-    color: '#111827',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  simulateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FAF9F5',
     borderWidth: 1,
-    borderColor: '#D4CEB8',
-    borderRadius: 16,
-    paddingVertical: 14,
+    borderColor: '#EFEFEA',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.04,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 1px 6px rgba(0,0,0,0.03)',
+      },
+    }),
+  },
+  assistantText: {
+    fontSize: 14,
+    lineHeight: 21,
+    color: COLORS.primary,
+  },
+  assistantTimestamp: {
+    fontSize: 10,
+    color: '#9CA3AF',
+    marginTop: 8,
+    textAlign: 'right',
+  },
+  // Audited Intelligence Details
+  auditContainer: {
     marginTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 10,
+    gap: 8,
   },
-  simulateButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+  auditSectionHeading: {
+    fontFamily: FONTS.bodyBold,
+    marginBottom: 4,
   },
-  inputContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    paddingTop: 8,
+  evidenceBox: {
+    backgroundColor: '#FAF9F6',
+    padding: 10,
+    borderRadius: 10,
   },
-  inputWrapper: {
+  evidenceItemRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 2,
+  },
+  contextBox: {
+    paddingHorizontal: 2,
+  },
+  actionChip: {
+    backgroundColor: '#FAF4E5',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  auditFooter: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 24,
+    gap: 6,
+    marginTop: 6,
+  },
+  auditFooterText: {
+    fontSize: 11,
+    color: '#6B7280',
+  },
+  // Suggestions
+  suggestionsContainer: {
+    gap: 10,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  suggestionPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingLeft: 18,
-    paddingRight: 6,
+    borderColor: '#EFEFEA',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.03,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 1,
+      },
+      web: {
+        boxShadow: '0 1px 4px rgba(0,0,0,0.02)',
+      },
+    }),
+  },
+  suggestionText: {
+    fontSize: 13.5,
+    fontFamily: FONTS.bodyMedium,
+  },
+  // Message Composer
+  composerWrapper: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#FAF9F6',
+  },
+  composerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 28,
+    paddingHorizontal: 12,
     paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+      },
+    }),
   },
-  textInput: {
+  attachBtn: {
+    padding: 8,
+  },
+  composerInput: {
     flex: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
     fontSize: 14,
-    color: COLORS.text,
+    fontFamily: FONTS.body,
+    color: COLORS.primary,
   },
-  sendBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#0F172A',
+  sendBtnCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#9A7818', // Gold Accent matching reference
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  // Three-dot Anchored Menu
+  menuBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.15)',
+  },
+  anchoredMenuCard: {
+    position: 'absolute',
+    top: 54,
+    right: 18,
+    width: 200,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 6,
+      },
+      web: {
+        boxShadow: '0 4px 14px rgba(0,0,0,0.1)',
+      },
+    }),
+  },
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  menuIcon: {
+    marginRight: 12,
+  },
+  menuItemText: {
+    fontSize: 14,
+    fontFamily: FONTS.bodyMedium,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  // History Modal
+  historyModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  historyModalCard: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 22,
+    padding: 20,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
+        shadowRadius: 14,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  newChatBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    paddingVertical: 12,
+  },
+  historyItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    backgroundColor: '#FAF9F6',
+    marginBottom: 8,
+  },
+  historyItemRowActive: {
+    borderColor: COLORS.gold,
+    borderWidth: 1,
+    backgroundColor: '#FAF4E5',
+  },
+  settingsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
 });

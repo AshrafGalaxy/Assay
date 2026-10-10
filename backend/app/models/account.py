@@ -16,5 +16,7 @@ class Account(Base):
     balance = Column(Float, default=0.0)
     currency = Column(String, default="INR")
     provider = Column(String, default="mock_aa")
+    bank_key = Column(String, nullable=True)
     status = Column(String, default="connected")
+    last_synced_at = Column(String, nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
