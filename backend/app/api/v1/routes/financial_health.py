@@ -1,77 +1,43 @@
 from fastapi import APIRouter
 from app.schemas.financial_health import FinancialHealthOut, Signal
+from app.services.financial_intelligence.demo_ledger import get_demo_transactions
+from app.services.financial_intelligence.engine import (
+    build_cash_flow,
+    build_financial_health,
+    detect_obligations,
+)
 
 router = APIRouter(tags=["financial-health"])
 
 
 @router.get("/financial-health", response_model=FinancialHealthOut)
 def get_financial_health():
-    """Returns the deterministic financial-health snapshot."""
-    return FinancialHealthOut(
-        income=85000.0,
-        spending=60200.0,
-        savings=24800.0,
-        savings_rate=0.2918,
-        fixed_expenses=29000.0,
-        variable_expenses=31200.0,
-        recurring_obligations=18400.0,
-        projected_month_end_balance=8700.0,
-        health_score=78,
-        signals=[
-            Signal(
-                type="spending_increase",
-                category="Food & Dining",
-                change_percent=27.0,
-                description="Food delivery increased by 27% compared to last month",
-                severity="warning",
-            ),
-            Signal(
-                type="healthy_savings",
-                category="Savings",
-                change_percent=12.0,
-                description="Savings rate is within top 25% percentile for your income bracket",
-                severity="info",
-            ),
-        ],
-    )
+    """Return an explainable, deterministic health snapshot."""
+    return FinancialHealthOut(**build_financial_health(get_demo_transactions()))
 
 
 @router.get("/analytics/cash-flow")
 def get_cash_flow():
-    """Returns historical and projected cash flow."""
-    return {
-        "monthly_summary": [
-            {"month": "Jul 2026", "inflow": 85000, "outflow": 54000, "net": 31000},
-            {"month": "Aug 2026", "inflow": 85000, "outflow": 58200, "net": 26800},
-            {"month": "Sep 2026", "inflow": 85000, "outflow": 60200, "net": 24800},
-        ],
-        "projected_month_end": 8700.0,
-        "daily_burn_rate": 1845.0,
-    }
+    """Return observed monthly history and a current-month burn projection."""
+    return build_cash_flow(get_demo_transactions())
 
 
 @router.get("/analytics/obligations")
 def get_obligations():
-    """Returns detected recurring obligations."""
-    return {
-        "total_monthly_obligations": 18400.0,
-        "items": [
-            {"id": "ob_1", "name": "Apartment Rent", "amount": 25000.0, "frequency": "monthly", "due_day": 3},
-            {"id": "ob_2", "name": "Netflix 4K", "amount": 999.0, "frequency": "monthly", "due_day": 12},
-            {"id": "ob_3", "name": "Gym Cult.fit", "amount": 1850.0, "frequency": "monthly", "due_day": 18},
-        ],
-    }
+    """Return recurring debit transactions detected in the active month."""
+    return detect_obligations(get_demo_transactions())
 
 
 @router.get("/analytics/spending")
 def get_spending_breakdown():
-    return {
-        "categories": [
-            {"name": "Housing & Rent", "amount": 25000, "percentage": 41.5},
-            {"name": "Food & Dining", "amount": 14200, "percentage": 23.5},
-            {"name": "Groceries", "amount": 8400, "percentage": 14.0},
-            {"name": "Shopping & Lifestyle", "amount": 6200, "percentage": 10.3},
-            {"name": "Subscriptions & Bills", "amount": 3600, "percentage": 6.0},
-            {"name": "Transport", "amount": 2800, "percentage": 4.7},
-        ]
-    }
+    health_transactions = get_demo_transactions()
+    latest_month = max(item["transaction_date"][:7] for item in health_transactions)
+    debits = [item for item in health_transactions if item["transaction_date"].startswith(latest_month) and item["type"] == "debit"]
+    total = sum(item["amount"] for item in debits)
+    totals = {}
+    for item in debits:
+        totals[item["category"]] = totals.get(item["category"], 0) + item["amount"]
+    return {"categories": [
+        {"name": name, "amount": round(amount, 2), "percentage": round((amount / total) * 100, 1) if total else 0}
+        for name, amount in sorted(totals.items(), key=lambda item: item[1], reverse=True)
+    ]}

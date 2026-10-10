@@ -5,45 +5,46 @@ import re
 CATEGORY_KEYWORD_RULES = {
     "Food & Dining": [
         "starbucks", "blue tokai", "cafe", "coffee", "restaurant", "swiggy", "zomato",
-        "mcdonald", "burger", "pizza", "domino", "subway", "kfc", "dunkin", "bakery",
-        "bistro", "dhaba", "bar", "kitchen", "biryani", "chaat", "tea", "chai",
+        "mcdonald", "mcdonalds", "burger", "pizza", "domino", "subway", "kfc", "dunkin",
+        "bakery", "bistro", "dhaba", "kitchen", "biryani", "chaat", "tea", "chai",
+        "dining", "eat club", "box8", "faasos", "behrouz",
     ],
     "Groceries": [
-        "supermarket", "mart", "grocery", "groceries", "blinkit", "zepto", "instamart",
+        "supermarket", "grocery", "groceries", "blinkit", "zepto", "instamart",
         "bigbasket", "dmart", "reliance fresh", "spencer", "nature basket", "kirana",
-        "organic", "provisions", "general store",
+        "organic", "provisions", "general store", "more megastore", "jiomart",
     ],
     "Shopping": [
         "amazon", "flipkart", "myntra", "zara", "h&m", "uniqlo", "retail", "apparel",
         "clothing", "footwear", "electronics", "croma", "reliance digital", "apple",
+        "ajio", "nykaa", "meesho",
     ],
     "Healthcare": [
         "pharmacy", "chemist", "apothecary", "apollo", "medplus", "hospital", "clinic",
-        "diagnostic", "lab", "dental", "doctor", "health", "pharma",
+        "diagnostic", "dental", "doctor", "pharma", "1mg", "pharmeasy", "netmeds",
     ],
     "Transportation": [
         "uber", "ola", "rapido", "metro", "fuel", "petrol", "diesel", "hpcl", "bpcl",
         "iocl", "shell", "toll", "parking", "fastag", "railway", "irctc", "indigo",
+        "namma yatri", "blusmart",
     ],
     "Utilities": [
-        "electricity", "water", "gas", "airtel", "jio", "vodafone", "vi", "broadband",
-        "wifi", "bescom", "tneb", "mahadiscom", "bill payment",
+        "electricity", "water bill", "airtel", "jio", "vodafone", "broadband",
+        "wifi", "bescom", "tneb", "mahadiscom", "bill payment", "recharge",
     ],
     "Entertainment": [
         "netflix", "spotify", "pvr", "inox", "cinema", "theatre", "movie", "bookmyshow",
-        "hotstar", "prime video", "steam", "playstation",
+        "hotstar", "prime video", "steam", "playstation", "youtube premium",
     ],
     "Services": [
         "urban company", "salon", "spa", "dry clean", "laundry", "cleaning", "repair",
+        "google pay", "phonepe", "paytm", "bhim",
     ],
 }
 
 
 class TransactionCategorizer:
     """Service for classifying transactions into standard financial categories."""
-
-    def __init__(self):
-        pass
 
     def categorize(
         self,
@@ -54,25 +55,29 @@ class TransactionCategorizer:
         """
         Determines the appropriate financial category for a transaction.
         Separated cleanly from the OCR text extraction layer.
+        Uses merchant, line items, and full OCR text together.
         """
-        search_text = (merchant_name or "").lower()
-
-        # Check line items if merchant is unclear
+        parts: List[str] = []
+        if merchant_name:
+            parts.append(merchant_name)
         if line_items:
-            item_names = " ".join(item.get("name", "") for item in line_items).lower()
-            search_text = f"{search_text} {item_names}"
+            parts.extend(item.get("name", "") for item in line_items if item.get("name"))
+        if raw_text:
+            parts.append(raw_text)
 
-        if not search_text and raw_text:
-            search_text = raw_text.lower()
+        search_text = " ".join(parts).lower()
+        if not search_text.strip():
+            return "Other"
 
-        # Match against predefined category dictionaries
+        # Prefer merchant/line-item matches, then fall through the same keyword scan on full text.
         for category, keywords in CATEGORY_KEYWORD_RULES.items():
             for kw in keywords:
                 if re.search(r"\b" + re.escape(kw) + r"\b", search_text):
                     return category
 
-        # Fallback default
-        return "Food & Dining" if "coffee" in search_text or "food" in search_text else "Other"
+        if "coffee" in search_text or "food" in search_text:
+            return "Food & Dining"
+        return "Other"
 
 
 categorizer = TransactionCategorizer()

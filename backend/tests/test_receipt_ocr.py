@@ -315,11 +315,8 @@ def test_api_upload_receipt_and_confirm_flow(monkeypatch):
         {"text": "UPI Ref: UPI/8372619472/PAY", "confidence": 0.96, "bounding_box": [[10, 160], [200, 160], [200, 180], [10, 180]]},
     ]
 
-    monkeypatch.setattr(
-        ocr_pipeline.easyocr_service,
-        "extract_text_and_boxes",
-        lambda img: mock_ocr_elements,
-    )
+    monkeypatch.setattr(ocr_pipeline.tesseract_service, "is_available", True)
+    monkeypatch.setattr(ocr_pipeline.tesseract_service, "extract_text_and_boxes", lambda img: mock_ocr_elements)
 
     # 1. Upload receipt to OCR endpoint
     upload_res = client.post(
@@ -333,7 +330,7 @@ def test_api_upload_receipt_and_confirm_flow(monkeypatch):
     assert data["requires_review"] is True
     assert "ocr" in data
     assert "receipt" in data
-    assert data["ocr"]["engine"] == "easyocr"
+    assert data["ocr"]["engine"] == "tesseract"
     assert data["receipt"]["merchant"] == "Starbucks Coffee"
     assert data["receipt"]["total_amount"] == 340.0
     assert data["receipt"]["date"] == "2026-09-26"

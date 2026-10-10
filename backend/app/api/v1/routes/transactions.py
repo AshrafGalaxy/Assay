@@ -6,6 +6,7 @@ from app.core.database import get_db
 from app.models.transaction import Transaction
 from app.schemas.transaction import TransactionCreate, TransactionOut, TransactionListResponse
 from app.providers.aa.mock_provider import MockAAProvider
+from app.services.financial_intelligence.demo_ledger import get_demo_transactions
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 mock_provider = MockAAProvider()
@@ -28,51 +29,17 @@ def get_transactions(
     total = query.count()
     items = query.offset(offset).limit(limit).all()
 
-    if not items and offset == 0:
-        # Provide realistic mock items if DB empty
-        mock_items = [
-            TransactionOut(
-                id="tx_01",
-                amount=85000.0,
-                type="credit",
-                category="Salary",
-                merchant_name="TechCorp Solutions",
-                description="Monthly Salary Credit",
-                transaction_date="2026-09-01T10:00:00Z",
-                is_recurring=True,
-                is_fixed=True,
-                is_discretionary=False,
-                source_type="aa",
-            ),
-            TransactionOut(
-                id="tx_02",
-                amount=25000.0,
-                type="debit",
-                category="Housing & Rent",
-                merchant_name="Landlord Rent Payment",
-                description="Apartment Rent",
-                transaction_date="2026-09-03T11:30:00Z",
-                is_recurring=True,
-                is_fixed=True,
-                is_discretionary=False,
-                source_type="aa",
-            ),
-            TransactionOut(
-                id="tx_03",
-                amount=3400.0,
-                type="debit",
-                category="Food & Dining",
-                merchant_name="Swiggy",
-                description="Weekend dinner delivery",
-                transaction_date="2026-09-05T20:15:00Z",
-                is_recurring=False,
-                is_fixed=False,
-                is_discretionary=True,
-                source_type="aa",
-            ),
-        ]
+    if total == 0:
+        # The synthetic ledger keeps prototype endpoints internally consistent
+        # until the Kaggle dataset importer and Supabase repository are wired.
+        mock_items = get_demo_transactions()
+        if category:
+            mock_items = [item for item in mock_items if item["category"] == category]
+        if transaction_type:
+            mock_items = [item for item in mock_items if item["type"] == transaction_type]
+        mock_items.sort(key=lambda item: item["transaction_date"], reverse=True)
         return TransactionListResponse(
-            items=mock_items,
+            items=[TransactionOut(**item) for item in mock_items[offset:offset + limit]],
             total=len(mock_items),
             limit=limit,
             offset=offset,
@@ -107,19 +74,10 @@ def get_transactions(
 def get_transaction(transaction_id: str, db: Session = Depends(get_db)):
     tx = db.query(Transaction).filter(Transaction.id == transaction_id).first()
     if not tx:
-        return TransactionOut(
-            id=transaction_id,
-            amount=3400.0,
-            type="debit",
-            category="Food & Dining",
-            merchant_name="Swiggy",
-            description="Weekend dinner delivery",
-            transaction_date="2026-09-05T20:15:00Z",
-            is_recurring=False,
-            is_fixed=False,
-            is_discretionary=True,
-            source_type="aa",
-        )
+        demo_transaction = next((item for item in get_demo_transactions() if item["id"] == transaction_id), None)
+        if demo_transaction:
+            return TransactionOut(**demo_transaction)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Transaction not found")
     return TransactionOut(
         id=tx.id,
         account_id=tx.account_id,

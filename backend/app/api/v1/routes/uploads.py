@@ -24,11 +24,10 @@ async def upload_receipt(file: UploadFile = File(...)):
     Receipt image upload endpoint:
     1. Validates image type, size, magic bytes, and dimensions.
     2. Runs non-destructive OpenCV preprocessing.
-    3. Runs EasyOCR with PyTesseract fallback.
-    4. Deterministically extracts merchant, totals, dates, taxes, payment method, line items.
-    5. Returns structured review payload with field-level confidences.
-    
-    NOTE: Does NOT create a transaction directly. Requires user confirmation.
+    3. Extracts text with local Tesseract OCR.
+    4. Parses merchant, totals, dates, taxes, payment method, and line items.
+    5. Suggests a financial category from merchant / line items / raw text.
+    6. Returns a structured review payload (no transaction until confirm).
     """
     image_bytes = await validate_image_upload(file)
     upload_id = f"upl_{uuid.uuid4().hex[:8]}"

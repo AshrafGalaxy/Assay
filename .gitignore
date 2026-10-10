@@ -57,7 +57,10 @@ yarn-error.*
 # Local env files
 .env
 .env*.local
-frontend/.env*
+frontend/.env
+frontend/.env.local
+frontend/.env*.local
+!frontend/.env.example
 backend/.env
 
 # TypeScript

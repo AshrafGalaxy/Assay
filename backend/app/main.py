@@ -1,11 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
-from app.core.database import Base, engine
+from app.core.database import Base, database_is_ready, engine
 from app.api.v1.router import api_router
 
-# Create database tables if they don't exist
-Base.metadata.create_all(bind=engine)
+# Supabase schema is applied by its migration workflow. The local SQLite
+# fallback remains self-contained for development and API tests.
+if settings.manages_schema:
+    Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -37,7 +39,11 @@ def root():
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy"}
+    database_ready = database_is_ready()
+    return {
+        "status": "healthy" if database_ready else "degraded",
+        "database": "ready" if database_ready else "unavailable",
+    }
 
 
 app.include_router(api_router, prefix=settings.API_V1_STR)

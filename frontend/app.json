@@ -24,7 +24,15 @@
       "expo-router",
       "expo-font",
       "expo-splash-screen",
-      "expo-status-bar"
+      "expo-status-bar",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Allow Assay to capture receipts for transaction extraction.",
+          "photosPermission": "Allow Assay to select receipt and UPI images for transaction extraction.",
+          "microphonePermission": false
+        }
+      ]
     ]
   }
 }

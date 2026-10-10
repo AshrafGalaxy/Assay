@@ -1,7 +1,6 @@
-from ast import Tuple
 import logging
 import shutil
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Tuple
 import numpy as np
 import pytesseract
 from pytesseract import Output
@@ -30,7 +29,7 @@ def is_tesseract_available() -> bool:
 
 
 class TesseractService:
-    """Fallback OCR Engine using PyTesseract."""
+    """The receipt OCR engine, powered only by the local Tesseract binary."""
 
     def __init__(self):
         self._available = is_tesseract_available()

@@ -117,8 +117,18 @@ npm run web
 ```bash
 cd frontend
 npm install
+cp .env.example .env
 npm start
 ```
+
+Expo loads `EXPO_PUBLIC_*` variables from `frontend/.env` (not `_env`). Copy `.env.example` and fill in values as needed.
+
+**API base URL on device vs simulator**
+
+- Prefer setting `EXPO_PUBLIC_API_URL` in `frontend/.env` when you want an explicit override (must include `/api/v1`).
+- If unset, the app uses the Expo/Metro LAN host so Expo Go and physical devices can reach the backend on your machine.
+- Simulator / web fall back to `localhost` (Android emulator: `10.0.2.2`).
+- For a physical device, either leave `EXPO_PUBLIC_API_URL` unset, or set it to `http://YOUR_LAN_IP:8000/api/v1` (same Wi‑Fi as the backend). Restart Expo after changing `.env`.
 
 Expo native modules should be installed or repaired with `npx expo install` so their versions stay compatible with the Expo SDK.
 
@@ -130,8 +140,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+Bind with `--host 0.0.0.0` so phones on your LAN can reach the API (default `127.0.0.1` only works on the host / simulators).
 
 - Swagger API Docs: `http://localhost:8000/api/v1/docs`
 - Health Check: `http://localhost:8000/health`
