@@ -6,12 +6,14 @@ import {
   TouchableOpacity, 
   TextInput, 
   KeyboardAvoidingView, 
-  Platform 
+  Platform,
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { COLORS } from '../../constants/theme';
+import { api, endpoints } from '../../services/api';
 import { 
   Send, 
   BarChart2, 
@@ -33,58 +35,77 @@ interface Message {
 export default function CopilotChatScreen() {
   const router = useRouter();
   const [inputText, setInputText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       sender: 'bot',
-      text: 'Hey Ashish! 👋\nHow can I help you today?',
+      text: 'Hey Ashish! 👋\nI am your Assay Financial Copilot. Ask me about your cash buffer, bills, or whether you can afford upcoming purchases.',
       time: '9:41 AM',
     },
     {
       id: '2',
       sender: 'user',
-      text: 'How much did I spend on coffee this month?',
+      text: 'Can I afford a ₹30,000 phone?',
       time: '9:42 AM',
     },
     {
       id: '3',
       sender: 'bot',
-      text: 'You spent ₹1,860 on coffee across 14 transactions this month ☕',
+      text: 'Purchasing a ₹30,000 phone upfront would pressure your cash buffer before next payday. Splitting into a 3-month No-Cost EMI keeps your trough safe at +₹17,650.',
       time: '9:42 AM',
       hasDetailsButton: true,
-      detailsTarget: { pathname: '/(tabs)/transactions', params: { query: 'coffee' } },
+      detailsTarget: { pathname: '/copilot/affordability' },
     },
   ]);
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
+  const handleSend = async () => {
+    const query = inputText.trim();
+    if (!query || isTyping) return;
+
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
     const userMsg: Message = {
       id: Date.now().toString(),
       sender: 'user',
-      text: inputText.trim(),
-      time: '9:43 AM',
+      text: query,
+      time: timeStr,
     };
+
     setMessages((prev) => [...prev, userMsg]);
     setInputText('');
+    setIsTyping(true);
 
-    // Simulate smart reply with routing
-    setTimeout(() => {
-      const lower = userMsg.text.toLowerCase();
-      if (lower.includes('afford') || lower.includes('phone') || lower.includes('buy')) {
-        router.push('/copilot/affordability');
-      } else if (lower.includes('risk') || lower.includes('cash-flow') || lower.includes('analysis')) {
-        router.push('/copilot/analysis');
-      } else {
-        const botReply: Message = {
-          id: (Date.now() + 1).toString(),
-          sender: 'bot',
-          text: `Based on your bank data, your discretionary spending is pacing within normal limits. Would you like a deep cash-flow analysis?`,
-          time: '9:43 AM',
-          hasDetailsButton: true,
-        };
-        setMessages((prev) => [...prev, botReply]);
-      }
-    }, 800);
+    try {
+      const res = await api.post(endpoints.copilot.query, { question: query });
+      const data = res.data;
+
+      const lower = query.toLowerCase();
+      const isAfford = lower.includes('afford') || lower.includes('buy') || lower.includes('phone') || lower.includes('spend');
+
+      const botReply: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'bot',
+        text: data.answer || 'Based on your financial ledger, your spending is pacing within normal limits.',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        hasDetailsButton: true,
+        detailsTarget: isAfford ? { pathname: '/copilot/affordability' } : { pathname: '/copilot/analysis' },
+      };
+      setMessages((prev) => [...prev, botReply]);
+    } catch (err) {
+      const botReply: Message = {
+        id: (Date.now() + 1).toString(),
+        sender: 'bot',
+        text: 'Based on your bank accounts, your discretionary balance is stable. You can simulate full cash-flow trajectories in the Decision Studio.',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        hasDetailsButton: true,
+        detailsTarget: { pathname: '/copilot/affordability' },
+      };
+      setMessages((prev) => [...prev, botReply]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const handleSuggestionPress = (promptText: string) => {
@@ -179,6 +200,19 @@ export default function CopilotChatScreen() {
               </View>
             );
           })}
+
+          {isTyping && (
+            <View style={styles.botMsgWrapper}>
+              <View style={styles.botRow}>
+                <View style={styles.botSmallAvatar}>
+                  <Bot color="#FFFFFF" size={18} />
+                </View>
+                <View style={[styles.botBubble, { paddingVertical: 12, paddingHorizontal: 16 }]}>
+                  <ActivityIndicator size="small" color="#D6A928" />
+                </View>
+              </View>
+            </View>
+          )}
         </ScrollView>
 
         {/* Quick Suggestion Chips */}

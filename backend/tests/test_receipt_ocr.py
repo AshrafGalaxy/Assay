@@ -357,3 +357,32 @@ def test_api_upload_receipt_and_confirm_flow(monkeypatch):
     assert confirm_data["status"] == "confirmed"
     assert confirm_data["transaction_id"].startswith("tx_")
     assert confirm_data["category"] == "Food & Dining"
+
+
+def test_api_upload_quarantine_quality_gate(monkeypatch):
+    """Low-confidence OCR (< 0.75) must be quarantined with requires_review=True and a quarantine warning message."""
+    receipt_bytes = create_receipt_image([
+        "Blurry Cafe",
+        "Total: 120.00",
+    ])
+
+    # Mock low confidence extraction (0.60 < 0.75)
+    mock_ocr_elements = [
+        {"text": "Blurry Cafe", "confidence": 0.60, "bounding_box": [[10, 10], [100, 10], [100, 30], [10, 30]]},
+        {"text": "Total: 120.00", "confidence": 0.62, "bounding_box": [[10, 40], [100, 40], [100, 60], [10, 60]]},
+    ]
+
+    monkeypatch.setattr(type(ocr_pipeline.tesseract_service), "is_available", property(lambda self: True))
+    monkeypatch.setattr(ocr_pipeline.tesseract_service, "extract_text_and_boxes", lambda img: mock_ocr_elements)
+
+    response = client.post(
+        "/api/v1/uploads/receipt",
+        files={"file": ("blurry_receipt.jpg", io.BytesIO(receipt_bytes), "image/jpeg")},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["requires_review"] is True
+    assert data["ocr"]["overall_confidence"] < 0.75
+    assert data["message"] is not None
+    assert "Quarantine Quality Gate" in data["message"]
+

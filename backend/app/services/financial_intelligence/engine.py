@@ -62,7 +62,8 @@ def _category_spend(transactions: Iterable[dict[str, Any]]) -> dict[str, float]:
     totals: defaultdict[str, float] = defaultdict(float)
     for transaction in transactions:
         if transaction["type"] == "debit":
-            totals[transaction["category"]] += float(transaction["amount"])
+            cat = transaction.get("category") or "Other"
+            totals[cat] += float(transaction["amount"])
     return {category: _money(amount) for category, amount in totals.items()}
 
 
@@ -116,6 +117,23 @@ def build_financial_health(
             })
     if savings_rate >= 0.2:
         signals.append({"type": "healthy_savings", "category": "Savings", "change_percent": _money(savings_rate * 100), "description": "You are saving at least 20% of this month's income.", "severity": "info"})
+    # 2-cycle structural break / Life Shift detection across consecutive cycles
+    prev_month_key = _previous_month(active_month)
+    prev_prev_month_key = _previous_month(prev_month_key)
+    prev_income = sum(float(tx["amount"]) for tx in _transactions_for_month(transactions, prev_month_key) if tx["type"] == "credit")
+    prev_prev_income = sum(float(tx["amount"]) for tx in _transactions_for_month(transactions, prev_prev_month_key) if tx["type"] == "credit")
+    if prev_prev_income > 0 and prev_income > 0:
+        shift_m1 = (prev_income - prev_prev_income) / prev_prev_income
+        shift_m0 = (income - prev_prev_income) / prev_prev_income if income > 0 else 0
+        if shift_m1 >= 0.35 and shift_m0 >= 0.35:
+            signals.insert(0, {
+                "type": "structural_break_life_shift",
+                "category": "Income",
+                "change_percent": _money(shift_m0 * 100),
+                "description": f"Life Shift Detected: Income surged by {_money(shift_m0 * 100):.0f}% across consecutive cycles. Models adapted to new baseline.",
+                "severity": "info",
+            })
+
     if not signals:
         signals.append({"type": "stable_spending", "description": "No material spending increase was detected against the prior month.", "severity": "info"})
 

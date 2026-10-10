@@ -8,6 +8,7 @@ import {
   Modal,
   ActivityIndicator,
   TextInput,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -27,6 +28,7 @@ import {
   Image as ImageIcon,
   FileText,
   ChevronRight,
+  AlertTriangle,
 } from 'lucide-react-native';
 
 interface UploadItem {
@@ -58,11 +60,28 @@ export default function UploadScreen() {
   const [editAmount, setEditAmount] = useState('');
   const [editCategory, setEditCategory] = useState<string>('Other');
 
+  // Recover any camera photo if Android OS destroyed the Activity due to memory pressure
+  useEffect(() => {
+    async function checkPendingAndroidAsset() {
+      if (Platform.OS === 'android') {
+        try {
+          const pending = await ImagePicker.getPendingResultAsync();
+          if (pending && 'canceled' in pending && !pending.canceled && pending.assets && pending.assets.length > 0) {
+            await processImage(pending.assets[0]);
+          }
+        } catch (e) {
+          console.warn('[Assay] Failed to recover pending camera asset:', e);
+        }
+      }
+    }
+    void checkPendingAndroidAsset();
+  }, []);
+
   useEffect(() => {
     if (!scanResult) return;
-    setEditMerchant(scanResult.receipt.merchant || '');
+    setEditMerchant(scanResult.receipt?.merchant || '');
     setEditAmount(
-      scanResult.receipt.total_amount != null ? String(scanResult.receipt.total_amount) : '',
+      scanResult.receipt?.total_amount != null ? String(scanResult.receipt.total_amount) : '',
     );
     setEditCategory(scanResult.suggested_category || 'Other');
   }, [scanResult]);
@@ -100,7 +119,7 @@ export default function UploadScreen() {
     }
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ['images'],
-      quality: 1,
+      quality: 0.7,
       allowsEditing: false,
     });
     if (!result.canceled && result.assets[0]) {
@@ -116,7 +135,7 @@ export default function UploadScreen() {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 1,
+      quality: 0.7,
       allowsEditing: false,
     });
     if (!result.canceled && result.assets[0]) {
@@ -156,7 +175,7 @@ export default function UploadScreen() {
           merchantKey: 'receipt',
           amount: newItem.amount,
           time: newItem.time,
-          method: scanResult.receipt.payment_method || 'Receipt',
+          method: scanResult?.receipt?.payment_method || 'Receipt',
           category: newItem.category,
           notes: newItem.notes,
         },
@@ -324,6 +343,20 @@ export default function UploadScreen() {
               Text extracted, fields analyzed, category suggested. Edit anything before saving.
             </Typography>
 
+            {scanResult && (scanResult.ocr?.overall_confidence ?? 1) < 0.75 && (
+              <View style={styles.quarantineCard}>
+                <AlertTriangle color="#D97706" size={16} style={{ marginTop: 2, marginRight: 8 }} />
+                <View style={{ flex: 1 }}>
+                  <Typography variant="bodyBold" style={{ color: '#D97706', fontSize: 13 }}>
+                    Quarantine Quality Gate
+                  </Typography>
+                  <Typography variant="caption" color={COLORS.textSecondary} style={{ fontSize: 11.5, marginTop: 2 }}>
+                    {scanResult.message || `Confidence score is ${Math.round((scanResult.ocr?.overall_confidence || 0) * 100)}% (<75%). Please verify extracted merchant and amount before adding.`}
+                  </Typography>
+                </View>
+              </View>
+            )}
+
             <View style={styles.extractCard}>
               <View style={styles.fieldBlock}>
                 <Typography variant="caption" color={COLORS.textSecondary}>Merchant</Typography>
@@ -373,7 +406,7 @@ export default function UploadScreen() {
               </View>
               <View style={styles.resultRow}>
                 <Typography variant="caption" color={COLORS.textSecondary}>OCR confidence</Typography>
-                <Typography variant="bodyBold">{Math.round((scanResult?.ocr.overall_confidence || 0) * 100)}%</Typography>
+                <Typography variant="bodyBold">{Math.round((scanResult?.ocr?.overall_confidence || 0) * 100)}%</Typography>
               </View>
             </View>
 
@@ -612,4 +645,14 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
   },
   confirmButtonDisabled: { opacity: 0.45 },
+  quarantineCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(217, 119, 6, 0.25)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+  },
 });

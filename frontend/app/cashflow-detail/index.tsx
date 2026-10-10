@@ -29,6 +29,8 @@ import {
   DailyCashFlowResponse,
   DailyCashPoint,
   fetchDailyCashFlow,
+  fetchConformalForecast,
+  ConformalForecastResponse,
   formatINR,
 } from '../../services/finance';
 import {
@@ -36,6 +38,8 @@ import {
   AlertTriangle,
   ChevronDown,
   ArrowRight,
+  ShieldCheck,
+  TrendingUp,
 } from 'lucide-react-native';
 
 const EVENT_FILTERS = ['All', 'Income', 'Bills', 'EMIs'] as const;
@@ -62,6 +66,7 @@ export default function CashFlowDetailScreen() {
   const [selectedPoint, setSelectedPoint] = useState<DailyCashPoint | null>(null);
   const [assumptionsOpen, setAssumptionsOpen] = useState(false);
   const [payload, setPayload] = useState<DailyCashFlowResponse | null>(null);
+  const [forecast, setForecast] = useState<ConformalForecastResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -70,9 +75,13 @@ export default function CashFlowDetailScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      // Observed month from generator; optional 14-day provider forecast tagged separately.
-      const data = await fetchDailyCashFlow({ includeForecastDays: 14 });
+      // Fetch observed month and calibrated 6-month Conformal Quantile forecast in parallel
+      const [data, forecastData] = await Promise.all([
+        fetchDailyCashFlow({ includeForecastDays: 14 }),
+        fetchConformalForecast(6, 0.80).catch(() => null),
+      ]);
       setPayload(data);
+      if (forecastData) setForecast(forecastData);
       setSelectedPoint(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to load daily cash flow';
@@ -483,6 +492,66 @@ export default function CashFlowDetailScreen() {
             </TouchableOpacity>
           </View>
         )}
+        {/* 6-Month Conformal Quantile Cash Flow Envelope */}
+        {forecast && forecast.periods && forecast.periods.length > 0 && (
+          <View style={styles.forecastCard}>
+            <View style={styles.forecastHeader}>
+              <View>
+                <Typography variant="bodyBold" style={{ fontSize: 16 }}>
+                  6-Month Probabilistic Forecast
+                </Typography>
+                <Typography variant="caption" color={COLORS.textSecondary}>
+                  Conformal Quantile Autoregression (CQ-AR)
+                </Typography>
+              </View>
+              <View style={styles.conformalBadge}>
+                <ShieldCheck color="#16A34A" size={13} style={{ marginRight: 4 }} />
+                <Typography variant="caption" style={styles.conformalBadgeText}>
+                  {Math.round(forecast.conformal_coverage_pct)}% Calibrated
+                </Typography>
+              </View>
+            </View>
+
+            <View style={styles.forecastList}>
+              {forecast.periods.map((period) => (
+                <View key={period.period_id} style={styles.periodRow}>
+                  <View style={styles.periodLeftCol}>
+                    <Typography variant="bodyBold" style={{ fontSize: 13.5 }}>
+                      {period.month_label}
+                    </Typography>
+                    <Typography variant="caption" color={COLORS.textSecondary}>
+                      Net: {formatINR(period.net_cash_p50)}
+                    </Typography>
+                  </View>
+
+                  <View style={styles.periodCenterCol}>
+                    <View style={styles.periodRangeBar}>
+                      <View style={styles.periodRangeFill} />
+                      <View style={styles.periodMedianMarker} />
+                    </View>
+                    <View style={styles.periodRangeLabels}>
+                      <Typography variant="caption" style={styles.rangeSubText}>
+                        P10: {formatINR(period.essential_p10)}
+                      </Typography>
+                      <Typography variant="caption" style={styles.rangeSubText}>
+                        P90: {formatINR(period.essential_p90)}
+                      </Typography>
+                    </View>
+                  </View>
+
+                  <View style={styles.periodRightCol}>
+                    <Typography variant="bodyBold" style={{ fontSize: 13.5, color: '#16A34A', textAlign: 'right' }}>
+                      {formatINR(period.income_p50)}
+                    </Typography>
+                    <Typography variant="caption" color={COLORS.textSecondary} style={{ textAlign: 'right' }}>
+                      Exp. Inflow
+                    </Typography>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         <TouchableOpacity style={styles.assumptionHeader} onPress={toggleAssumptions} activeOpacity={0.8}>
           <Typography variant="bodyBold" style={{ fontSize: 14 }}>
@@ -628,4 +697,86 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: -2,
   },
+  forecastCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+  },
+  forecastHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  conformalBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(22,163,74,0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  conformalBadgeText: {
+    color: '#16A34A',
+    fontWeight: '700',
+    fontSize: 11,
+  },
+  forecastList: {
+    gap: 12,
+  },
+  periodRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.04)',
+  },
+  periodLeftCol: {
+    width: 75,
+  },
+  periodCenterCol: {
+    flex: 1,
+    paddingHorizontal: 10,
+  },
+  periodRangeBar: {
+    height: 6,
+    backgroundColor: 'rgba(214,169,40,0.18)',
+    borderRadius: 3,
+    position: 'relative',
+    justifyContent: 'center',
+  },
+  periodRangeFill: {
+    position: 'absolute',
+    left: '15%',
+    right: '15%',
+    height: 6,
+    backgroundColor: '#D6A928',
+    borderRadius: 3,
+  },
+  periodMedianMarker: {
+    position: 'absolute',
+    left: '50%',
+    width: 3,
+    height: 10,
+    backgroundColor: '#0F172A',
+    borderRadius: 1.5,
+    top: -2,
+  },
+  periodRangeLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  rangeSubText: {
+    fontSize: 10,
+    color: COLORS.textSecondary,
+  },
+  periodRightCol: {
+    width: 80,
+  },
 });
+

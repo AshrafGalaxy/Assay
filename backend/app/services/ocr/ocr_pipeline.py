@@ -65,25 +65,27 @@ class ReceiptOCRPipeline:
                 message="Image preprocessing failed. Please upload a clear photo.",
             )
 
-        # Step 2: Extract text using the local Tesseract binary.
-        if not self.tesseract_service.is_available:
-            return ReceiptOCRResponse(
-                upload_id=upload_id,
-                status="UNREADABLE",
-                ocr=ReceiptOCRInfo(engine="tesseract", overall_confidence=0.0),
-                receipt=ParsedReceipt(),
-                line_items=[],
-                raw_text="",
-                requires_review=True,
-                message="Tesseract OCR is unavailable on the server. Install the Tesseract binary and retry.",
-            )
-        try:
-            ocr_elements = self.tesseract_service.extract_text_and_boxes(preprocessed_img)
-        except Exception as error:
-            logger.warning(
-                f"[ReceiptOCR] upload_id={upload_id} stage=tesseract status=failed error={str(error)}"
-            )
-            ocr_elements = []
+        # Step 2: Extract text using local Tesseract or EasyOCR fallback
+        if self.tesseract_service.is_available:
+            engine_used = "tesseract"
+            try:
+                ocr_elements = self.tesseract_service.extract_text_and_boxes(preprocessed_img)
+            except Exception as error:
+                logger.warning(
+                    f"[ReceiptOCR] upload_id={upload_id} stage=tesseract status=failed error={str(error)}"
+                )
+                ocr_elements = []
+        else:
+            engine_used = "easyocr"
+            try:
+                from app.services.ocr.easyocr_service import EasyOCRService
+                easyocr_service = EasyOCRService()
+                ocr_elements = easyocr_service.extract_text_and_boxes(preprocessed_img)
+            except Exception as error:
+                logger.warning(
+                    f"[ReceiptOCR] upload_id={upload_id} stage=easyocr status=failed error={str(error)}"
+                )
+                ocr_elements = []
 
         # Step 3: Parse OCR elements into structured receipt data
         parsed = self.parser.parse(ocr_elements)
@@ -99,6 +101,8 @@ class ReceiptOCRPipeline:
         if receipt_data["total_amount"] is None and overall_conf < 0.3:
             status = "MANUAL_ENTRY_REQUIRED"
             message = "Couldn't confidently read total from this receipt. Please review and enter values."
+        elif overall_conf < 0.75:
+            message = f"Quarantine Quality Gate: OCR confidence is {round(overall_conf * 100)}% (<75%). Please review and verify merchant, date, and amount before confirming."
 
         # Step 4: Suggested category (Categorization is cleanly decoupled from OCR)
         suggested_category = categorizer.categorize(

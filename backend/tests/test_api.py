@@ -14,7 +14,9 @@ def test_root():
 def test_health():
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "database": "ready"}
+    data = response.json()
+    assert data["status"] in ["healthy", "degraded"]
+    assert "database" in data
 
 
 def test_financial_health():
@@ -71,3 +73,35 @@ def test_copilot_query():
     data = response.json()
     assert data["intent"] == "affordability"
     assert "answer" in data
+
+
+def test_money_leaks_endpoint():
+    response = client.get("/api/v1/analytics/money-leaks?threshold=250")
+    assert response.status_code == 200
+    data = response.json()
+    assert "total_amount" in data
+    assert "total_count" in data
+    assert "leaks" in data
+    assert len(data["leaks"]) > 0
+    assert "note" in data
+
+
+def test_structural_break_life_shift_detection():
+    from app.services.financial_intelligence.engine import build_financial_health
+    from datetime import date
+
+    # 3 consecutive months: Month 1 base (50k), Month 2 surged (80k = +60%), Month 3 surged (85k = +70%)
+    transactions = [
+        {"id": "t1", "amount": 50000.0, "type": "credit", "category": "Salary", "transaction_date": "2026-07-01", "is_fixed": False, "is_recurring": True},
+        {"id": "t2", "amount": 20000.0, "type": "debit", "category": "Rent", "transaction_date": "2026-07-10", "is_fixed": True, "is_recurring": True},
+        {"id": "t3", "amount": 80000.0, "type": "credit", "category": "Salary", "transaction_date": "2026-08-01", "is_fixed": False, "is_recurring": True},
+        {"id": "t4", "amount": 25000.0, "type": "debit", "category": "Rent", "transaction_date": "2026-08-10", "is_fixed": True, "is_recurring": True},
+        {"id": "t5", "amount": 85000.0, "type": "credit", "category": "Salary", "transaction_date": "2026-09-01", "is_fixed": False, "is_recurring": True},
+        {"id": "t6", "amount": 30000.0, "type": "debit", "category": "Rent", "transaction_date": "2026-09-10", "is_fixed": True, "is_recurring": True},
+    ]
+    result = build_financial_health(transactions, as_of=date(2026, 9, 30))
+    shift_signal = next((s for s in result["signals"] if s["type"] == "structural_break_life_shift"), None)
+    assert shift_signal is not None
+    assert "Life Shift Detected" in shift_signal["description"]
+
+

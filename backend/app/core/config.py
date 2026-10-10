@@ -1,6 +1,8 @@
 from typing import List
+from pathlib import Path
 from pydantic_settings import BaseSettings
 from pydantic import field_validator
+
 
 
 class Settings(BaseSettings):
@@ -19,8 +21,19 @@ class Settings(BaseSettings):
     MANAGE_SCHEMA: bool | None = None
 
     # Providers
-    LLM_PROVIDER: str = "mock"
+    LLM_PROVIDER: str = "groq"  # "groq" | "huggingface" | "mock" | "openai" | "gemini"
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL_ID: str = "qwen/qwen3.8-27b"
+
+    HF_TOKEN: str = ""
+    HF_MODEL_ID: str = "meta-llama/Llama-3.1-8B-Instruct"
     AA_PROVIDER: str = "mock"
+
+
+    # Core Financial Planning & Uncertainty Parameters
+    MINIMUM_RESERVE_FLOOR: float = 25000.0
+    CONFORMAL_CONFIDENCE_LEVEL: float = 0.80
+    MONTE_CARLO_SIMULATION_PATHS: int = 1000
 
     # Synthetic personal-finance dataset (API ledger source)
     SYNTHETIC_DATA_DIR: str = "data/synthetic_finance"
@@ -60,8 +73,13 @@ class Settings(BaseSettings):
 
     class Config:
         case_sensitive = True
-        env_file = ".env"
+        env_file = (
+            str(Path(__file__).resolve().parent.parent.parent / ".env"),
+            ".env",
+            "backend/.env",
+        )
         extra = "allow"
+
 
 
 settings = Settings()

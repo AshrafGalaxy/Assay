@@ -7,6 +7,7 @@ import {
   Dimensions,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -505,6 +506,9 @@ export default function InsightsScreen() {
 
                 {periods.map((p, i) => {
                   const selected = p.period_index === selectedPeriod;
+                  const pressProps = Platform.OS === 'web'
+                    ? { onClick: () => setSelectedPeriod(p.period_index), style: { cursor: 'pointer' } as any }
+                    : { onPress: () => setSelectedPeriod(p.period_index) };
                   return (
                     <G key={p.period_index}>
                       <Circle
@@ -514,7 +518,7 @@ export default function InsightsScreen() {
                         fill={p.reserve_violated ? '#EF4444' : '#D6A928'}
                         stroke="#0F172A"
                         strokeWidth={1.5}
-                        onPress={() => setSelectedPeriod(p.period_index)}
+                        {...pressProps}
                       />
                       <SvgText
                         x={getX(i, periods.length)}

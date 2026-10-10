@@ -36,6 +36,8 @@ class CopilotQueryResponse(BaseModel):
     recommendation: Optional[Dict[str, Any]] = None
     confidence: float = 0.86
     limitations: List[str] = []
+    audit_passed: Optional[bool] = True
+    provider: Optional[str] = None
 
 
 class RecommendationAssumption(BaseModel):
