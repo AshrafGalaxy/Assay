@@ -66,7 +66,10 @@ export const endpoints = {
   accounts: {
     list: '/accounts',
     demoConnect: '/accounts/demo-connect',
+    link: '/accounts/link',
     sync: (id: string) => `/accounts/${id}/sync`,
+    disconnect: (id: string) => `/accounts/${id}/disconnect`,
+    consent: (id: string) => `/accounts/${id}/consent`,
   },
   transactions: {
     list: '/transactions',

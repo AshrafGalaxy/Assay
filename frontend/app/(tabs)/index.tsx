@@ -21,20 +21,32 @@ import {
   Calendar,
   AlertCircle,
   TrendingDown,
-  ArrowRight,
-  Layers,
+  Eye,
+  EyeOff,
 } from 'lucide-react-native';
 
 export default function Dashboard() {
   const router = useRouter();
   const aaState = useAAState();
   const [hasUnreadNotification, setHasUnreadNotification] = React.useState(true);
+  const [showBalance, setShowBalance] = React.useState(true);
 
-  const { cashIn: liveCashIn, cashOut: liveCashOut } = useTransactions();
+  const { cashIn: liveCashIn, cashOut: liveCashOut, categorySpending } = useTransactions();
+
+  const activeAccounts = aaState.connected_accounts.filter(
+    (a) => a.status !== 'disconnected'
+  );
+  const hasConnectedAccounts = aaState.aa_connected && activeAccounts.length > 0;
+
+  // Calculate Total Bank Balance from all active linked accounts
+  const totalBankBalance = activeAccounts.reduce(
+    (sum, acc) => sum + (Number(acc.balance) || 0),
+    0
+  );
 
   // Current calendar month cash flow metrics from single source of truth
-  const cashIn = aaState.aa_connected ? liveCashIn : (liveCashIn > 85000 ? liveCashIn : 15000);
-  const cashOut = aaState.aa_connected ? liveCashOut : (liveCashOut > 32450 ? liveCashOut : 12450);
+  const cashIn = hasConnectedAccounts ? liveCashIn : (liveCashIn > 45000 ? liveCashIn : 15000);
+  const cashOut = hasConnectedAccounts ? liveCashOut : (liveCashOut > 28500 ? liveCashOut : 12450);
   // Remaining This Month: Monthly cash inflows minus monthly cash outflows
   const remainingThisMonth = Math.max(0, cashIn - cashOut);
 
@@ -60,7 +72,7 @@ export default function Dashboard() {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Subtle limited insights banner if user chose Set Up Later or disconnected */}
-        {!aaState.aa_connected && (
+        {!hasConnectedAccounts && (
           <View style={styles.limitedBanner}>
             <View style={styles.limitedBannerLeft}>
               <View style={styles.limitedIconWrap}>
@@ -86,27 +98,52 @@ export default function Dashboard() {
         )}
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            HERO CARD: CURRENT BALANCE & SPENDING
+            HERO CARD: TOTAL BANK BALANCE (Screen 8)
             ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
         <Card variant="hero" style={styles.heroCard}>
           <View style={styles.heroTopRow}>
-            <Typography variant="secondary" color={COLORS.textSecondary} style={styles.heroLabel}>
-              {aaState.aa_connected ? 'Available Liquid Balance' : 'Total spent this month'}
-            </Typography>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Typography variant="secondary" color={COLORS.textSecondary} style={styles.heroLabel}>
+                {hasConnectedAccounts ? 'Total Bank Balance' : 'Total spent this month'}
+              </Typography>
+              {hasConnectedAccounts && (
+                <TouchableOpacity
+                  onPress={() => setShowBalance(!showBalance)}
+                  activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  {showBalance ? (
+                    <Eye size={16} color="rgba(255, 255, 255, 0.7)" />
+                  ) : (
+                    <EyeOff size={16} color="rgba(255, 255, 255, 0.7)" />
+                  )}
+                </TouchableOpacity>
+              )}
+            </View>
 
-            {aaState.aa_connected && (
-              <View style={styles.bankStatusPill}>
+            {hasConnectedAccounts && (
+              <TouchableOpacity
+                style={styles.bankStatusPill}
+                onPress={() => router.push('/settings/connected-accounts')}
+                activeOpacity={0.8}
+              >
                 <View style={styles.statusDot} />
                 <Text style={styles.bankStatusText}>
-                  {aaState.connected_accounts[0]?.bankName || 'HDFC Bank'} • Synced
+                  {activeAccounts.length > 1
+                    ? `${activeAccounts.map((a) => a.bankName.replace(' Bank', '')).join(' & ')} • Synced`
+                    : `${activeAccounts[0]?.bankName || 'HDFC Bank'} • Synced`}
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
           </View>
 
           <View style={styles.amountRow}>
             <Typography variant="h1" color={COLORS.white} style={styles.heroAmount}>
-              {aaState.aa_connected ? '₹1,66,930' : '₹12,450'}
+              {hasConnectedAccounts
+                ? showBalance
+                  ? formatCurrency(totalBankBalance)
+                  : '••••••'
+                : '₹12,450'}
             </Typography>
             <View style={styles.trendBadge}>
               <TrendingUp color={COLORS.success} size={14} strokeWidth={2} />
