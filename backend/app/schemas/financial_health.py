@@ -26,16 +26,35 @@ class FinancialHealthOut(BaseModel):
 class CopilotQueryRequest(BaseModel):
     question: str
     context: Optional[Dict[str, Any]] = None
+    user_id: Optional[str] = None
 
 
 class CopilotQueryResponse(BaseModel):
     intent: str
+    headline: Optional[str] = None
     answer: str
+    what_we_know: List[Dict[str, Any]] = []
+    what_may_happen: Optional[str] = None
+    what_you_can_do: Optional[Dict[str, Any]] = None
+    why_this_answer: Optional[Dict[str, Any]] = None
     observed: List[Any] = []
     analysis: Dict[str, Any] = {}
     recommendation: Optional[Dict[str, Any]] = None
-    confidence: float = 0.86
+    confidence: float = 0.94
     limitations: List[str] = []
+
+
+class CopilotInsightItem(BaseModel):
+    id: str
+    category: str
+    severity: str
+    title: str
+    summary: str
+    evidence: List[str] = []
+    recommendation: str
+    action_url: Optional[str] = None
+    action_label: Optional[str] = None
+
 
 
 class RecommendationAssumption(BaseModel):

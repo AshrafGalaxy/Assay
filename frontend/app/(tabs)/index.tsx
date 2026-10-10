@@ -23,6 +23,7 @@ import {
   TrendingDown,
   Eye,
   EyeOff,
+  ChevronRight,
 } from 'lucide-react-native';
 
 export default function Dashboard() {
@@ -210,8 +211,35 @@ export default function Dashboard() {
           <ActionItem
             icon={<PieChart color={COLORS.primary} size={22} strokeWidth={1.8} />}
             title="Insights"
-            onPress={() => router.push('/insights')}
+            onPress={() => router.push('/(tabs)/insights')}
           />
+        </View>
+
+        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+            FINANCIAL INTELLIGENCE ENTRY POINT (Mockup Screen 1)
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        <View style={styles.fiSectionWrap}>
+          <Typography variant="cardHeading" style={styles.fiSectionTitle}>
+            Financial Intelligence
+          </Typography>
+          <TouchableOpacity
+            style={styles.fiCard}
+            onPress={() => router.push('/(tabs)/insights')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.fiIconBox}>
+              <Sparkles size={20} color={COLORS.gold} />
+            </View>
+            <View style={styles.fiContent}>
+              <Typography variant="bodyBold" color={COLORS.primary} style={styles.fiCardTitle}>
+                Financial Intelligence
+              </Typography>
+              <Typography variant="caption" color={COLORS.textSecondary}>
+                Plan smarter with AI insights
+              </Typography>
+            </View>
+            <ChevronRight size={18} color={COLORS.textSecondary} />
+          </TouchableOpacity>
         </View>
 
         {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -687,5 +715,41 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingTop: 12,
+  },
+  fiSectionWrap: {
+    marginBottom: 16,
+  },
+  fiSectionTitle: {
+    fontSize: 16,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.primary,
+    marginBottom: 8,
+  },
+  fiCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: SIZES.radius,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  fiIconBox: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  fiContent: {
+    flex: 1,
+  },
+  fiCardTitle: {
+    fontSize: 15,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.primary,
+    marginBottom: 2,
   },
 });

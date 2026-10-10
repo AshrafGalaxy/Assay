@@ -83,9 +83,16 @@ export const endpoints = {
     cashFlowDaily: '/analytics/cash-flow/daily',
     obligations: '/analytics/obligations',
     spending: '/analytics/spending',
+    scenarios: '/analytics/cash-flow/scenarios',
+    affordability: '/analytics/affordability',
+  },
+  settings: {
+    forecast: '/settings/forecast',
   },
   copilot: {
     query: '/copilot/query',
+    insights: '/copilot/insights',
+    audit: (id: string) => `/copilot/audit/${id}`,
   },
   recommendations: {
     list: '/recommendations',

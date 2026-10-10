@@ -1,17 +1,29 @@
 from datetime import date
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.transaction import Transaction
 from app.schemas.financial_health import FinancialHealthOut
-from app.schemas.forecast import CashFlowForecastOut
+from app.schemas.forecast import (
+    AffordabilityRequest,
+    AffordabilityResponse,
+    CashFlowForecastOut,
+    ForecastScenariosResponse,
+    ForecastSettingsIn,
+    ForecastSettingsOut,
+    UpcomingObligationsResponse,
+)
 from app.services.financial_intelligence.engine import (
     build_cash_flow,
     build_cash_flow_forecast,
     build_financial_health,
+    build_forecast_scenarios,
+    calculate_affordability,
     detect_obligations,
+    get_upcoming_obligations_projection,
 )
 from app.services.financial_intelligence.forecasting import (
     build_cash_flow_daily_view,
@@ -22,6 +34,11 @@ from app.services.financial_intelligence.ledger import (
     get_monthly_finance_row,
     get_user_profile,
 )
+from app.services.financial_intelligence.unified_data import (
+    get_unified_financial_data,
+    get_user_forecast_settings,
+    save_user_forecast_settings,
+)
 
 router = APIRouter(tags=["financial-health"])
 
@@ -30,47 +47,205 @@ def _transactions(user_id: str | None):
     return get_ledger_transactions(user_id=user_id, historical_only=True)
 
 
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 1. SETTINGS PERSISTENCE ENDPOINTS
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@router.get("/settings/forecast", response_model=ForecastSettingsOut)
+def get_forecast_settings_endpoint(
+    user_id: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Retrieve persisted user forecast preferences."""
+    data = get_user_forecast_settings(db, user_id=user_id)
+    return ForecastSettingsOut(**data)
+
+
+@router.post("/settings/forecast", response_model=ForecastSettingsOut)
+def save_forecast_settings_endpoint(
+    payload: ForecastSettingsIn,
+    user_id: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Persist updated forecast preferences (horizon, reserve, inclusions)."""
+    if payload.horizon_months not in {1, 3, 6, 12}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="horizon_months must be 1, 3, 6, or 12",
+        )
+    data = save_user_forecast_settings(db, payload, user_id=user_id)
+    return ForecastSettingsOut(**data)
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 2. FINANCIAL HEALTH & SUMMARY
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 @router.get("/financial-health", response_model=FinancialHealthOut)
-def get_financial_health(user_id: str | None = Query(None, description="Synthetic UserID override")):
-    """Return an explainable, deterministic health snapshot from the synthetic ledger."""
-    return FinancialHealthOut(**build_financial_health(_transactions(user_id)))
+def get_financial_health(
+    user_id: str | None = Query(None, description="Synthetic UserID override"),
+    db: Session = Depends(get_db),
+):
+    """Return an explainable, deterministic health snapshot from the unified data source."""
+    unified = get_unified_financial_data(db, user_id=user_id)
+    return FinancialHealthOut(**build_financial_health(unified["transactions"]))
 
 
 @router.get("/analytics/cash-flow")
 def get_cash_flow(
     user_id: str | None = Query(None),
     months: int = Query(6, ge=1, le=24),
+    db: Session = Depends(get_db),
 ):
     """Return observed monthly history and a current-month burn projection."""
-    return build_cash_flow(_transactions(user_id), months=months)
+    unified = get_unified_financial_data(db, user_id=user_id)
+    return build_cash_flow(unified["transactions"], months=months)
 
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 3. CASH FLOW FORECAST (MAIN SCREEN)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @router.get("/analytics/cash-flow/forecast", response_model=CashFlowForecastOut)
 def get_cash_flow_forecast(
     user_id: str | None = Query(None),
-    horizon_months: int = Query(6, description="1, 3, or 6"),
+    horizon_months: int = Query(6, description="1, 3, 6, or 12"),
+    minimum_reserve: Optional[float] = Query(None),
+    include_income: Optional[bool] = Query(None),
+    include_essential: Optional[bool] = Query(None),
+    include_discretionary: Optional[bool] = Query(None),
+    include_debt: Optional[bool] = Query(None),
+    include_obligations: Optional[bool] = Query(None),
+    db: Session = Depends(get_db),
 ):
-    """Current-trajectory monthly cash-flow forecast (1/3/6 months).
+    """Current-trajectory monthly cash-flow forecast (1/3/6/12 months).
 
     Deterministic engine owns balances and reserve checks. Shortfall probability uses
-    seeded Monte Carlo income noise. Insights cite only computed metrics. Does not
-    consume future synthetic shock labels.
+    seeded Monte Carlo income noise. Inclusions and reserve settings can be customized.
     """
-    if horizon_months not in {1, 3, 6}:
-        raise HTTPException(status_code=422, detail="horizon_months must be 1, 3, or 6")
-    transactions = _transactions(user_id)
-    profile = get_user_profile(user_id=user_id)
+    if horizon_months not in {1, 3, 6, 12}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="horizon_months must be 1, 3, 6, or 12",
+        )
+
+    unified = get_unified_financial_data(db, user_id=user_id)
+    transactions = unified["transactions"]
+    profile = unified["profile"]
+    saved_settings = unified["settings"]
+
+    # Resolve settings (query parameters override saved DB settings)
+    eff_reserve = minimum_reserve if minimum_reserve is not None else saved_settings.get("minimum_reserve")
+    eff_inc = include_income if include_income is not None else saved_settings.get("include_income", True)
+    eff_ess = include_essential if include_essential is not None else saved_settings.get("include_essential", True)
+    eff_disc = include_discretionary if include_discretionary is not None else saved_settings.get("include_discretionary", True)
+    eff_debt = include_debt if include_debt is not None else saved_settings.get("include_debt", True)
+    eff_obl = include_obligations if include_obligations is not None else saved_settings.get("include_obligations", True)
+
     provider = get_forecast_provider()
-    # Monthly path is engine run-rates today; provider.model_id tags the active seam for ML swap-in.
+
     payload = build_cash_flow_forecast(
         transactions,
         horizon_months=horizon_months,
         profile=profile,
         model_id=getattr(provider, "model_id", "run_rate_v1"),
         forecast_source="run_rate_projection",
+        opening_balance=unified["available_balance"],
+        minimum_reserve=eff_reserve,
+        include_income=eff_inc,
+        include_essential=eff_ess,
+        include_discretionary=eff_disc,
+        include_debt=eff_debt,
+        include_obligations=eff_obl,
     )
+
+    if unified["last_synced_at"]:
+        payload["data_quality"]["last_synced_at"] = unified["last_synced_at"]
+        payload["data_quality"]["accounts_count"] = unified["accounts_count"]
+
     return CashFlowForecastOut(**payload)
 
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 4. SCENARIO ANALYSIS (SCREEN 4.2)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@router.get("/analytics/cash-flow/scenarios", response_model=ForecastScenariosResponse)
+def get_forecast_scenarios_endpoint(
+    user_id: str | None = Query(None),
+    horizon_months: int = Query(6, description="1, 3, 6, or 12"),
+    minimum_reserve: Optional[float] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Calculate Best-case, Expected, and Worst-case scenarios using the deterministic pipeline."""
+    if horizon_months not in {1, 3, 6, 12}:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="horizon_months must be 1, 3, 6, or 12",
+        )
+
+    unified = get_unified_financial_data(db, user_id=user_id)
+    eff_reserve = minimum_reserve if minimum_reserve is not None else unified["settings"].get("minimum_reserve")
+
+    scenarios_data = build_forecast_scenarios(
+        unified["transactions"],
+        horizon_months=horizon_months,
+        profile=unified["profile"],
+        opening_balance=unified["available_balance"],
+        minimum_reserve=eff_reserve,
+    )
+
+    return ForecastScenariosResponse(**scenarios_data)
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 5. UPCOMING OBLIGATIONS (SCREEN 4.3)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@router.get("/analytics/obligations")
+def get_obligations(
+    user_id: str | None = Query(None),
+    horizon_months: int = Query(6, description="6 or 12"),
+    db: Session = Depends(get_db),
+):
+    """Return future contractual obligations projected chronologically."""
+    unified = get_unified_financial_data(db, user_id=user_id)
+    return get_upcoming_obligations_projection(
+        unified["transactions"],
+        horizon_months=horizon_months,
+        profile=unified["profile"],
+    )
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 6. AFFORDABILITY CHECK (SCREEN I)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+@router.post("/analytics/affordability", response_model=AffordabilityResponse)
+def check_affordability_endpoint(
+    payload: AffordabilityRequest,
+    user_id: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Evaluate whether an upfront purchase is safe against future bills and safety buffer."""
+    unified = get_unified_financial_data(db, user_id=user_id)
+
+    result = calculate_affordability(
+        unified["transactions"],
+        purchase_amount=payload.purchase_amount,
+        purchase_date=payload.purchase_date,
+        expense_type=payload.expense_type,
+        profile=unified["profile"],
+        opening_balance=unified["available_balance"],
+        minimum_reserve=unified["settings"].get("minimum_reserve"),
+    )
+
+    return AffordabilityResponse(**result)
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 7. DAILY CASH FLOW & SPENDING
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 @router.get("/analytics/cash-flow/daily")
 def get_cash_flow_daily(
@@ -80,17 +255,16 @@ def get_cash_flow_daily(
         0,
         ge=0,
         le=60,
-        description="Optional forward days from FORECAST_PROVIDER (run_rate or ml)",
+        description="Optional forward days from FORECAST_PROVIDER",
     ),
+    db: Session = Depends(get_db),
 ):
-    """Daily cash path rebuilt from synthetic generator transactions for one month.
-
-    Observed points use ledger truth. Optional forecast days come from the configured
-    forecast provider (run-rate now; ML when FORECAST_PROVIDER=ml and a model is loaded).
-    """
-    transactions = _transactions(user_id)
-    profile = get_user_profile(user_id=user_id)
+    """Daily cash path rebuilt from unified transactions."""
+    unified = get_unified_financial_data(db, user_id=user_id)
+    transactions = unified["transactions"]
+    profile = unified["profile"]
     monthly = get_monthly_finance_row(user_id=user_id, month=month, historical_only=True)
+
     if monthly is None and not transactions:
         return {
             "month": month,
@@ -100,8 +274,10 @@ def get_cash_flow_daily(
         }
 
     selected_month = month or (str(monthly["Month"]) if monthly else None)
-    opening = float(monthly["OpeningBalance"]) if monthly else float(profile.get("starting_balance") or 0)
-    reserve = float(monthly["MinimumReserve"]) if monthly else float(profile.get("minimum_reserve") or 0)
+    opening = unified["available_balance"] if unified["is_live_account"] else (
+        float(monthly["OpeningBalance"]) if monthly else float(profile.get("starting_balance") or 0)
+    )
+    reserve = float(unified["settings"].get("minimum_reserve") or (monthly["MinimumReserve"] if monthly else profile.get("minimum_reserve") or 0))
 
     return build_cash_flow_daily_view(
         transactions,
@@ -113,34 +289,15 @@ def get_cash_flow_daily(
     )
 
 
-@router.get("/analytics/obligations")
-def get_obligations(user_id: str | None = Query(None)):
-    """Return recurring debit transactions detected in the active month."""
-    return detect_obligations(_transactions(user_id))
-
-
 @router.get("/analytics/spending")
 def get_spending_breakdown(user_id: str | None = Query(None), db: Session = Depends(get_db)):
-    health_transactions = _transactions(user_id)
-    manual_txs = [
-        {
-            "id": tx.id,
-            "amount": float(tx.amount),
-            "type": tx.type,
-            "category": tx.category,
-            "merchant_name": tx.merchant_name,
-            "transaction_date": tx.transaction_date,
-        }
-        for tx in db.query(Transaction).all()
-    ]
-    existing_ids = {t["id"] for t in manual_txs}
-    all_txs = manual_txs + [t for t in health_transactions if t["id"] not in existing_ids]
+    unified = get_unified_financial_data(db, user_id=user_id)
+    all_txs = [t for t in unified["transactions"] if not t.get("is_internal_transfer")]
 
     if not all_txs:
         return {"categories": []}
 
     today = date.today().isoformat()
-    # Filter dates up to today or latest observed month
     month_candidates = [
         item["transaction_date"][:7]
         for item in all_txs

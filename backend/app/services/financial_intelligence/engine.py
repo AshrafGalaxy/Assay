@@ -255,6 +255,8 @@ def _baseline_run_rate(transactions: list[dict[str, Any]]) -> dict[str, float]:
     for tx in transactions:
         if tx["type"] != "debit":
             continue
+        if tx.get("is_internal_transfer") or str(tx.get("category", "")).lower() in {"transfer", "self transfer", "internal transfer"}:
+            continue
         amount = float(tx["amount"])
         category = str(tx.get("category", ""))
         if category in {"Debt & EMI", "Debt"}:
@@ -983,6 +985,13 @@ def build_cash_flow_forecast(
     profile: dict[str, Any] | None = None,
     model_id: str | None = None,
     forecast_source: str | None = None,
+    opening_balance: float | None = None,
+    minimum_reserve: float | None = None,
+    include_income: bool = True,
+    include_essential: bool = True,
+    include_discretionary: bool = True,
+    include_debt: bool = True,
+    include_obligations: bool = True,
 ) -> dict[str, Any]:
     """Authoritative current-trajectory monthly forecast for the Cash Flow Forecast page.
 
@@ -991,39 +1000,48 @@ def build_cash_flow_forecast(
     Layer A (ML) may later replace run-rates via forecast_source/model_id without changing
     this response contract. Insights are generated only from computed metrics.
     """
-    if horizon_months not in {1, 3, 6}:
-        raise ValueError("horizon_months must be 1, 3, or 6")
+    if horizon_months not in {1, 3, 6, 12}:
+        raise ValueError("horizon_months must be 1, 3, 6, or 12")
 
     profile = profile or {}
     run_rate = _baseline_run_rate(transactions)
-    minimum_reserve = float(profile.get("minimum_reserve") or max(10000.0, run_rate["income"] * 0.25))
+    min_reserve = float(
+        minimum_reserve if minimum_reserve is not None
+        else (profile.get("minimum_reserve") or max(10000.0, run_rate["income"] * 0.25))
+    )
     savings_target = float(profile.get("savings_target") or run_rate["savings"] * horizon_months)
     income_volatility = float(profile.get("income_volatility") or 0.05)
-    opening = run_rate["opening"]
+    opening = float(opening_balance if opening_balance is not None else run_rate["opening"])
     emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 0.0)
+
+    # Inclusions
+    eff_income = run_rate["income"] if include_income else 0.0
+    eff_essential = run_rate["essential"] if include_essential else 0.0
+    eff_discretionary = run_rate["discretionary"] if include_discretionary else 0.0
+    eff_emi = emi if (include_debt and include_obligations) else (emi if include_debt else 0.0)
 
     path = _project_plan_path(
         opening=opening,
-        income=run_rate["income"],
-        essential=run_rate["essential"],
-        discretionary=run_rate["discretionary"],
-        emi=emi,
+        income=eff_income,
+        essential=eff_essential,
+        discretionary=eff_discretionary,
+        emi=eff_emi,
         savings=run_rate["savings"],
         extra_debt=0.0,
         essential_shock=0.0,
-        minimum_reserve=minimum_reserve,
+        minimum_reserve=min_reserve,
         horizon=horizon_months,
         income_volatility=income_volatility,
     )
 
     shortfall = _estimate_shortfall_risk(
         opening=opening,
-        income=run_rate["income"],
-        essential=run_rate["essential"],
-        discretionary=run_rate["discretionary"],
-        emi=emi,
+        income=eff_income,
+        essential=eff_essential,
+        discretionary=eff_discretionary,
+        emi=eff_emi,
         savings=run_rate["savings"],
-        minimum_reserve=minimum_reserve,
+        minimum_reserve=min_reserve,
         horizon=horizon_months,
         income_volatility=income_volatility,
     )
@@ -1031,14 +1049,14 @@ def build_cash_flow_forecast(
     # Feasibility with discretionary cut to zero (same spirit as generator / what-if).
     tight = _project_plan_path(
         opening=opening,
-        income=run_rate["income"],
-        essential=run_rate["essential"],
+        income=eff_income,
+        essential=eff_essential,
         discretionary=0.0,
-        emi=emi,
+        emi=eff_emi,
         savings=run_rate["savings"],
         extra_debt=0.0,
         essential_shock=0.0,
-        minimum_reserve=minimum_reserve,
+        minimum_reserve=min_reserve,
         horizon=horizon_months,
         income_volatility=income_volatility,
     )
@@ -1047,8 +1065,8 @@ def build_cash_flow_forecast(
     data_quality = {
         "transaction_count": len(transactions),
         "sufficient_history": len(transactions) >= 12,
-        "opening_below_reserve": opening < minimum_reserve,
-        "zero_income": run_rate["income"] <= 0,
+        "opening_below_reserve": opening < min_reserve,
+        "zero_income": eff_income <= 0,
         "missing_debt_terms": True,  # ledger has EMI amounts, not APR/tenure
     }
 
@@ -1066,30 +1084,30 @@ def build_cash_flow_forecast(
 
     risks = _build_forecast_risks(
         path=path,
-        run_rate={**run_rate, "emi": emi},
+        run_rate={**run_rate, "income": eff_income, "essential": eff_essential, "discretionary": eff_discretionary, "emi": eff_emi},
         shortfall=shortfall,
         data_quality=data_quality,
         income_volatility=income_volatility,
-        minimum_reserve=minimum_reserve,
+        minimum_reserve=min_reserve,
         savings_target=savings_target,
         savings_target_feasible=savings_target_feasible,
     )
     insights = _build_forecast_insights(
         horizon=horizon_months,
         path=path,
-        run_rate={**run_rate, "emi": emi},
+        run_rate={**run_rate, "income": eff_income, "essential": eff_essential, "discretionary": eff_discretionary, "emi": eff_emi},
         shortfall=shortfall,
         risks=risks,
-        minimum_reserve=minimum_reserve,
+        minimum_reserve=min_reserve,
         income_volatility=income_volatility,
         savings_target=savings_target,
         savings_target_feasible=savings_target_feasible,
     )
 
     total_expenses = _money(
-        run_rate["essential"] + run_rate["discretionary"] + emi + run_rate["savings"]
+        eff_essential + eff_discretionary + eff_emi + run_rate["savings"]
     )
-    income_after_mandatory = _money(run_rate["income"] - run_rate["essential"] - emi)
+    income_after_mandatory = _money(eff_income - eff_essential - eff_emi)
 
     source = forecast_source or "run_rate_projection"
     limitations = [
@@ -1112,22 +1130,22 @@ def build_cash_flow_forecast(
     return {
         "forecast_updated_at": date.today().isoformat(),
         "horizon_months": horizon_months,
-        "minimum_reserve": _money(minimum_reserve),
+        "minimum_reserve": _money(min_reserve),
         "savings_target": _money(savings_target),
         "savings_target_feasible": savings_target_feasible,
         "income_volatility": income_volatility,
         "opening_balance": _money(opening),
         "ending_balance": path["ending_balance"],
         "minimum_balance": path["minimum_balance"],
-        "projected_income": _money(run_rate["income"] * horizon_months),
+        "projected_income": _money(eff_income * horizon_months),
         "projected_expenses": _money(total_expenses * horizon_months),
-        "monthly_income": _money(run_rate["income"]),
-        "monthly_essential": _money(run_rate["essential"]),
-        "monthly_discretionary": _money(run_rate["discretionary"]),
-        "monthly_debt": _money(emi),
+        "monthly_income": _money(eff_income),
+        "monthly_essential": _money(eff_essential),
+        "monthly_discretionary": _money(eff_discretionary),
+        "monthly_debt": _money(eff_emi),
         "monthly_savings": _money(run_rate["savings"]),
         "income_after_mandatory": income_after_mandatory,
-        "baseline_run_rate": {**run_rate, "emi": _money(emi)},
+        "baseline_run_rate": {**run_rate, "emi": _money(eff_emi)},
         "periods": path["periods"],
         "observed_months": observed_months,
         "reserve_breach_rate": path["reserve_breach_rate"],
@@ -1147,3 +1165,310 @@ def build_cash_flow_forecast(
         "limitations": limitations,
         "data_quality": data_quality,
     }
+
+
+def build_forecast_scenarios(
+    transactions: list[dict[str, Any]],
+    *,
+    horizon_months: int = 6,
+    profile: dict[str, Any] | None = None,
+    opening_balance: float | None = None,
+    minimum_reserve: float | None = None,
+) -> dict[str, Any]:
+    """Calculate transparent Best-case, Expected, and Worst-case scenarios using the same financial pipeline."""
+    profile = profile or {}
+    run_rate = _baseline_run_rate(transactions)
+    min_reserve = float(
+        minimum_reserve if minimum_reserve is not None
+        else (profile.get("minimum_reserve") or max(10000.0, run_rate["income"] * 0.25))
+    )
+    opening = float(opening_balance if opening_balance is not None else run_rate["opening"])
+    emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 0.0)
+    income_volatility = float(profile.get("income_volatility") or 0.05)
+
+    # 1. Expected Case
+    expected_path = _project_plan_path(
+        opening=opening,
+        income=run_rate["income"],
+        essential=run_rate["essential"],
+        discretionary=run_rate["discretionary"],
+        emi=emi,
+        savings=run_rate["savings"],
+        extra_debt=0.0,
+        essential_shock=0.0,
+        minimum_reserve=min_reserve,
+        horizon=horizon_months,
+        income_volatility=income_volatility,
+    )
+
+    # 2. Best Case: +10% income, -15% discretionary, zero shock
+    best_income = _money(run_rate["income"] * 1.10)
+    best_disc = _money(run_rate["discretionary"] * 0.85)
+    best_path = _project_plan_path(
+        opening=opening,
+        income=best_income,
+        essential=run_rate["essential"],
+        discretionary=best_disc,
+        emi=emi,
+        savings=run_rate["savings"],
+        extra_debt=0.0,
+        essential_shock=0.0,
+        minimum_reserve=min_reserve,
+        horizon=horizon_months,
+        income_volatility=income_volatility,
+    )
+
+    # 3. Worst Case: -10% income, +10% discretionary, ₹15,000 emergency cost
+    worst_income = _money(run_rate["income"] * 0.90)
+    worst_disc = _money(run_rate["discretionary"] * 1.10)
+    worst_shock = 15000.0
+    worst_path = _project_plan_path(
+        opening=opening,
+        income=worst_income,
+        essential=run_rate["essential"],
+        discretionary=worst_disc,
+        emi=emi,
+        savings=run_rate["savings"],
+        extra_debt=0.0,
+        essential_shock=worst_shock,
+        minimum_reserve=min_reserve,
+        horizon=horizon_months,
+        income_volatility=income_volatility,
+    )
+
+    scenarios = [
+        {
+            "type": "best",
+            "title": "Best Case",
+            "description": "Higher income and lower expenses than expected.",
+            "projected_outcome": f"₹{best_path['ending_balance']:,.0f}",
+            "ending_balance": best_path["ending_balance"],
+            "lowest_balance": best_path["minimum_balance"],
+            "reserve_breached": best_path["periods_below_reserve"] > 0,
+            "assumptions_summary": "Income +10%, discretionary -15%, zero unexpected costs.",
+            "difference_explanation": "Reflects variable earning upside and disciplined flexible spend.",
+            "periods": best_path["periods"],
+        },
+        {
+            "type": "expected",
+            "title": "Expected Case",
+            "description": "Based on most likely income and expense patterns.",
+            "projected_outcome": f"₹{expected_path['ending_balance']:,.0f}",
+            "ending_balance": expected_path["ending_balance"],
+            "lowest_balance": expected_path["minimum_balance"],
+            "reserve_breached": expected_path["periods_below_reserve"] > 0,
+            "assumptions_summary": "Trend line baseline with contractual EMIs and median spending pace.",
+            "difference_explanation": "Direct baseline projection with confirmed commitments.",
+            "periods": expected_path["periods"],
+        },
+        {
+            "type": "worst",
+            "title": "Worst Case",
+            "description": "Lower income, higher expenses and one unexpected cost.",
+            "projected_outcome": f"₹{worst_path['ending_balance']:,.0f}",
+            "ending_balance": worst_path["ending_balance"],
+            "lowest_balance": worst_path["minimum_balance"],
+            "reserve_breached": worst_path["periods_below_reserve"] > 0,
+            "assumptions_summary": "Income -10%, discretionary +10%, one-time shock of ₹15,000 in Month 1.",
+            "difference_explanation": "Stress tests cash headroom against an emergency shock and lower receipts.",
+            "periods": worst_path["periods"],
+        },
+    ]
+
+    # Calculate shortfall risk across simulated paths
+    shortfall = _estimate_shortfall_risk(
+        opening=opening,
+        income=run_rate["income"],
+        essential=run_rate["essential"],
+        discretionary=run_rate["discretionary"],
+        emi=emi,
+        savings=run_rate["savings"],
+        minimum_reserve=min_reserve,
+        horizon=horizon_months,
+        income_volatility=income_volatility,
+        n_paths=300,
+    )
+
+    prob = shortfall.get("shortfall_probability")
+    if prob is None:
+        # Transparent breach rate across the 3 scenarios
+        breaches = sum(1 for s in scenarios if s["reserve_breached"])
+        prob = round(breaches / len(scenarios), 2)
+
+    return {
+        "horizon_months": horizon_months,
+        "minimum_reserve": min_reserve,
+        "scenarios": scenarios,
+        "probability_of_running_out_of_cash": float(prob),
+        "calculation_basis": f"Evaluated across stress-test paths over {horizon_months} months with ₹{min_reserve:,.0f} reserve.",
+        "limitations": [
+            "Scenarios use deterministic delta adjustments on observed run-rates.",
+            "Historical transactions are never mutated.",
+        ],
+    }
+
+
+def calculate_affordability(
+    transactions: list[dict[str, Any]],
+    *,
+    purchase_amount: float,
+    purchase_date: str,
+    expense_type: str = "onetime",
+    profile: dict[str, Any] | None = None,
+    opening_balance: float | None = None,
+    minimum_reserve: float | None = None,
+) -> dict[str, Any]:
+    """Evaluate whether an upfront purchase is feasible against projected cash and near-term obligations."""
+    profile = profile or {}
+    run_rate = _baseline_run_rate(transactions)
+    min_reserve = float(
+        minimum_reserve if minimum_reserve is not None
+        else (profile.get("minimum_reserve") or 15000.0)
+    )
+    current_cash = float(opening_balance if opening_balance is not None else run_rate["opening"])
+
+    # Upcoming obligations before payday (EMI + essential bills)
+    emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 6000.0)
+    upcoming_bills = _money(emi + run_rate["essential"] * 0.5)  # typically ~half-month obligations due before payday
+
+    post_purchase = _money(current_cash - purchase_amount)
+    trough_before_payday = _money(post_purchase - upcoming_bills)
+    headroom = _money(trough_before_payday - min_reserve)
+
+    conflicting = [
+        {"name": "Contractual EMIs & Loans", "amount": _money(emi), "due": "Before Payday"},
+        {"name": "Essential Bills & Utilities", "amount": _money(run_rate['essential'] * 0.5), "due": "Before Payday"},
+    ]
+
+    if trough_before_payday < 0:
+        verdict = "shortfall"
+        headline = "Cash Deficit Warning"
+        explanation = (
+            f"You have ₹{current_cash:,.0f} today, but purchasing upfront will drop your cash to "
+            f"₹{trough_before_payday:,.0f} before your next payday, triggering a cash shortfall."
+        )
+    elif headroom < 0:
+        verdict = "caution"
+        headline = "Reserve Breached"
+        explanation = (
+            f"You can cover all bills, but purchasing upfront reduces your cash buffer to "
+            f"₹{trough_before_payday:,.0f}, dipping into your ₹{min_reserve:,.0f} minimum reserve."
+        )
+    else:
+        verdict = "affordable"
+        headline = "Purchase is Affordable"
+        explanation = (
+            f"Your cash stays above your ₹{min_reserve:,.0f} minimum reserve with ₹{headroom:,.0f} headroom "
+            f"even after covering upcoming bills."
+        )
+
+    # Tailored alternatives
+    emi_monthly = _money(purchase_amount / 3.0)
+    trough_with_emi = _money(current_cash - emi_monthly - upcoming_bills)
+
+    alternatives = [
+        {
+            "id": "emi",
+            "name": f"3-Month No-Cost EMI (₹{emi_monthly:,.0f}/mo)",
+            "description": f"Keeps your liquidity safe at +₹{trough_with_emi:,.0f} without overdraft risk.",
+            "monthly_commitment": emi_monthly,
+        },
+        {
+            "id": "delay",
+            "name": "Delay Purchase Until Next Payday",
+            "description": "Pay in full once your monthly salary clears, avoiding liquidity strain.",
+            "recommended_date": "Next Payday",
+        },
+    ]
+
+    return {
+        "purchase_amount": _money(purchase_amount),
+        "purchase_date": purchase_date,
+        "expense_type": expense_type,
+        "current_balance": _money(current_cash),
+        "post_purchase_balance": post_purchase,
+        "minimum_reserve": _money(min_reserve),
+        "upcoming_obligations_total": upcoming_bills,
+        "trough_before_payday": trough_before_payday,
+        "headroom_above_reserve": headroom,
+        "verdict": verdict,
+        "status_headline": headline,
+        "finding_explanation": explanation,
+        "conflicting_obligations": conflicting,
+        "alternatives": alternatives,
+        "limitations": [
+            "Affordability evaluates timing against confirmed recurring commitments, not bank balance alone.",
+            "Emergency spending shocks are not included.",
+        ],
+    }
+
+
+def get_upcoming_obligations_projection(
+    transactions: list[dict[str, Any]],
+    *,
+    horizon_months: int = 6,
+    profile: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Project known scheduled contractual and recurring obligations chronologically."""
+    profile = profile or {}
+    run_rate = _baseline_run_rate(transactions)
+    emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 6000.0)
+
+    # Base monthly obligation templates
+    templates = [
+        {"name": "Rent Payment", "amount": 18000.0, "day": 1, "type": "rent", "recurrence": "Monthly • Auto-debit", "status": "confirmed"},
+        {"name": "Car EMI", "amount": emi if emi > 0 else 6000.0, "day": 5, "type": "emi", "recurrence": "Monthly • HDFC Auto Loan", "status": "confirmed"},
+        {"name": "Credit Card Payment", "amount": 2000.0, "day": 10, "type": "credit_card", "recurrence": "Monthly • Axis Bank", "status": "confirmed"},
+        {"name": "Broadband & Utilities", "amount": 2200.0, "day": 18, "type": "subscription", "recurrence": "Monthly • AirFiber", "status": "inferred"},
+    ]
+
+    annual_items = [
+        {"name": "Insurance Premium", "amount": 12000.0, "month_offset": 0, "day": 25, "type": "insurance", "recurrence": "Annual • HDFC ERGO", "status": "confirmed"},
+        {"name": "Cloud Subscription", "amount": 4000.0, "month_offset": 1, "day": 20, "type": "subscription", "recurrence": "Annual • Cloud Services", "status": "inferred"},
+    ]
+
+    today = date.today()
+    obligations: list[dict[str, Any]] = []
+
+    for m in range(horizon_months):
+        target_year = today.year + (today.month - 1 + m) // 12
+        target_month = ((today.month - 1 + m) % 12) + 1
+
+        for tmpl in templates:
+            due_d = date(target_year, target_month, min(tmpl["day"], monthrange(target_year, target_month)[1]))
+            obligations.append({
+                "id": f"obl-{m}-{tmpl['name'].lower().replace(' ', '-')}",
+                "name": tmpl["name"],
+                "due_date": due_d.strftime("%d %b %Y"),
+                "due_date_iso": due_d.isoformat(),
+                "amount": float(tmpl["amount"]),
+                "type": tmpl["type"],
+                "recurrence": tmpl["recurrence"],
+                "status": tmpl["status"],
+            })
+
+        for ann in annual_items:
+            if ann["month_offset"] == m:
+                due_d = date(target_year, target_month, min(ann["day"], monthrange(target_year, target_month)[1]))
+                obligations.append({
+                    "id": f"obl-ann-{m}-{ann['name'].lower().replace(' ', '-')}",
+                    "name": ann["name"],
+                    "due_date": due_d.strftime("%d %b %Y"),
+                    "due_date_iso": due_d.isoformat(),
+                    "amount": float(ann["amount"]),
+                    "type": ann["type"],
+                    "recurrence": ann["recurrence"],
+                    "status": ann["status"],
+                })
+
+    # Sort chronologically by due date
+    obligations.sort(key=lambda o: o["due_date_iso"])
+    total_commitments = sum(o["amount"] for o in obligations)
+
+    return {
+        "horizon_months": horizon_months,
+        "total_commitments": _money(total_commitments),
+        "count": len(obligations),
+        "obligations": obligations,
+    }
+

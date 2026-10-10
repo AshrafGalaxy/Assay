@@ -78,7 +78,7 @@ export default function RootLayout() {
       <Stack.Screen name="debt/index" options={{ presentation: 'card' }} />
       <Stack.Screen name="copilot/analysis" options={{ presentation: 'card' }} />
       <Stack.Screen name="copilot/affordability" options={{ presentation: 'card' }} />
-      <Stack.Screen name="simulator/index" options={{ presentation: 'card' }} />
+      <Stack.Screen name="simulator/index" options={{ presentation: 'card', gestureEnabled: true }} />
       <Stack.Screen name="settings/profile" options={{ presentation: 'card' }} />
       <Stack.Screen name="settings/connected-accounts" options={{ presentation: 'card' }} />
       <Stack.Screen name="settings/categories" options={{ presentation: 'card' }} />
@@ -89,6 +89,11 @@ export default function RootLayout() {
       <Stack.Screen name="settings/help" options={{ presentation: 'card' }} />
       <Stack.Screen name="settings/feedback" options={{ presentation: 'card' }} />
       <Stack.Screen name="cashflow-detail/index" options={{ presentation: 'card' }} />
+      <Stack.Screen name="forecast/details" options={{ presentation: 'card' }} />
+      <Stack.Screen name="forecast/monthly-breakdown" options={{ presentation: 'card' }} />
+      <Stack.Screen name="forecast/scenarios" options={{ presentation: 'card' }} />
+      <Stack.Screen name="forecast/obligations" options={{ presentation: 'card' }} />
+      <Stack.Screen name="forecast/settings" options={{ presentation: 'card' }} />
     </Stack>
   );
 }
