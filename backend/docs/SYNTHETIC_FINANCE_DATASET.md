@@ -108,7 +108,7 @@ These modules are **not** implemented in this task; the datasets are shaped for 
 
 | Module | Planned use |
 |--------|-------------|
-| `forecasting.py` | **Started**: provider seam (`run_rate` / `ml`). Daily observed path from generator txs via `GET /analytics/cash-flow/daily`. Set `FORECAST_PROVIDER=ml` + `FORECAST_MODEL_PATH` when adding a model. |
+| `forecasting.py` | Provider seam (`run_rate` / `ml`). Daily path: `GET /analytics/cash-flow/daily`. Monthly outlook: `GET /analytics/cash-flow/forecast?horizon_months=1|3|6` (engine run-rates + Monte Carlo shortfall; ML swap via `FORECAST_PROVIDER`). |
 | `scenario_simulator.py` | Apply scenario metadata (`IncomeReductionPct`, unexpected expense) onto forecast paths |
 | `action_planner.py` | Choose discretionary / savings actions subject to reserve + EMI constraints |
 | `plan_evaluator.py` | Score plans using realized future outcomes and feasibility flags |

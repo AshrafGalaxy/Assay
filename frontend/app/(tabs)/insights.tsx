@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, {
   Path,
@@ -22,90 +22,133 @@ import Svg, {
 } from 'react-native-svg';
 import { Typography } from '../../components/Typography';
 import { ScreenHeader } from '../../components/ui/ScreenHeader';
-import { COLORS } from '../../constants/theme';
-import {
-  TrendingUp,
-  TrendingDown,
-  AlertTriangle,
-  ArrowRight,
-  Calendar,
-  Zap,
-  ArrowUpRight,
-  ChevronRight,
-} from 'lucide-react-native';
+import { COLORS, SPACING, SIZES } from '../../constants/theme';
+import { AlertTriangle, ArrowRight, ChevronDown, ChevronUp, Sparkles } from 'lucide-react-native';
 import { API_BASE_URL } from '../../services/api';
 import {
-  DailyCashFlowResponse,
-  DailyCashPoint,
-  ObligationItem,
-  fetchDailyCashFlow,
-  fetchObligations,
+  CashFlowForecast,
+  ForecastInsight,
+  ForecastPeriod,
+  ForecastRisk,
+  fetchCashFlowForecast,
   formatINR,
-  formatSignedINR,
 } from '../../services/finance';
 
-const TIMEFRAMES = ['30 Days', '60 Days', '90 Days'] as const;
-type Timeframe = (typeof TIMEFRAMES)[number];
+const HORIZONS = [
+  { months: 1 as const, label: '1 Month' },
+  { months: 3 as const, label: '3 Months' },
+  { months: 6 as const, label: '6 Months' },
+];
 
-function forecastDaysFor(timeframe: Timeframe): number {
-  if (timeframe === '60 Days') return 30;
-  if (timeframe === '90 Days') return 60;
-  return 0;
-}
+/** Floating dock (~62) + typical bottom margin — keep scroll content clear of the tab bar. */
+const TAB_CLEARANCE = 88;
 
 function compactINR(amount: number): string {
   const abs = Math.abs(amount);
+  if (abs >= 10000000) return `₹${(abs / 10000000).toFixed(1)}Cr`;
   if (abs >= 100000) return `₹${(abs / 100000).toFixed(1)}L`;
   if (abs >= 1000) return `₹${Math.round(abs / 1000)}k`;
   return formatINR(amount);
 }
 
-function buildLinePaths(
-  series: DailyCashPoint[],
-  getX: (d: DailyCashPoint) => number,
-  getY: (val: number) => number,
-  baseY: number,
-) {
-  if (series.length < 2) return { linePath: '', areaPath: '' };
-  const pts = series.map((d) => ({ x: getX(d), y: getY(d.balance) }));
-  let path = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const dx = p2.x - p1.x;
-    path += ` C ${(p1.x + dx * 0.38).toFixed(1)} ${p1.y.toFixed(1)}, ${(p2.x - dx * 0.38).toFixed(1)} ${p2.y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+function pctLabel(value: number | null | undefined): string {
+  if (value == null) return '—';
+  return `${(value * 100).toFixed(0)}%`;
+}
+
+function riskTone(severity: string): { fg: string; bg: string; border: string } {
+  if (severity === 'critical') {
+    return { fg: COLORS.error, bg: '#FEF2F2', border: '#FECACA' };
   }
-  const fp = pts[0];
-  const lp = pts[pts.length - 1];
-  return {
-    linePath: path,
-    areaPath: `${path} L ${lp.x.toFixed(1)} ${baseY.toFixed(1)} L ${fp.x.toFixed(1)} ${baseY.toFixed(1)} Z`,
-  };
+  if (severity === 'elevated' || severity === 'warning') {
+    return { fg: COLORS.warning, bg: '#FFFBEB', border: '#FDE68A' };
+  }
+  return { fg: COLORS.success, bg: '#F0FDF4', border: '#BBF7D0' };
+}
+
+/** One primary reserve story; skip duplicate breach variants. */
+function selectPrimaryRisks(risks: ForecastRisk[]): ForecastRisk[] {
+  const critical = risks.filter((r) => r.severity === 'critical');
+  const elevated = risks.filter(
+    (r) => r.severity === 'elevated' || r.severity === 'warning',
+  );
+  const healthy = risks.filter((r) => r.severity === 'healthy');
+
+  const opening = critical.find((r) => r.id === 'opening_below_reserve');
+  const firstBreach = critical.find((r) => r.id.startsWith('reserve_breach'));
+  const mandatory = critical.find((r) => r.id.startsWith('mandatory_shortfall'));
+  const incomeGap = critical.find((r) => r.id === 'income_below_mandatory');
+
+  const picked: ForecastRisk[] = [];
+  if (opening) {
+    picked.push(opening);
+  } else if (firstBreach) {
+    picked.push({
+      ...firstBreach,
+      title: 'Reserve at risk',
+      what: firstBreach.what,
+      action: 'Explore alternatives in What-If.',
+    });
+  }
+  if (mandatory) picked.push(mandatory);
+  else if (incomeGap && !picked.some((r) => r.id === incomeGap.id)) picked.push(incomeGap);
+
+  for (const r of elevated) {
+    if (picked.length >= 2) break;
+    if (!picked.some((p) => p.id === r.id)) picked.push(r);
+  }
+
+  const hasCritical = picked.some((r) => r.severity === 'critical');
+  if (!hasCritical && healthy[0]) picked.push(healthy[0]);
+
+  return picked.slice(0, 2);
+}
+
+/** Insights that do not restate the primary risk banner. */
+function selectInsights(
+  insights: ForecastInsight[],
+  primaryRisks: ForecastRisk[],
+): ForecastInsight[] {
+  const hasReserveRisk = primaryRisks.some(
+    (r) =>
+      r.id === 'opening_below_reserve' ||
+      r.id.startsWith('reserve_breach') ||
+      r.severity === 'critical',
+  );
+
+  return insights
+    .filter((insight) => {
+      if (!hasReserveRisk) return true;
+      return !['reserve_pressure', 'top_risk', 'buffer_ok'].includes(insight.theme);
+    })
+    .slice(0, 6);
 }
 
 export default function InsightsScreen() {
   const router = useRouter();
-  const [timeframe, setTimeframe] = useState<Timeframe>('30 Days');
+  const insets = useSafeAreaInsets();
+  const [horizon, setHorizon] = useState<1 | 3 | 6>(3);
+  const [forecast, setForecast] = useState<CashFlowForecast | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState(1);
   const [cardWidth, setCardWidth] = useState(0);
-  const [payload, setPayload] = useState<DailyCashFlowResponse | null>(null);
-  const [obligations, setObligations] = useState<ObligationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [insightsExpanded, setInsightsExpanded] = useState(false);
+  const [methodOpen, setMethodOpen] = useState(false);
 
-  const load = useCallback(async (tf: Timeframe) => {
+  const load = useCallback(async (h: 1 | 3 | 6) => {
     try {
       setError(null);
-      const [daily, oblig] = await Promise.all([
-        fetchDailyCashFlow({ includeForecastDays: forecastDaysFor(tf) }),
-        fetchObligations(),
-      ]);
-      setPayload(daily);
-      setObligations((oblig.items || []).slice(0, 5));
+      const data = await fetchCashFlowForecast(h);
+      setForecast(data);
+      setSelectedPeriod(1);
+      setInsightsExpanded(false);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load cash-flow';
+      const message = err instanceof Error ? err.message : 'Failed to load forecast';
       setError(`${message} (API: ${API_BASE_URL})`);
-      setPayload(null);
+      setForecast(null);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -114,107 +157,159 @@ export default function InsightsScreen() {
 
   useEffect(() => {
     setLoading(true);
-    void load(timeframe);
-  }, [load, timeframe]);
+    void load(horizon);
+  }, [horizon, load]);
 
-  const series = payload?.points || [];
+  const periods = forecast?.periods || [];
+  const activePeriod =
+    periods.find((p) => p.period_index === selectedPeriod) || periods[0] || null;
+
+  const primaryRisks = useMemo(
+    () => selectPrimaryRisks(forecast?.risks || []),
+    [forecast?.risks],
+  );
+  const insightPool = useMemo(
+    () => selectInsights(forecast?.insights || [], primaryRisks),
+    [forecast?.insights, primaryRisks],
+  );
+  const visibleInsights = insightsExpanded ? insightPool.slice(0, 3) : insightPool.slice(0, 1);
+  const moreInsightCount = Math.max(0, Math.min(insightPool.length, 3) - visibleInsights.length);
+
+  const monthlyExpenses = forecast
+    ? forecast.monthly_essential +
+      forecast.monthly_discretionary +
+      forecast.monthly_debt +
+      forecast.monthly_savings
+    : 0;
+
   const screenWidth = Dimensions.get('window').width;
-  const fallbackWidth = Math.min(screenWidth - 40, 420);
-  const actualWidth = cardWidth > 0 ? cardWidth : fallbackWidth;
-
-  const chartH = 130;
-  const padL = 0;
-  const padR = 0;
-  const padTop = 10;
-  const padBottom = 10;
+  const actualWidth = cardWidth > 0 ? cardWidth : Math.min(screenWidth - 40, 480);
+  const chartH = 148;
+  const padL = 8;
+  const padR = 8;
+  const padTop = 12;
+  const padBottom = 22;
   const plotW = Math.max(actualWidth - padL - padR, 120);
   const plotH = chartH - padTop - padBottom;
   const baseY = padTop + plotH;
 
-  const maxVal = useMemo(() => {
-    if (!series.length) return 100000;
-    const peak = Math.max(...series.map((p) => p.balance), payload?.minimum_reserve || 0, 1);
-    return Math.ceil(peak / 10000) * 10000;
-  }, [series, payload?.minimum_reserve]);
+  const { maxVal, minPlot } = useMemo(() => {
+    if (!periods.length || !forecast) return { maxVal: 100000, minPlot: 0 };
+    const peak = Math.max(
+      ...periods.map((p) => p.balance_high),
+      ...periods.map((p) => p.closing_balance),
+      forecast.minimum_reserve,
+      1,
+    );
+    const floor = Math.min(
+      ...periods.map((p) => p.balance_low),
+      ...periods.map((p) => p.closing_balance),
+      forecast.minimum_reserve,
+      0,
+    );
+    return {
+      maxVal: Math.ceil(peak / 10000) * 10000,
+      minPlot: Math.min(0, Math.floor(floor / 10000) * 10000),
+    };
+  }, [periods, forecast]);
 
-  const getX = (d: DailyCashPoint) => padL + (d.pct_x ?? 0) * plotW;
+  const getX = (index: number, total: number) =>
+    padL + (total <= 1 ? plotW / 2 : (index / (total - 1)) * plotW);
   const getY = (val: number) => {
-    const frac = Math.max(0, Math.min(val / maxVal, 1));
-    return Math.min(padTop + (1 - frac) * plotH, baseY - 6);
+    const span = Math.max(maxVal - minPlot, 1);
+    const frac = Math.max(0, Math.min((val - minPlot) / span, 1));
+    return Math.min(padTop + (1 - frac) * plotH, baseY - 4);
   };
 
-  const troughPoint = useMemo(() => {
-    if (!series.length) return null;
-    return series.reduce((min, p) => (p.balance < min.balance ? p : min), series[0]);
-  }, [series]);
+  const { linePath, bandPath } = useMemo(() => {
+    if (periods.length < 1) return { linePath: '', bandPath: '' };
+    const pts = periods.map((p, i) => ({
+      x: getX(i, periods.length),
+      y: getY(p.closing_balance),
+      yLow: getY(p.balance_low),
+      yHigh: getY(p.balance_high),
+    }));
+    if (pts.length === 1) {
+      return { linePath: `M ${pts[0].x} ${pts[0].y}`, bandPath: '' };
+    }
+    let line = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      line += ` L ${pts[i].x.toFixed(1)} ${pts[i].y.toFixed(1)}`;
+    }
+    let band = `M ${pts[0].x.toFixed(1)} ${pts[0].yHigh.toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      band += ` L ${pts[i].x.toFixed(1)} ${pts[i].yHigh.toFixed(1)}`;
+    }
+    for (let i = pts.length - 1; i >= 0; i--) {
+      band += ` L ${pts[i].x.toFixed(1)} ${pts[i].yLow.toFixed(1)}`;
+    }
+    band += ' Z';
+    return { linePath: line, bandPath: band };
+  }, [periods, actualWidth, maxVal, minPlot]);
 
-  const { linePath, areaPath } = useMemo(
-    () => buildLinePaths(series, getX, getY, baseY),
-    [series, actualWidth, maxVal],
-  );
+  const openSimulator = () => {
+    router.push({ pathname: '/simulator', params: { horizon: String(horizon) } });
+  };
 
-  const opening = payload?.opening_balance ?? series[0]?.balance;
-  const ending = payload?.closing_balance;
-  const minBal = payload?.minimum_balance ?? troughPoint?.balance;
-  const troughEvent = troughPoint?.event
-    ? `${troughPoint.event}${troughPoint.event_amount != null ? ` (${formatSignedINR(troughPoint.event_amount, (troughPoint.event_amount || 0) >= 0)})` : ''}`
-    : null;
-  const belowReserve =
-    troughPoint != null &&
-    payload != null &&
-    troughPoint.balance < (payload.minimum_reserve || 0);
+  const bottomPad = TAB_CLEARANCE + Math.max(insets.bottom, 8);
 
-  const eventObligations = useMemo(() => {
-    return series
-      .filter((p) => p.event && p.event_type !== 'income' && !p.is_forecast)
-      .slice(0, 3);
-  }, [series]);
+  const riskPct = forecast?.shortfall_probability;
+  const riskColor =
+    (riskPct || 0) > 0.35
+      ? COLORS.error
+      : (riskPct || 0) > 0.1
+        ? COLORS.warning
+        : COLORS.success;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScreenHeader
-        title="Cash-Flow Forecast"
-        subtitle={
-          payload?.month
-            ? `Synthetic ledger · ${payload.month}${payload.forecast_source ? ` + ${payload.forecast_source}` : ''}`
-            : 'Predictive Solvency & Buffer Analytics'
-        }
+        title="Cash Flow Forecast"
+        subtitle="See what's ahead. Prepare before it happens."
         showNotification={false}
-        rightAction={
-          <TouchableOpacity style={styles.calendarBtn} onPress={() => {}} activeOpacity={0.7}>
-            <Calendar color={COLORS.text} size={18} strokeWidth={1.8} />
-          </TouchableOpacity>
-        }
       />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: bottomPad }]}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
             onRefresh={() => {
               setRefreshing(true);
-              void load(timeframe);
+              void load(horizon);
             }}
           />
         }
       >
-        <View style={styles.timeframeRow}>
-          {TIMEFRAMES.map((tf) => {
-            const isActive = timeframe === tf;
+        <View style={styles.metaRow}>
+          <Typography variant="caption" color={COLORS.textSecondary} style={styles.metaText}>
+            {forecast
+              ? `Updated ${forecast.forecast_updated_at} · Projection`
+              : 'Loading projection…'}
+          </Typography>
+          <TouchableOpacity onPress={openSimulator} hitSlop={8} activeOpacity={0.7}>
+            <Typography variant="caption" style={styles.metaLink}>
+              What-If
+            </Typography>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.horizonRow}>
+          {HORIZONS.map((item) => {
+            const active = horizon === item.months;
             return (
               <TouchableOpacity
-                key={tf}
-                style={[styles.tfPill, isActive && styles.tfPillActive]}
-                onPress={() => setTimeframe(tf)}
+                key={item.months}
+                style={[styles.horizonPill, active && styles.horizonPillActive]}
+                onPress={() => setHorizon(item.months)}
                 activeOpacity={0.75}
               >
                 <Typography
                   variant="caption"
-                  style={[styles.tfText, isActive && styles.tfTextActive]}
+                  style={[styles.horizonLabel, active && styles.horizonLabelActive]}
                 >
-                  {tf}
+                  {item.label}
                 </Typography>
               </TouchableOpacity>
             );
@@ -225,545 +320,710 @@ export default function InsightsScreen() {
           <View style={styles.statusRow}>
             <ActivityIndicator color={COLORS.primary} />
             <Typography variant="caption" color={COLORS.textSecondary}>
-              Loading generator daily path…
+              Calculating forecast…
             </Typography>
           </View>
         )}
 
         {error && (
-          <Typography variant="caption" color={COLORS.error} style={{ marginBottom: 12 }}>
-            {error}
-          </Typography>
-        )}
-
-        <TouchableOpacity
-          style={styles.forecastCard}
-          activeOpacity={0.93}
-          onPress={() => router.push('/cashflow-detail')}
-          onLayout={(e) => {
-            const w = e.nativeEvent.layout.width;
-            if (w > 0 && Math.abs(w - cardWidth) > 2) setCardWidth(w);
-          }}
-        >
-          <View style={styles.summaryMetricRow}>
-            <View style={styles.summaryMetric}>
-              <Typography variant="caption" style={styles.metricLabel}>Opening</Typography>
-              <Typography variant="financial" style={styles.metricValueNeutral}>
-                {opening != null ? formatINR(opening) : '—'}
-              </Typography>
-            </View>
-            <View style={[styles.summaryMetric, { alignItems: 'center' }]}>
-              <Typography variant="caption" style={styles.metricLabel}>Min balance</Typography>
-              <Typography variant="financial" style={styles.metricValueAlert}>
-                {minBal != null ? formatINR(minBal) : '—'}
-              </Typography>
-            </View>
-            <View style={[styles.summaryMetric, { alignItems: 'flex-end' }]}>
-              <Typography variant="caption" style={styles.metricLabel}>End of period</Typography>
-              <Typography variant="financial" style={styles.metricValueGood}>
-                {ending != null ? formatINR(ending) : '—'}
-              </Typography>
-            </View>
-          </View>
-
-          <Typography variant="caption" style={styles.summarySubLabel}>
-            {troughPoint
-              ? `Lowest on ${troughPoint.label}${troughEvent ? ` — ${troughEvent}` : ''}`
-              : 'Daily balances reconstructed from synthetic transactions'}
-          </Typography>
-
-          <View style={styles.svgWrapper}>
-            <Svg width={actualWidth} height={chartH}>
-              <Defs>
-                <LinearGradient id="summaryGrad" x1="0" y1="0" x2="0" y2="1">
-                  <Stop offset="0%" stopColor="#D6A928" stopOpacity="0.25" />
-                  <Stop offset="80%" stopColor="#D6A928" stopOpacity="0.05" />
-                  <Stop offset="100%" stopColor="#D6A928" stopOpacity="0.0" />
-                </LinearGradient>
-              </Defs>
-
-              <Line
-                x1={0}
-                y1={baseY}
-                x2={actualWidth}
-                y2={baseY}
-                stroke="rgba(255,255,255,0.10)"
-                strokeWidth="1"
-              />
-
-              {areaPath ? <Path d={areaPath} fill="url(#summaryGrad)" /> : null}
-              {linePath ? (
-                <Path
-                  d={linePath}
-                  fill="none"
-                  stroke="#D6A928"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ) : null}
-
-              {troughPoint && (
-                <G>
-                  <Circle
-                    cx={getX(troughPoint)}
-                    cy={getY(troughPoint.balance)}
-                    r="8"
-                    fill="rgba(239,68,68,0.18)"
-                  />
-                  <Circle
-                    cx={getX(troughPoint)}
-                    cy={getY(troughPoint.balance)}
-                    r="4"
-                    fill="#EF4444"
-                    stroke="#0F172A"
-                    strokeWidth="1.5"
-                  />
-                  <SvgText
-                    x={getX(troughPoint)}
-                    y={getY(troughPoint.balance) - 11}
-                    fill="#FCA5A5"
-                    fontSize="8"
-                    fontWeight="600"
-                    textAnchor="middle"
-                  >
-                    {compactINR(troughPoint.balance)}
-                  </SvgText>
-                </G>
-              )}
-            </Svg>
-          </View>
-
-          <View style={styles.tapAffordance}>
-            <Typography variant="caption" style={styles.tapHint}>
-              {troughPoint ? (
-                <>
-                  Balance reaches a low of{' '}
-                  <Typography variant="caption" style={{ color: '#EF4444', fontWeight: '700' }}>
-                    {formatINR(troughPoint.balance)}
-                  </Typography>
-                  {' '}on {troughPoint.label}
-                </>
-              ) : (
-                'Pull to refresh once the API is reachable'
-              )}
+          <View style={styles.errorCard}>
+            <Typography variant="caption" color={COLORS.error} style={{ lineHeight: 18 }}>
+              {error}
             </Typography>
-            <View style={styles.tapCTA}>
-              <Typography variant="caption" style={styles.tapCTAText}>View detailed forecast</Typography>
-              <ChevronRight color="#D6A928" size={14} strokeWidth={2.5} />
-            </View>
-          </View>
-        </TouchableOpacity>
-
-        {belowReserve && troughPoint && payload && (
-          <View style={styles.warningCard}>
-            <View style={styles.warningIconWrapper}>
-              <AlertTriangle color="#D97706" size={22} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Typography variant="body" color="#92400E" style={styles.warningText}>
-                <Typography variant="bodyBold" color="#92400E">Reserve pressure: </Typography>
-                Account dips to{' '}
-                <Typography variant="bodyBold" color="#92400E">
-                  {formatINR(troughPoint.balance)}
-                </Typography>
-                {' '}on {troughPoint.label}, below reserve of {formatINR(payload.minimum_reserve)}.
-              </Typography>
-              <TouchableOpacity
-                style={styles.warningActionBtn}
-                onPress={() => router.push('/cashflow-detail')}
-                activeOpacity={0.8}
-              >
-                <Typography variant="caption" style={styles.warningActionText}>
-                  See detailed forecast & what-if options →
-                </Typography>
-              </TouchableOpacity>
-            </View>
           </View>
         )}
 
-        <Typography variant="cardHeading" style={styles.sectionHeader}>
-          Ledger events this month
-        </Typography>
-
-        <View style={styles.obligationsList}>
-          {eventObligations.map((pt) => {
-            const isIn = pt.event_type === 'income';
-            return (
-              <TouchableOpacity
-                key={`ev-${pt.day}-${pt.event}`}
-                style={styles.obligationCard}
-                onPress={() => router.push('/cashflow-detail')}
-                activeOpacity={0.75}
-              >
-                <View
-                  style={[
-                    styles.obligationIcon,
-                    { backgroundColor: isIn ? '#DCFCE7' : pt.event_type === 'emi' ? '#FEE2E2' : '#FEF3C7' },
-                  ]}
-                >
-                  {isIn ? (
-                    <ArrowUpRight color="#16A34A" size={20} />
-                  ) : (
-                    <Zap color={pt.event_type === 'emi' ? '#DC2626' : '#D97706'} size={18} />
-                  )}
-                </View>
-                <View style={styles.obligationDetails}>
-                  <Typography variant="bodyBold" style={{ fontSize: 15 }}>
-                    {pt.event}
-                  </Typography>
-                  <View style={styles.obligationSubRow}>
-                    <Typography variant="caption" color={COLORS.textSecondary}>
-                      {pt.label} •
-                    </Typography>
-                    <View
-                      style={[
-                        styles.tagBadge,
-                        { backgroundColor: isIn ? '#DCFCE7' : '#FEF3C7' },
-                      ]}
-                    >
-                      <Typography
-                        variant="caption"
-                        color={isIn ? '#15803D' : '#B45309'}
-                        style={{ fontSize: 11, fontWeight: '600' }}
-                      >
-                        {pt.event_category || pt.event_type || 'Event'}
-                      </Typography>
-                    </View>
-                  </View>
-                </View>
+        {forecast && !loading && (
+          <>
+            {/* Primary: cash + safety */}
+            <View style={styles.summaryRow}>
+              <View style={[styles.summaryCard, styles.summaryPrimary]}>
+                <Typography variant="caption" style={styles.summaryLbl} numberOfLines={1}>
+                  Projected ending cash
+                </Typography>
                 <Typography
                   variant="financial"
-                  style={{ fontSize: 16, color: isIn ? '#16A34A' : '#DC2626' }}
+                  style={styles.summaryValue}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
                 >
-                  {pt.event_amount != null
-                    ? formatSignedINR(pt.event_amount, (pt.event_amount || 0) >= 0)
-                    : '—'}
+                  {formatINR(forecast.ending_balance)}
                 </Typography>
-              </TouchableOpacity>
-            );
-          })}
+              </View>
+              <View style={[styles.summaryCard, styles.summaryPrimary]}>
+                <Typography variant="caption" style={styles.summaryLbl} numberOfLines={1}>
+                  Reserve risk
+                </Typography>
+                <Typography
+                  variant="financial"
+                  style={[styles.summaryValue, { color: riskColor }]}
+                  numberOfLines={1}
+                >
+                  {pctLabel(forecast.shortfall_probability)}
+                </Typography>
+                <Typography variant="caption" color={COLORS.textSecondary} numberOfLines={1}>
+                  vs {formatINR(forecast.minimum_reserve)}
+                </Typography>
+              </View>
+            </View>
 
-          {!eventObligations.length &&
-            obligations.map((item) => (
-              <View key={item.id} style={styles.obligationCard}>
-                <View style={[styles.obligationIcon, { backgroundColor: '#FEF3C7' }]}>
-                  <Zap color="#D97706" size={18} />
-                </View>
-                <View style={styles.obligationDetails}>
-                  <Typography variant="bodyBold" style={{ fontSize: 15 }}>
-                    {item.name}
+            <View style={styles.secondaryRow}>
+              <View style={styles.secondaryCard}>
+                <Typography variant="caption" style={styles.secondaryLbl} numberOfLines={1}>
+                  Min balance
+                </Typography>
+                <Typography variant="financial" style={styles.secondaryVal} numberOfLines={1}>
+                  {formatINR(forecast.minimum_balance)}
+                </Typography>
+              </View>
+              <View style={styles.secondaryCard}>
+                <Typography variant="caption" style={styles.secondaryLbl} numberOfLines={1}>
+                  Income / mo
+                </Typography>
+                <Typography variant="financial" style={styles.secondaryVal} numberOfLines={1}>
+                  {formatINR(forecast.monthly_income)}
+                </Typography>
+              </View>
+              <View style={styles.secondaryCard}>
+                <Typography variant="caption" style={styles.secondaryLbl} numberOfLines={1}>
+                  Expenses / mo
+                </Typography>
+                <Typography variant="financial" style={styles.secondaryVal} numberOfLines={1}>
+                  {formatINR(monthlyExpenses)}
+                </Typography>
+              </View>
+            </View>
+
+            {/* Single primary risk banner */}
+            {primaryRisks[0] && (
+              <View
+                style={[
+                  styles.riskBanner,
+                  {
+                    backgroundColor: riskTone(primaryRisks[0].severity).bg,
+                    borderColor: riskTone(primaryRisks[0].severity).border,
+                  },
+                ]}
+              >
+                <AlertTriangle
+                  color={riskTone(primaryRisks[0].severity).fg}
+                  size={16}
+                  style={{ marginTop: 2 }}
+                />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    variant="bodyBold"
+                    style={{ fontSize: 13, color: riskTone(primaryRisks[0].severity).fg }}
+                    numberOfLines={1}
+                  >
+                    {primaryRisks[0].title}
                   </Typography>
-                  <View style={styles.obligationSubRow}>
-                    <Typography variant="caption" color={COLORS.textSecondary}>
-                      Due day {item.due_day} •
-                    </Typography>
-                    <View style={[styles.tagBadge, { backgroundColor: '#FEF3C7' }]}>
+                  <Typography
+                    variant="caption"
+                    color={COLORS.text}
+                    style={{ lineHeight: 17, marginTop: 2 }}
+                    numberOfLines={2}
+                  >
+                    {primaryRisks[0].what}
+                  </Typography>
+                  {primaryRisks[0].action ? (
+                    <TouchableOpacity onPress={openSimulator} activeOpacity={0.75} style={{ marginTop: 6 }}>
                       <Typography
                         variant="caption"
-                        color="#B45309"
-                        style={{ fontSize: 11, fontWeight: '600' }}
+                        style={{
+                          color: riskTone(primaryRisks[0].severity).fg,
+                          fontWeight: '700',
+                          fontSize: 12,
+                        }}
                       >
-                        {item.category || item.frequency}
+                        {primaryRisks[0].action} →
                       </Typography>
-                    </View>
-                  </View>
+                    </TouchableOpacity>
+                  ) : null}
                 </View>
-                <Typography variant="financial" style={{ fontSize: 16, color: '#DC2626' }}>
-                  -{formatINR(item.amount)}
+              </View>
+            )}
+
+            {/* Chart */}
+            <View
+              style={styles.chartCard}
+              onLayout={(e) => {
+                const w = e.nativeEvent.layout.width - 28;
+                if (w > 0 && Math.abs(w - cardWidth) > 2) setCardWidth(w);
+              }}
+            >
+              <View style={styles.chartHeader}>
+                <Typography variant="bodyBold" style={styles.chartTitle}>
+                  Projected cash balance
+                </Typography>
+                <View style={styles.legendRow}>
+                  <View style={[styles.legendDot, { backgroundColor: '#D6A928' }]} />
+                  <Typography variant="caption" style={styles.legendText}>
+                    Expected
+                  </Typography>
+                  <View style={[styles.legendBand, { backgroundColor: 'rgba(214,169,40,0.35)' }]} />
+                  <Typography variant="caption" style={styles.legendText}>
+                    Band
+                  </Typography>
+                  <View style={styles.legendReserve} />
+                  <Typography variant="caption" style={styles.legendText}>
+                    Reserve
+                  </Typography>
+                </View>
+              </View>
+
+              <Svg width={actualWidth} height={chartH}>
+                <Defs>
+                  <LinearGradient id="bandGrad" x1="0" y1="0" x2="0" y2="1">
+                    <Stop offset="0%" stopColor="#D6A928" stopOpacity="0.2" />
+                    <Stop offset="100%" stopColor="#D6A928" stopOpacity="0.04" />
+                  </LinearGradient>
+                </Defs>
+
+                <Line
+                  x1={padL}
+                  y1={getY(forecast.minimum_reserve)}
+                  x2={actualWidth - padR}
+                  y2={getY(forecast.minimum_reserve)}
+                  stroke="#EF4444"
+                  strokeDasharray="4 3"
+                  strokeWidth={1.2}
+                />
+
+                {bandPath ? <Path d={bandPath} fill="url(#bandGrad)" /> : null}
+                {linePath ? (
+                  <Path
+                    d={linePath}
+                    fill="none"
+                    stroke="#D6A928"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                ) : null}
+
+                {periods.map((p, i) => {
+                  const selected = p.period_index === selectedPeriod;
+                  return (
+                    <G key={p.period_index}>
+                      <Circle
+                        cx={getX(i, periods.length)}
+                        cy={getY(p.closing_balance)}
+                        r={selected ? 5.5 : 3.5}
+                        fill={p.reserve_violated ? '#EF4444' : '#D6A928'}
+                        stroke="#0F172A"
+                        strokeWidth={1.5}
+                        onPress={() => setSelectedPeriod(p.period_index)}
+                      />
+                      <SvgText
+                        x={getX(i, periods.length)}
+                        y={baseY + 14}
+                        fill="rgba(255,255,255,0.5)"
+                        fontSize="10"
+                        fontWeight={selected ? '700' : '500'}
+                        textAnchor="middle"
+                      >
+                        {p.period_label}
+                      </SvgText>
+                    </G>
+                  );
+                })}
+              </Svg>
+
+              {activePeriod && <PeriodStrip period={activePeriod} />}
+            </View>
+
+            {/* Outlook insights — compact */}
+            <View style={styles.sectionHead}>
+              <Sparkles color={COLORS.gold} size={16} />
+              <Typography variant="cardHeading" style={styles.sectionTitle}>
+                Outlook insights
+              </Typography>
+            </View>
+
+            {visibleInsights.map((insight) => (
+              <View key={`${insight.theme}-${insight.headline}`} style={styles.insightCard}>
+                <Typography variant="bodyBold" style={{ fontSize: 14 }} numberOfLines={2}>
+                  {insight.headline}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color={COLORS.textSecondary}
+                  style={{ lineHeight: 18, marginTop: 4 }}
+                  numberOfLines={3}
+                >
+                  {insight.body}
                 </Typography>
               </View>
             ))}
 
-          {!loading && !eventObligations.length && !obligations.length && (
-            <Typography variant="caption" color={COLORS.textSecondary} style={{ textAlign: 'center', paddingVertical: 8 }}>
-              No ledger events for this month
-            </Typography>
-          )}
-        </View>
+            {moreInsightCount > 0 && (
+              <TouchableOpacity
+                onPress={() => setInsightsExpanded(true)}
+                style={styles.expandBtn}
+                activeOpacity={0.7}
+              >
+                <Typography variant="caption" style={styles.expandBtnText}>
+                  Show {moreInsightCount} more
+                </Typography>
+                <ChevronDown color={COLORS.textSecondary} size={14} />
+              </TouchableOpacity>
+            )}
+            {insightsExpanded && insightPool.length > 1 && (
+              <TouchableOpacity
+                onPress={() => setInsightsExpanded(false)}
+                style={styles.expandBtn}
+                activeOpacity={0.7}
+              >
+                <Typography variant="caption" style={styles.expandBtnText}>
+                  Show less
+                </Typography>
+                <ChevronUp color={COLORS.textSecondary} size={14} />
+              </TouchableOpacity>
+            )}
 
-        <Typography variant="cardHeading" style={{ marginTop: 24, marginBottom: 12 }}>
-          Financial Intelligence Hub
-        </Typography>
+            {/* Compact What-If */}
+            <TouchableOpacity style={styles.ctaRow} onPress={openSimulator} activeOpacity={0.85}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Typography variant="bodyBold" style={{ color: '#fff', fontSize: 14 }}>
+                  Explore What-If Simulator
+                </Typography>
+                <Typography
+                  variant="caption"
+                  style={{ color: 'rgba(255,255,255,0.6)', marginTop: 2, lineHeight: 16 }}
+                  numberOfLines={2}
+                >
+                  Compare plans and see how your decisions affect future cash.
+                </Typography>
+              </View>
+              <ArrowRight color="#D6A928" size={18} />
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.hubCard}
-          onPress={() => router.push('/debt')}
-          activeOpacity={0.75}
-        >
-          <View style={[styles.hubIcon, { backgroundColor: '#EFF6FF' }]}>
-            <TrendingDown color="#2563EB" size={20} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Typography variant="bodyBold">Debt & Liabilities</Typography>
-            <Typography variant="caption" color={COLORS.textSecondary}>
-              Active credit lines and payoff planning.
-            </Typography>
-          </View>
-          <ArrowRight color={COLORS.textSecondary} size={18} />
-        </TouchableOpacity>
+            {/* Secondary: expandable breakdown */}
+            <TouchableOpacity
+              style={styles.accordionHead}
+              onPress={() => setDetailsOpen((v) => !v)}
+              activeOpacity={0.8}
+            >
+              <Typography variant="bodyBold" style={{ fontSize: 13 }}>
+                Income & obligations
+              </Typography>
+              {detailsOpen ? (
+                <ChevronUp color={COLORS.textSecondary} size={16} />
+              ) : (
+                <ChevronDown color={COLORS.textSecondary} size={16} />
+              )}
+            </TouchableOpacity>
+            {detailsOpen && (
+              <View style={styles.accordionBody}>
+                <DetailRow label="Forecast income" value={formatINR(forecast.monthly_income)} />
+                <DetailRow label="Essential expenses" value={formatINR(forecast.monthly_essential)} />
+                <DetailRow label="Mandatory debt / EMI" value={formatINR(forecast.monthly_debt)} />
+                <DetailRow
+                  label="After essentials + EMI"
+                  value={formatINR(forecast.income_after_mandatory)}
+                  emphasize
+                />
+                <DetailRow label="Discretionary" value={formatINR(forecast.monthly_discretionary)} />
+                <DetailRow label="Planned savings" value={formatINR(forecast.monthly_savings)} />
+                {primaryRisks[1] && (
+                  <View style={{ marginTop: 10 }}>
+                    <Typography variant="caption" color={COLORS.textSecondary} style={{ marginBottom: 4 }}>
+                      Also watch
+                    </Typography>
+                    <Typography variant="caption" style={{ lineHeight: 18 }}>
+                      {primaryRisks[1].title}: {primaryRisks[1].what}
+                    </Typography>
+                  </View>
+                )}
+              </View>
+            )}
 
-        <TouchableOpacity
-          style={styles.hubCard}
-          onPress={() => router.push({ pathname: '/simulator', params: { horizon: '6' } })}
-          activeOpacity={0.75}
-        >
-          <View style={[styles.hubIcon, { backgroundColor: '#FEF3C7' }]}>
-            <Zap color="#B45309" size={20} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Typography variant="bodyBold">What-If Simulator</Typography>
-            <Typography variant="caption" color={COLORS.textSecondary}>
-              Adjust spending and loan levers against generator run-rates.
-            </Typography>
-          </View>
-          <ArrowRight color={COLORS.textSecondary} size={18} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.hubCard}
-          onPress={() => router.push('/copilot/affordability')}
-          activeOpacity={0.75}
-        >
-          <View style={[styles.hubIcon, { backgroundColor: '#FEE2E2' }]}>
-            <AlertTriangle color="#DC2626" size={20} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Typography variant="bodyBold">Affordability Check</Typography>
-            <Typography variant="caption" color={COLORS.textSecondary}>
-              Cash shortfall warning and No-Cost EMI options.
-            </Typography>
-          </View>
-          <ArrowRight color={COLORS.textSecondary} size={18} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.hubCard}
-          onPress={() => router.push('/copilot/analysis')}
-          activeOpacity={0.75}
-        >
-          <View style={[styles.hubIcon, { backgroundColor: '#F0FDF4' }]}>
-            <TrendingUp color="#16A34A" size={20} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Typography variant="bodyBold">Copilot Audited Intelligence</Typography>
-            <Typography variant="caption" color={COLORS.textSecondary}>
-              Observed facts, predictive risk, and actionable spending caps.
-            </Typography>
-          </View>
-          <ArrowRight color={COLORS.textSecondary} size={18} />
-        </TouchableOpacity>
-
-        <View style={{ height: 110 }} />
+            <TouchableOpacity
+              style={[styles.accordionHead, { marginTop: SPACING.sm }]}
+              onPress={() => setMethodOpen((v) => !v)}
+              activeOpacity={0.8}
+            >
+              <Typography variant="bodyBold" style={{ fontSize: 13 }}>
+                Method & limitations
+              </Typography>
+              {methodOpen ? (
+                <ChevronUp color={COLORS.textSecondary} size={16} />
+              ) : (
+                <ChevronDown color={COLORS.textSecondary} size={16} />
+              )}
+            </TouchableOpacity>
+            {methodOpen && (
+              <View style={styles.accordionBody}>
+                <Typography variant="caption" color={COLORS.textSecondary} style={{ marginBottom: 6 }}>
+                  {forecast.source} · {forecast.model_id}
+                  {forecast.shortfall_method ? ` · ${forecast.shortfall_method}` : ''}
+                </Typography>
+                {(forecast.limitations || []).slice(0, 4).map((item) => (
+                  <Typography
+                    key={item}
+                    variant="caption"
+                    color={COLORS.textSecondary}
+                    style={{ marginBottom: 4, lineHeight: 17 }}
+                  >
+                    • {item}
+                  </Typography>
+                ))}
+              </View>
+            )}
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+function PeriodStrip({ period }: { period: ForecastPeriod }) {
+  return (
+    <View style={styles.periodStrip}>
+      <Typography variant="caption" style={styles.periodStripTitle}>
+        {period.period_label}
+        {period.reserve_violated ? ' · below reserve' : ''}
+      </Typography>
+      <View style={styles.periodStripGrid}>
+        <MiniStat label="Open" value={compactINR(period.opening_balance)} />
+        <MiniStat label="Close" value={compactINR(period.closing_balance)} />
+        <MiniStat label="Income" value={compactINR(period.income)} />
+        <MiniStat label="EMI" value={compactINR(period.mandatory_debt)} />
+        <MiniStat label="Essentials" value={compactINR(period.essential_expenses)} />
+        <MiniStat label="Disc." value={compactINR(period.discretionary_spending)} />
+      </View>
+    </View>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.miniStat}>
+      <Typography variant="caption" style={styles.miniLbl}>
+        {label}
+      </Typography>
+      <Typography variant="caption" style={styles.miniVal} numberOfLines={1}>
+        {value}
+      </Typography>
+    </View>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+  emphasize,
+}: {
+  label: string;
+  value: string;
+  emphasize?: boolean;
+}) {
+  return (
+    <View style={[styles.detailRow, emphasize && styles.detailEmphasize]}>
+      <Typography variant="caption" color={COLORS.textSecondary} style={{ flex: 1 }}>
+        {label}
+      </Typography>
+      <Typography
+        variant="financial"
+        style={{ fontSize: 13, fontWeight: emphasize ? '700' : '600', color: COLORS.text }}
+      >
+        {value}
+      </Typography>
+    </View>
+  );
+}
+
+const CARD_RADIUS = SIZES.radius;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  scrollContent: {
+    paddingHorizontal: SPACING.lg,
+    paddingTop: 2,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: SPACING.md,
+  },
+  metaText: {
+    flexShrink: 1,
+    fontSize: 11,
+  },
+  metaLink: {
+    color: COLORS.info,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  horizonRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.base,
+  },
+  horizonPill: {
+    flex: 1,
+    minHeight: 40,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  horizonPillActive: {
+    backgroundColor: '#0F172A',
+    borderColor: '#0F172A',
+  },
+  horizonLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+  },
+  horizonLabelActive: {
+    color: '#FFFFFF',
+  },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
-  summaryMetricRow: {
+  errorCard: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: CARD_RADIUS,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+  },
+  summaryRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 6,
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
   },
-  summaryMetric: {
-    flex: 1,
-  },
-  metricLabel: {
-    fontSize: 9.5,
-    color: 'rgba(255,255,255,0.42)',
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    marginBottom: 2,
-  },
-  metricValueNeutral: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  metricValueAlert: {
-    fontSize: 16,
-    color: '#EF4444',
-    fontWeight: '700',
-  },
-  metricValueGood: {
-    fontSize: 16,
-    color: '#4ADE80',
-    fontWeight: '700',
-  },
-  summarySubLabel: {
-    color: 'rgba(255,255,255,0.38)',
-    fontSize: 11,
-    marginBottom: 6,
-    lineHeight: 16,
-  },
-  tapAffordance: {
-    paddingVertical: 10,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.07)',
-    marginTop: 2,
-  },
-  tapHint: {
-    color: 'rgba(255,255,255,0.45)',
-    fontSize: 11,
-    lineHeight: 16,
-    marginBottom: 5,
-  },
-  tapCTA: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  tapCTAText: {
-    color: '#D6A928',
-    fontWeight: '700',
-    fontSize: 12,
-  },
-  scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 4,
-  },
-  calendarBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+  summaryCard: {
     backgroundColor: COLORS.surface,
+    borderRadius: CARD_RADIUS,
     borderWidth: 1,
     borderColor: COLORS.border,
-    alignItems: 'center',
+    padding: SPACING.md,
+  },
+  summaryPrimary: {
+    flex: 1,
+    minHeight: 88,
     justifyContent: 'center',
   },
-  timeframeRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  tfPill: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  tfPillActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
-  },
-  tfText: {
-    fontSize: 13,
-    fontWeight: '600',
+  summaryLbl: {
     color: COLORS.textSecondary,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+    marginBottom: 4,
   },
-  tfTextActive: {
-    color: '#FFFFFF',
-  },
-  forecastCard: {
-    backgroundColor: '#0F172A',
-    borderRadius: 24,
-    paddingTop: 14,
-    paddingBottom: 14,
-    paddingHorizontal: 14,
-    marginBottom: 16,
-    overflow: 'hidden',
-  },
-  svgWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  warningCard: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 20,
-  },
-  warningIconWrapper: {
-    marginRight: 12,
-    marginTop: 2,
-  },
-  warningText: {
-    fontSize: 13.5,
-    lineHeight: 20,
-  },
-  warningActionBtn: {
-    marginTop: 8,
-  },
-  warningActionText: {
-    color: '#B45309',
+  summaryValue: {
+    fontSize: 20,
+    lineHeight: 26,
     fontWeight: '700',
-    fontSize: 12.5,
-  },
-  sectionHeader: {
-    fontSize: 18,
-    marginBottom: 12,
     color: COLORS.text,
   },
-  obligationsList: {
-    gap: 10,
-    marginBottom: 12,
-  },
-  obligationCard: {
+  secondaryRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
+  secondaryCard: {
+    flex: 1,
+    minWidth: 0,
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
-    padding: 14,
-  },
-  obligationIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    minHeight: 64,
     justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
   },
-  obligationDetails: {
-    flex: 1,
+  secondaryLbl: {
+    color: COLORS.textSecondary,
+    fontSize: 10,
+    marginBottom: 2,
   },
-  obligationSubRow: {
+  secondaryVal: {
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  riskBanner: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 3,
-    gap: 6,
+    alignItems: 'flex-start',
+    gap: 10,
+    borderRadius: CARD_RADIUS,
+    borderWidth: 1,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
   },
-  tagBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+  chartCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 12,
+    marginBottom: SPACING.base,
+    overflow: 'hidden',
+  },
+  chartHeader: {
+    marginBottom: 4,
+  },
+  chartTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    marginBottom: 6,
+  },
+  legendRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  legendDot: {
+    width: 8,
+    height: 8,
     borderRadius: 4,
   },
-  hubCard: {
+  legendBand: {
+    width: 12,
+    height: 8,
+    borderRadius: 2,
+    marginLeft: 4,
+  },
+  legendReserve: {
+    width: 12,
+    height: 2,
+    backgroundColor: '#EF4444',
+    marginLeft: 4,
+  },
+  legendText: {
+    color: 'rgba(255,255,255,0.45)',
+    fontSize: 10,
+  },
+  periodStrip: {
+    marginTop: 8,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.08)',
+  },
+  periodStripTitle: {
+    color: 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  periodStripGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  miniStat: {
+    width: '30%',
+    flexGrow: 1,
+    minWidth: 88,
+  },
+  miniLbl: {
+    color: 'rgba(255,255,255,0.38)',
+    fontSize: 10,
+  },
+  miniVal: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 1,
+  },
+  sectionHead: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    marginBottom: SPACING.sm,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    lineHeight: 22,
+    color: COLORS.text,
+  },
+  insightCard: {
     backgroundColor: COLORS.surface,
-    borderRadius: 18,
+    borderRadius: 14,
     borderWidth: 1,
     borderColor: COLORS.border,
-    padding: 16,
-    marginBottom: 10,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
   },
-  hubIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    justifyContent: 'center',
+  expandBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 14,
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    marginBottom: SPACING.sm,
+  },
+  expandBtnText: {
+    color: COLORS.textSecondary,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  ctaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: '#0F172A',
+    borderRadius: CARD_RADIUS,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginTop: SPACING.sm,
+    marginBottom: SPACING.base,
+  },
+  accordionHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  accordionBody: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderTopWidth: 0,
+    borderBottomLeftRadius: 14,
+    borderBottomRightRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 2,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  detailEmphasize: {
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: COLORS.border,
+    marginVertical: 4,
+    paddingVertical: 8,
   },
 });

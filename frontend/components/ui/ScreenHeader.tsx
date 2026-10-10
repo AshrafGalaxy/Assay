@@ -51,11 +51,21 @@ export function ScreenHeader({
           </>
         ) : (
           <>
-            <Typography variant="pageTitle" color={COLORS.text}>
+            <Typography
+              variant="pageTitle"
+              color={COLORS.text}
+              style={styles.title}
+              numberOfLines={2}
+            >
               {title}
             </Typography>
             {subtitle && (
-              <Typography variant="secondary" color={COLORS.textSecondary} style={styles.subtitle}>
+              <Typography
+                variant="secondary"
+                color={COLORS.textSecondary}
+                style={styles.subtitle}
+                numberOfLines={2}
+              >
                 {subtitle}
               </Typography>
             )}
@@ -63,19 +73,21 @@ export function ScreenHeader({
         )}
       </View>
 
-      <View style={styles.actionsContainer}>
-        {rightAction}
-        {!rightAction && showNotification && (
-          <TouchableOpacity 
-            style={styles.notificationBtn} 
-            onPress={handleNotification}
-            activeOpacity={0.7}
-          >
-            <Bell color={COLORS.text} size={18} strokeWidth={1.8} />
-            {hasUnreadNotification && <View style={styles.notificationBadgeDot} />}
-          </TouchableOpacity>
-        )}
-      </View>
+      {(rightAction || showNotification) && (
+        <View style={styles.actionsContainer}>
+          {rightAction}
+          {!rightAction && showNotification && (
+            <TouchableOpacity
+              style={styles.notificationBtn}
+              onPress={handleNotification}
+              activeOpacity={0.7}
+            >
+              <Bell color={COLORS.text} size={18} strokeWidth={1.8} />
+              {hasUnreadNotification && <View style={styles.notificationBadgeDot} />}
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -88,26 +100,37 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     paddingHorizontal: SIZES.padding,
-    paddingTop: 16,
-    paddingBottom: 20,
+    paddingTop: 12,
+    paddingBottom: 10,
     backgroundColor: 'transparent',
   },
   textContainer: {
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
+    paddingRight: 4,
     justifyContent: 'center',
+  },
+  title: {
+    fontSize: 32,
+    lineHeight: 38,
+    flexShrink: 1,
   },
   userName: {
     marginTop: 2,
   },
   subtitle: {
-    marginTop: 4,
+    marginTop: 2,
+    paddingRight: 8,
+    lineHeight: 20,
   },
   actionsContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 0,
     gap: 10,
-    marginLeft: 16,
-    marginTop: 2,
+    marginLeft: 12,
+    marginTop: 4,
   },
   notificationBtn: {
     width: 42,

@@ -195,12 +195,12 @@ export default function CashFlowDetailScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Typography variant="pageTitle" style={styles.headerTitle}>
-            Cash Flow Forecast
+            Daily Cash Path
           </Typography>
           <Typography variant="caption" color={COLORS.textSecondary} style={styles.headerSub}>
             {payload?.month
-              ? `Generator ledger for ${payload.month}${payload.forecast_source ? ` + ${payload.forecast_source}` : ''}`
-              : 'Daily balances from your synthetic ledger'}
+              ? `Observed generator ledger · ${payload.month}${payload.forecast_source ? ` + ${payload.forecast_source}` : ''}`
+              : 'Daily balances from synthetic transactions'}
           </Typography>
         </View>
       </View>

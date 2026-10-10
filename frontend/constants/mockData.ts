@@ -77,28 +77,7 @@ export const MOCK_CATEGORIES = [
   { name: 'Others', amount: 7100, percent: 15, color: '#9CA3AF' },
 ];
 
-// ─── Cash Flow Forecast ───────────────────────────────────────────────────────
-
-export const MOCK_CASHFLOW_POINTS = [
-  { month: 'Apr', balance: 95000 },
-  { month: 'May', balance: 88000 },
-  { month: 'Jun', balance: 102000 },
-  { month: 'Jul', balance: 91000 },
-  { month: 'Aug', balance: 118000 },
-  { month: 'Sep', balance: 124500 },
-];
-
-export const MOCK_FORECAST_POINTS = [
-  { date: '16 Sep', balance: 124500, type: 'current' as const },
-  { date: '15 Sep', label: 'Rent', amount: -15000, type: 'outflow' as const },
-  { date: '18 Sep', label: 'EMI', amount: -12000, type: 'outflow' as const },
-  { date: '21 Sep', label: 'SIP', amount: -5000, type: 'outflow' as const },
-  { date: '25 Sep', label: 'Credit Card Bill', amount: -7200, type: 'outflow' as const },
-  { date: '28 Sep', label: 'Salary', amount: 70000, type: 'inflow' as const },
-];
-
-export const MOCK_PROJECTED_BALANCE = 32400;
-export const MOCK_CASHFLOW_PRESSURE_DATE = '25 September';
+// Cash-flow forecast mocks removed — Insights uses GET /analytics/cash-flow/forecast.
 
 // ─── Recurring Payments ───────────────────────────────────────────────────────
 

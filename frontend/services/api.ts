@@ -76,6 +76,7 @@ export const endpoints = {
   financialHealth: {
     summary: '/financial-health',
     cashFlow: '/analytics/cash-flow',
+    cashFlowForecast: '/analytics/cash-flow/forecast',
     cashFlowDaily: '/analytics/cash-flow/daily',
     obligations: '/analytics/obligations',
     spending: '/analytics/spending',

@@ -10,6 +10,8 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 from typing import Any, Iterable
 
+import numpy as np
+
 
 def _money(value: float) -> float:
     return round(float(value), 2)
@@ -625,4 +627,523 @@ def simulate_what_if(
             "sufficient_history": len(transactions) >= 12,
             "opening_below_reserve": opening < minimum_reserve,
         },
+    }
+
+
+def _estimate_shortfall_risk(
+    *,
+    opening: float,
+    income: float,
+    essential: float,
+    discretionary: float,
+    emi: float,
+    savings: float,
+    minimum_reserve: float,
+    horizon: int,
+    income_volatility: float,
+    n_paths: int = 200,
+    seed: int = 42,
+) -> dict[str, Any]:
+    """Monte Carlo shortfall risk under income noise (documented, reproducible).
+
+    Method: for each path, sample monthly income ~ Normal(μ=income, σ=income·vol),
+    clip at 0, then roll the same deterministic cash identity used by `_project_plan_path`.
+    shortfall_probability = share of paths where any period closing < minimum_reserve.
+    expected_shortfall = mean over paths of max(0, reserve − path minimum closing).
+
+    This is a scenario-simulation estimate, not a calibrated Bayesian default probability.
+    """
+    if horizon <= 0 or n_paths <= 0:
+        return {
+            "shortfall_probability": None,
+            "expected_shortfall": None,
+            "method": "unavailable",
+            "n_paths": 0,
+            "note": "Insufficient inputs for shortfall simulation.",
+        }
+
+    vol = max(0.0, float(income_volatility))
+    if income <= 0 and vol <= 0:
+        # Deterministic zero-income path — probability is 0 or 1 from a single trajectory.
+        path = _project_plan_path(
+            opening=opening,
+            income=income,
+            essential=essential,
+            discretionary=discretionary,
+            emi=emi,
+            savings=savings,
+            extra_debt=0.0,
+            essential_shock=0.0,
+            minimum_reserve=minimum_reserve,
+            horizon=horizon,
+            income_volatility=0.0,
+        )
+        breached = path["periods_below_reserve"] > 0
+        deficit = max(0.0, minimum_reserve - path["minimum_balance"])
+        return {
+            "shortfall_probability": 1.0 if breached else 0.0,
+            "expected_shortfall": _money(deficit if breached else 0.0),
+            "method": "deterministic_zero_volatility",
+            "n_paths": 1,
+            "note": "Income volatility is zero; risk collapses to the single projected path.",
+        }
+
+    rng = np.random.default_rng(seed)
+    sigma = max(income * vol, 1.0)
+    breach_flags: list[bool] = []
+    deficits: list[float] = []
+
+    for _ in range(n_paths):
+        balance = opening
+        path_min = opening
+        breached = False
+        for _month in range(horizon):
+            sampled_income = float(max(0.0, rng.normal(income, sigma)))
+            required = essential + emi
+            cash_before_flex = balance + sampled_income - required - discretionary
+            realized_savings = min(savings, max(0.0, cash_before_flex))
+            closing = balance + sampled_income - essential - discretionary - emi - realized_savings
+            path_min = min(path_min, closing)
+            if closing < minimum_reserve:
+                breached = True
+            balance = closing
+        breach_flags.append(breached)
+        deficits.append(max(0.0, minimum_reserve - path_min))
+
+    probability = sum(1 for flag in breach_flags if flag) / n_paths
+    return {
+        "shortfall_probability": round(probability, 4),
+        "expected_shortfall": _money(float(np.mean(deficits))),
+        "method": "monte_carlo_income_noise",
+        "n_paths": n_paths,
+        "note": (
+            f"Income each month drawn from Normal(μ=run-rate income, σ=income×{vol:.3f}); "
+            "essentials/EMI/discretionary/savings held at run-rate. Seeded for reproducibility."
+        ),
+    }
+
+
+def _build_forecast_risks(
+    *,
+    path: dict[str, Any],
+    run_rate: dict[str, float],
+    shortfall: dict[str, Any],
+    data_quality: dict[str, Any],
+    income_volatility: float,
+    minimum_reserve: float,
+    savings_target: float,
+    savings_target_feasible: bool,
+) -> list[dict[str, Any]]:
+    risks: list[dict[str, Any]] = []
+    periods = path["periods"]
+
+    if data_quality.get("opening_below_reserve"):
+        risks.append({
+            "id": "opening_below_reserve",
+            "severity": "critical",
+            "title": "Opening cash already below reserve",
+            "what": f"Current opening balance is below the declared reserve of ₹{minimum_reserve:,.0f}.",
+            "when": "Now (period M1 opening)",
+            "factors": ["Opening balance", "Minimum reserve"],
+            "impact": "Immediate liquidity constraint before any forecast month completes.",
+            "action": "Open the What-If Simulator to cut discretionary spend or pause extra savings.",
+        })
+
+    for violation in path.get("violations") or []:
+        if violation["type"] == "reserve_breach":
+            risks.append({
+                "id": f"reserve_breach_m{violation['period_index']}",
+                "severity": "critical",
+                "title": f"Reserve breach projected in {violation['period_label']}",
+                "what": violation["reason"],
+                "when": violation["period_label"],
+                "factors": ["Essential expenses", "Mandatory debt", "Discretionary spending", "Income"],
+                "impact": f"Expected deficit versus reserve: ₹{violation['deficit']:,.0f}.",
+                "action": "Investigate discretionary cuts and EMI timing in the What-If Simulator.",
+            })
+        elif violation["type"] == "mandatory_shortfall":
+            risks.append({
+                "id": f"mandatory_shortfall_m{violation['period_index']}",
+                "severity": "critical",
+                "title": f"Cannot cover essentials + EMI in {violation['period_label']}",
+                "what": violation["reason"],
+                "when": violation["period_label"],
+                "factors": ["Income", "Essential expenses", "Mandatory debt"],
+                "impact": f"Mandatory shortfall of ₹{violation['deficit']:,.0f}.",
+                "action": "Increase income assumptions or reduce non-mandatory essentials in What-If.",
+            })
+
+    income = run_rate["income"]
+    mandatory = run_rate["essential"] + run_rate["emi"]
+    if income > 0 and mandatory > income:
+        risks.append({
+            "id": "income_below_mandatory",
+            "severity": "critical",
+            "title": "Income below essential costs and EMI",
+            "what": (
+                f"Run-rate income ₹{income:,.0f} does not cover essentials ₹{run_rate['essential']:,.0f} "
+                f"+ EMI ₹{run_rate['emi']:,.0f}."
+            ),
+            "when": "Every projected month under current run-rates",
+            "factors": ["Income", "Essential expenses", "Mandatory debt"],
+            "impact": "Structural deficit before discretionary spend or savings.",
+            "action": "Review income variability and fixed obligations; stress-test in What-If.",
+        })
+
+    if income_volatility >= 0.15:
+        risks.append({
+            "id": "elevated_income_volatility",
+            "severity": "elevated",
+            "title": "Elevated income variability",
+            "what": f"Profile income volatility is {income_volatility * 100:.1f}%.",
+            "when": "Across the forecast horizon",
+            "factors": ["Income volatility"],
+            "impact": (
+                f"Monte Carlo shortfall probability ≈ "
+                f"{(shortfall.get('shortfall_probability') or 0) * 100:.1f}% "
+                f"({shortfall.get('method')})."
+            ),
+            "action": "Prefer Protect Liquidity plans and keep a higher cash buffer.",
+        })
+
+    available_after_mandatory = income - mandatory
+    if income > 0 and available_after_mandatory < run_rate["discretionary"] * 0.25:
+        risks.append({
+            "id": "limited_savings_capacity",
+            "severity": "elevated",
+            "title": "Limited capacity to save",
+            "what": (
+                f"After essentials and EMI, about ₹{max(0.0, available_after_mandatory):,.0f}/mo remains "
+                f"before discretionary spend of ₹{run_rate['discretionary']:,.0f}."
+            ),
+            "when": "Each month under current habits",
+            "factors": ["Discretionary spending", "Mandatory outflows"],
+            "impact": "Savings contributions are easily crowded out.",
+            "action": "Reduce discretionary spending in the What-If Simulator.",
+        })
+
+    if not savings_target_feasible:
+        risks.append({
+            "id": "savings_target_stretch",
+            "severity": "elevated",
+            "title": "Savings target looks stretched",
+            "what": f"Target ₹{savings_target:,.0f} may exceed feasible cumulative savings on this horizon.",
+            "when": f"By end of M{len(periods)}",
+            "factors": ["Savings target", "Reserve constraint", "Discretionary spending"],
+            "impact": "Goal may be infeasible without income increase or spend cuts.",
+            "action": "Lower the target or extend the horizon in What-If.",
+        })
+
+    if periods and all(p["closing_balance"] >= p["opening_balance"] for p in periods):
+        risks.append({
+            "id": "improving_liquidity",
+            "severity": "healthy",
+            "title": "Cash position trending up",
+            "what": "Projected closing balances improve versus each period opening under current run-rates.",
+            "when": f"M1–M{len(periods)}",
+            "factors": ["Income", "Spending run-rates"],
+            "impact": "Reserve headroom is expanding on the expected path.",
+            "action": "Optionally accelerate debt or savings in the What-If Simulator.",
+        })
+
+    # Deduplicate by id while preserving order
+    seen: set[str] = set()
+    unique: list[dict[str, Any]] = []
+    for risk in risks:
+        if risk["id"] in seen:
+            continue
+        seen.add(risk["id"])
+        unique.append(risk)
+    return unique
+
+
+def _build_forecast_insights(
+    *,
+    horizon: int,
+    path: dict[str, Any],
+    run_rate: dict[str, float],
+    shortfall: dict[str, Any],
+    risks: list[dict[str, Any]],
+    minimum_reserve: float,
+    income_volatility: float,
+    savings_target: float,
+    savings_target_feasible: bool,
+) -> list[dict[str, Any]]:
+    """Grounded, horizon-specific explanations — numbers only from engine outputs."""
+    periods = path["periods"]
+    min_period = min(periods, key=lambda p: p["closing_balance"]) if periods else None
+    ending = path["ending_balance"]
+    minimum_balance = path["minimum_balance"]
+    prob = shortfall.get("shortfall_probability")
+    prob_text = f"{prob * 100:.1f}%" if prob is not None else "unavailable"
+    insights: list[dict[str, Any]] = []
+
+    if horizon == 1:
+        insights.append({
+            "horizon_months": 1,
+            "theme": "immediate_liquidity",
+            "headline": "Immediate liquidity check",
+            "body": (
+                f"Over the next month, projected closing cash is ₹{ending:,.0f} "
+                f"(band ₹{periods[0]['balance_low']:,.0f}–₹{periods[0]['balance_high']:,.0f}). "
+                f"Essentials ₹{run_rate['essential']:,.0f} and EMI ₹{run_rate['emi']:,.0f} are treated as mandatory."
+            ),
+            "metrics_cited": ["ending_balance", "balance_low", "balance_high", "essential", "emi"],
+        })
+        if min_period and min_period["reserve_violated"]:
+            insights.append({
+                "horizon_months": 1,
+                "theme": "reserve_pressure",
+                "headline": "Reserve pressure this month",
+                "body": (
+                    f"Closing cash may fall to ₹{minimum_balance:,.0f}, below your reserve of "
+                    f"₹{minimum_reserve:,.0f}. Review discretionary purchases (₹{run_rate['discretionary']:,.0f}/mo) "
+                    "in the What-If Simulator."
+                ),
+                "metrics_cited": ["minimum_balance", "minimum_reserve", "discretionary"],
+            })
+        else:
+            insights.append({
+                "horizon_months": 1,
+                "theme": "buffer_ok",
+                "headline": "Mandatory obligations look coverable",
+                "body": (
+                    f"Expected minimum ₹{minimum_balance:,.0f} stays at or above the ₹{minimum_reserve:,.0f} reserve "
+                    f"on the baseline path. Monte Carlo shortfall probability is {prob_text}."
+                ),
+                "metrics_cited": ["minimum_balance", "minimum_reserve", "shortfall_probability"],
+            })
+    elif horizon == 3:
+        insights.append({
+            "horizon_months": 3,
+            "theme": "stability",
+            "headline": "Short-term stability",
+            "body": (
+                f"Across three months, ending cash is projected at ₹{ending:,.0f} with a trough of "
+                f"₹{minimum_balance:,.0f}. Income run-rate ₹{run_rate['income']:,.0f} versus "
+                f"total monthly outflows "
+                f"₹{(run_rate['essential'] + run_rate['discretionary'] + run_rate['emi'] + run_rate['savings']):,.0f}."
+            ),
+            "metrics_cited": ["ending_balance", "minimum_balance", "income", "outflows"],
+        })
+        if run_rate["discretionary"] > run_rate["savings"] * 2 and run_rate["savings"] >= 0:
+            insights.append({
+                "horizon_months": 3,
+                "theme": "discretionary_pressure",
+                "headline": "Discretionary spend limits savings room",
+                "body": (
+                    f"Discretionary run-rate ₹{run_rate['discretionary']:,.0f} is high relative to planned savings "
+                    f"₹{run_rate['savings']:,.0f}. Cutting discretionary spend could lift the three-month cash path."
+                ),
+                "metrics_cited": ["discretionary", "savings"],
+            })
+    else:
+        insights.append({
+            "horizon_months": 6,
+            "theme": "outlook",
+            "headline": "Six-month cash outlook",
+            "body": (
+                f"Projected ending balance ₹{ending:,.0f}; minimum along the path ₹{minimum_balance:,.0f}. "
+                f"Income volatility {income_volatility * 100:.1f}% widens later-period bands. "
+                f"Monte Carlo shortfall probability {prob_text} "
+                f"(method: {shortfall.get('method')})."
+            ),
+            "metrics_cited": ["ending_balance", "minimum_balance", "income_volatility", "shortfall_probability"],
+        })
+        insights.append({
+            "horizon_months": 6,
+            "theme": "goals",
+            "headline": "Savings goal feasibility",
+            "body": (
+                f"Cumulative projected savings ₹{path['cumulative_savings']:,.0f} versus target "
+                f"₹{savings_target:,.0f} — "
+                f"{'appears achievable on the expected path' if savings_target_feasible else 'looks stretched under reserve constraints'}."
+            ),
+            "metrics_cited": ["cumulative_savings", "savings_target", "savings_target_feasible"],
+        })
+
+    critical = [r for r in risks if r["severity"] == "critical"]
+    if critical:
+        top = critical[0]
+        insights.append({
+            "horizon_months": horizon,
+            "theme": "top_risk",
+            "headline": top["title"],
+            "body": f"{top['what']} {top['action']}",
+            "metrics_cited": top.get("factors") or [],
+        })
+
+    return insights
+
+
+def build_cash_flow_forecast(
+    transactions: list[dict[str, Any]],
+    *,
+    horizon_months: int = 6,
+    profile: dict[str, Any] | None = None,
+    model_id: str | None = None,
+    forecast_source: str | None = None,
+) -> dict[str, Any]:
+    """Authoritative current-trajectory monthly forecast for the Cash Flow Forecast page.
+
+    Layer B (deterministic engine) owns balances and reserve logic. Uncertainty bands use
+    profile income volatility; shortfall_probability uses seeded Monte Carlo income noise.
+    Layer A (ML) may later replace run-rates via forecast_source/model_id without changing
+    this response contract. Insights are generated only from computed metrics.
+    """
+    if horizon_months not in {1, 3, 6}:
+        raise ValueError("horizon_months must be 1, 3, or 6")
+
+    profile = profile or {}
+    run_rate = _baseline_run_rate(transactions)
+    minimum_reserve = float(profile.get("minimum_reserve") or max(10000.0, run_rate["income"] * 0.25))
+    savings_target = float(profile.get("savings_target") or run_rate["savings"] * horizon_months)
+    income_volatility = float(profile.get("income_volatility") or 0.05)
+    opening = run_rate["opening"]
+    emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 0.0)
+
+    path = _project_plan_path(
+        opening=opening,
+        income=run_rate["income"],
+        essential=run_rate["essential"],
+        discretionary=run_rate["discretionary"],
+        emi=emi,
+        savings=run_rate["savings"],
+        extra_debt=0.0,
+        essential_shock=0.0,
+        minimum_reserve=minimum_reserve,
+        horizon=horizon_months,
+        income_volatility=income_volatility,
+    )
+
+    shortfall = _estimate_shortfall_risk(
+        opening=opening,
+        income=run_rate["income"],
+        essential=run_rate["essential"],
+        discretionary=run_rate["discretionary"],
+        emi=emi,
+        savings=run_rate["savings"],
+        minimum_reserve=minimum_reserve,
+        horizon=horizon_months,
+        income_volatility=income_volatility,
+    )
+
+    # Feasibility with discretionary cut to zero (same spirit as generator / what-if).
+    tight = _project_plan_path(
+        opening=opening,
+        income=run_rate["income"],
+        essential=run_rate["essential"],
+        discretionary=0.0,
+        emi=emi,
+        savings=run_rate["savings"],
+        extra_debt=0.0,
+        essential_shock=0.0,
+        minimum_reserve=minimum_reserve,
+        horizon=horizon_months,
+        income_volatility=income_volatility,
+    )
+    savings_target_feasible = tight["cumulative_savings"] + 1e-9 >= savings_target
+
+    data_quality = {
+        "transaction_count": len(transactions),
+        "sufficient_history": len(transactions) >= 12,
+        "opening_below_reserve": opening < minimum_reserve,
+        "zero_income": run_rate["income"] <= 0,
+        "missing_debt_terms": True,  # ledger has EMI amounts, not APR/tenure
+    }
+
+    history = build_cash_flow(transactions, months=min(6, max(1, horizon_months)))
+    observed_months = [
+        {
+            "month": item["month"],
+            "inflow": item["inflow"],
+            "outflow": item["outflow"],
+            "net": item["net"],
+            "is_forecast": False,
+        }
+        for item in history.get("monthly_summary") or []
+    ]
+
+    risks = _build_forecast_risks(
+        path=path,
+        run_rate={**run_rate, "emi": emi},
+        shortfall=shortfall,
+        data_quality=data_quality,
+        income_volatility=income_volatility,
+        minimum_reserve=minimum_reserve,
+        savings_target=savings_target,
+        savings_target_feasible=savings_target_feasible,
+    )
+    insights = _build_forecast_insights(
+        horizon=horizon_months,
+        path=path,
+        run_rate={**run_rate, "emi": emi},
+        shortfall=shortfall,
+        risks=risks,
+        minimum_reserve=minimum_reserve,
+        income_volatility=income_volatility,
+        savings_target=savings_target,
+        savings_target_feasible=savings_target_feasible,
+    )
+
+    total_expenses = _money(
+        run_rate["essential"] + run_rate["discretionary"] + emi + run_rate["savings"]
+    )
+    income_after_mandatory = _money(run_rate["income"] - run_rate["essential"] - emi)
+
+    source = forecast_source or "run_rate_projection"
+    limitations = [
+        "Period balances use deterministic run-rates from the synthetic historical ledger.",
+        "balance_low/balance_high are income-volatility bands, not calibrated ML quantiles.",
+        shortfall.get("note") or "Shortfall probability uses seeded Monte Carlo income noise.",
+        "Mandatory debt uses observed EMI amounts; APR/tenure terms are not in the ledger.",
+        "Future generator shock labels (IsFutureOutcome) are never used as features.",
+    ]
+    if source == "run_rate_projection":
+        limitations.insert(
+            0,
+            "Active provider is run-rate (not ML). Set FORECAST_PROVIDER=ml when a model artefact is available.",
+        )
+    if not data_quality["sufficient_history"]:
+        limitations.append("Fewer than 12 historical transactions — treat projections as low confidence.")
+    if data_quality["zero_income"]:
+        limitations.append("Observed income run-rate is zero — distinguish missing data from true zero income.")
+
+    return {
+        "forecast_updated_at": date.today().isoformat(),
+        "horizon_months": horizon_months,
+        "minimum_reserve": _money(minimum_reserve),
+        "savings_target": _money(savings_target),
+        "savings_target_feasible": savings_target_feasible,
+        "income_volatility": income_volatility,
+        "opening_balance": _money(opening),
+        "ending_balance": path["ending_balance"],
+        "minimum_balance": path["minimum_balance"],
+        "projected_income": _money(run_rate["income"] * horizon_months),
+        "projected_expenses": _money(total_expenses * horizon_months),
+        "monthly_income": _money(run_rate["income"]),
+        "monthly_essential": _money(run_rate["essential"]),
+        "monthly_discretionary": _money(run_rate["discretionary"]),
+        "monthly_debt": _money(emi),
+        "monthly_savings": _money(run_rate["savings"]),
+        "income_after_mandatory": income_after_mandatory,
+        "baseline_run_rate": {**run_rate, "emi": _money(emi)},
+        "periods": path["periods"],
+        "observed_months": observed_months,
+        "reserve_breach_rate": path["reserve_breach_rate"],
+        "periods_below_reserve": path["periods_below_reserve"],
+        "shortfall_probability": shortfall.get("shortfall_probability"),
+        "expected_shortfall": shortfall.get("expected_shortfall"),
+        "shortfall_method": shortfall.get("method"),
+        "shortfall_note": shortfall.get("note"),
+        "cumulative_savings": path["cumulative_savings"],
+        "debt_remaining": path["debt_remaining"],
+        "violations": path["violations"],
+        "risks": risks,
+        "insights": insights,
+        "source": source,
+        "model_id": model_id or "run_rate_v1",
+        "is_projection": True,
+        "limitations": limitations,
+        "data_quality": data_quality,
     }

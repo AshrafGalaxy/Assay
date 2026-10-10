@@ -154,6 +154,105 @@ export async function fetchDailyCashFlow(options?: {
   return data;
 }
 
+export type ForecastPeriod = {
+  period_index: number;
+  period_label: string;
+  opening_balance: number;
+  income: number;
+  essential_expenses: number;
+  mandatory_debt: number;
+  additional_debt_repayment: number;
+  discretionary_spending: number;
+  savings_contribution: number;
+  planned_savings: number;
+  closing_balance: number;
+  minimum_reserve: number;
+  reserve_violated: boolean;
+  reserve_headroom: number;
+  balance_low: number;
+  balance_high: number;
+  debt_remaining: number;
+};
+
+export type ForecastRisk = {
+  id: string;
+  severity: string;
+  title: string;
+  what: string;
+  when: string;
+  factors: string[];
+  impact: string;
+  action: string;
+};
+
+export type ForecastInsight = {
+  horizon_months: number;
+  theme: string;
+  headline: string;
+  body: string;
+  metrics_cited: string[];
+};
+
+export type CashFlowForecast = {
+  forecast_updated_at: string;
+  horizon_months: number;
+  minimum_reserve: number;
+  savings_target: number;
+  savings_target_feasible: boolean;
+  income_volatility: number;
+  opening_balance: number;
+  ending_balance: number;
+  minimum_balance: number;
+  projected_income: number;
+  projected_expenses: number;
+  monthly_income: number;
+  monthly_essential: number;
+  monthly_discretionary: number;
+  monthly_debt: number;
+  monthly_savings: number;
+  income_after_mandatory: number;
+  baseline_run_rate: Record<string, number>;
+  periods: ForecastPeriod[];
+  observed_months: Array<{
+    month: string;
+    inflow: number;
+    outflow: number;
+    net: number;
+    is_forecast: boolean;
+  }>;
+  reserve_breach_rate: number;
+  periods_below_reserve: number;
+  shortfall_probability: number | null;
+  expected_shortfall: number | null;
+  shortfall_method: string | null;
+  shortfall_note: string | null;
+  cumulative_savings: number;
+  debt_remaining: number;
+  violations: Array<Record<string, unknown>>;
+  risks: ForecastRisk[];
+  insights: ForecastInsight[];
+  source: string;
+  model_id: string;
+  is_projection: boolean;
+  limitations: string[];
+  data_quality: {
+    transaction_count: number;
+    sufficient_history: boolean;
+    opening_below_reserve: boolean;
+    zero_income?: boolean;
+    missing_debt_terms?: boolean;
+  };
+};
+
+export async function fetchCashFlowForecast(
+  horizonMonths: 1 | 3 | 6 = 6,
+): Promise<CashFlowForecast> {
+  const { data } = await api.get<CashFlowForecast>(endpoints.financialHealth.cashFlowForecast, {
+    params: { horizon_months: horizonMonths },
+  });
+  return data;
+}
+
 export type WhatIfAssumptions = {
   horizon_months: 1 | 3 | 6;
   discretionary_reduction_pct: number;

@@ -1,16 +1,22 @@
 from datetime import date
-from fastapi import APIRouter, Query, Depends
+
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+
 from app.core.database import get_db
 from app.models.transaction import Transaction
-from app.api.v1.routes.transactions import get_all_unified_transactions
 from app.schemas.financial_health import FinancialHealthOut
+from app.schemas.forecast import CashFlowForecastOut
 from app.services.financial_intelligence.engine import (
     build_cash_flow,
+    build_cash_flow_forecast,
     build_financial_health,
     detect_obligations,
 )
-from app.services.financial_intelligence.forecasting import build_cash_flow_daily_view
+from app.services.financial_intelligence.forecasting import (
+    build_cash_flow_daily_view,
+    get_forecast_provider,
+)
 from app.services.financial_intelligence.ledger import (
     get_ledger_transactions,
     get_monthly_finance_row,
@@ -37,6 +43,33 @@ def get_cash_flow(
 ):
     """Return observed monthly history and a current-month burn projection."""
     return build_cash_flow(_transactions(user_id), months=months)
+
+
+@router.get("/analytics/cash-flow/forecast", response_model=CashFlowForecastOut)
+def get_cash_flow_forecast(
+    user_id: str | None = Query(None),
+    horizon_months: int = Query(6, description="1, 3, or 6"),
+):
+    """Current-trajectory monthly cash-flow forecast (1/3/6 months).
+
+    Deterministic engine owns balances and reserve checks. Shortfall probability uses
+    seeded Monte Carlo income noise. Insights cite only computed metrics. Does not
+    consume future synthetic shock labels.
+    """
+    if horizon_months not in {1, 3, 6}:
+        raise HTTPException(status_code=422, detail="horizon_months must be 1, 3, or 6")
+    transactions = _transactions(user_id)
+    profile = get_user_profile(user_id=user_id)
+    provider = get_forecast_provider()
+    # Monthly path is engine run-rates today; provider.model_id tags the active seam for ML swap-in.
+    payload = build_cash_flow_forecast(
+        transactions,
+        horizon_months=horizon_months,
+        profile=profile,
+        model_id=getattr(provider, "model_id", "run_rate_v1"),
+        forecast_source="run_rate_projection",
+    )
+    return CashFlowForecastOut(**payload)
 
 
 @router.get("/analytics/cash-flow/daily")
