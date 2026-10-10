@@ -19,6 +19,8 @@ interface TransactionItemData {
   category?: string;
   notes?: string;
   sourceType?: string;
+  bankKey?: string;
+  accountName?: string;
 }
 
 interface DateGroup {
@@ -77,6 +79,8 @@ function groupTransactionsByDate(txList: Transaction[]): DateGroup[] {
       category: tx.category,
       notes: tx.description,
       sourceType: tx.source_type,
+      bankKey: tx.bank_key,
+      accountName: tx.account_name,
     });
   }
 
@@ -118,7 +122,8 @@ export default function TransactionsScreen() {
             item.name.toLowerCase().includes(query) ||
             item.amount.includes(query) ||
             item.method.toLowerCase().includes(query) ||
-            (item.category && item.category.toLowerCase().includes(query));
+            (item.category && item.category.toLowerCase().includes(query)) ||
+            (item.accountName && item.accountName.toLowerCase().includes(query));
           return matchesFilter && matchesSearch;
         });
         return { ...group, items };
@@ -233,7 +238,7 @@ export default function TransactionsScreen() {
                     numberOfLines={1}
                     ellipsizeMode="tail"
                   >
-                    {item.time} • {item.method} • {item.category}
+                    {item.time} • {item.method} • {item.category}{item.accountName ? ` • ${item.accountName}` : ''}
                   </Typography>
                 </View>
 

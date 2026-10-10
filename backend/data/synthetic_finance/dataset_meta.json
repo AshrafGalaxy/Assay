@@ -1,0 +1,17 @@
+{
+  "evaluation_only_monthly_columns": [
+    "IsFutureOutcome",
+    "ReserveViolated"
+  ],
+  "evaluation_only_scenario_columns": [
+    "FinalActualBalance",
+    "IncomeReductionPct",
+    "InitialForecastBalance",
+    "MinimumActualBalance",
+    "ReserveViolated",
+    "ShockMonth",
+    "TargetFeasibleUnderRealizedSavings",
+    "UnexpectedEssentialExpense"
+  ],
+  "note": "Do not include evaluation-only columns or future IsFutureOutcome rows in forecasting feature matrices. Shock fields are labels / metadata."
+}
