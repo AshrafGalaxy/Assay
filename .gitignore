@@ -14,8 +14,6 @@ frontend/web-build/
 expo-env.d.ts
 frontend/expo-env.d.ts
 
-# Generated synthetic finance datasets (regenerate via CLI)
-backend/data/synthetic_finance/
 
 # Python / Backend
 __pycache__/
