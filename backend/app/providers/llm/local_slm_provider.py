@@ -14,7 +14,23 @@ from app.providers.llm.base import LLMProvider
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_LOCAL_MODEL_PATH = Path("backend/models/assay-copilot-qwen0.5b-q4_k_m.gguf")
+# backend/app/providers/llm/local_slm_provider.py -> parents[3] is the backend directory.
+# The server's working directory is not reliable, so the model is resolved from here.
+BACKEND_ROOT = Path(__file__).resolve().parents[3]
+DEFAULT_LOCAL_MODEL_PATH = BACKEND_ROOT / "models" / "assay-copilot-qwen0.5b-q4_k_m.gguf"
+
+
+def resolve_model_path(configured: Optional[str]) -> Path:
+    """Find the GGUF whether the process was started from the repo or from backend/."""
+    if not configured:
+        return DEFAULT_LOCAL_MODEL_PATH
+    candidate = Path(configured)
+    if candidate.is_absolute():
+        return candidate
+    from_cwd = (Path.cwd() / candidate).resolve()
+    if from_cwd.exists():
+        return from_cwd
+    return (BACKEND_ROOT / "models" / candidate.name).resolve()
 
 
 class LocalSLMProvider:
@@ -30,8 +46,8 @@ class LocalSLMProvider:
         n_ctx: int = 1024,
         n_threads: int = 4,
     ):
-        configured_path = getattr(settings, "LOCAL_SLM_MODEL_PATH", str(DEFAULT_LOCAL_MODEL_PATH))
-        self.model_path = Path(model_path or configured_path)
+        configured_path = model_path or getattr(settings, "LOCAL_SLM_MODEL_PATH", None)
+        self.model_path = resolve_model_path(configured_path)
         self.n_ctx = n_ctx
         self.n_threads = n_threads
         self.fallback = LLMProvider()
@@ -40,7 +56,8 @@ class LocalSLMProvider:
     @property
     def is_configured(self) -> bool:
         """Returns True if the quantized GGUF model file exists on disk."""
-        return self.model_path.exists() and self.model_path.stat().st_size > 10_000_000
+        # The full Q4 file is about 379 MB. A smaller file is a partial download.
+        return self.model_path.exists() and self.model_path.stat().st_size > 300_000_000
 
     def _get_llm(self):
         """Lazy-initializes llama_cpp.Llama on first inference call."""
@@ -90,6 +107,17 @@ class LocalSLMProvider:
             stop=["<|im_end|>", "<|endoftext|>"],
         )
         return output["choices"][0]["text"].strip()
+
+    async def generate_grounded(self, system_prompt: str, user_prompt: str) -> str | None:
+        """Return model text, or None when the local model cannot run."""
+        if not self.is_configured:
+            return None
+        try:
+            text = self._generate_chatml(system_prompt, user_prompt)
+            return text or None
+        except Exception as exc:
+            logger.warning(f"[LocalSLMProvider] Grounded generation failed: {exc}")
+            return None
 
     async def explain_affordability(
         self,

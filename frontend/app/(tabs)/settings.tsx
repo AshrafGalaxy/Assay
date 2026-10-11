@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, ScrollView, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { ProfileAvatar } from '../../components/profile/ProfileAvatar';
 import { COLORS } from '../../constants/theme';
@@ -16,8 +16,10 @@ import {
   HelpCircle, 
   MessageSquare,
   ChevronRight,
-  User
+  User,
+  Sparkles,
 } from 'lucide-react-native';
+import { fetchAiPreference } from '../../services/finance';
 
 interface SettingRowProps {
   icon: React.ReactNode;
@@ -59,6 +61,21 @@ function SettingRow({ icon, label, value, onPress, showDivider = false }: Settin
 export default function SettingsScreen() {
   const router = useRouter();
   const aaState = useAAState();
+  const [aiModeLabel, setAiModeLabel] = useState('Local');
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      fetchAiPreference()
+        .then((pref) => {
+          if (active) setAiModeLabel(pref.mode === 'cloud' ? 'Cloud' : 'Local');
+        })
+        .catch(() => {});
+      return () => {
+        active = false;
+      };
+    }, [])
+  );
 
   const handleRowClick = (title: string) => {
     Alert.alert(title, `${title} management is connected to your Assay profile.`);
@@ -101,6 +118,13 @@ export default function SettingsScreen() {
         </Typography>
 
         <View style={styles.groupedCard}>
+          <SettingRow
+            icon={<Sparkles color={COLORS.text} size={20} strokeWidth={1.8} />}
+            label="AI Model"
+            value={aiModeLabel}
+            showDivider
+            onPress={() => router.push('/settings/ai')}
+          />
           <SettingRow
             icon={<LayoutGrid color={COLORS.text} size={20} strokeWidth={1.8} />}
             label="Categories"

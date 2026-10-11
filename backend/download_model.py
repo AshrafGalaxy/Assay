@@ -8,7 +8,7 @@ import os
 import urllib.request
 from pathlib import Path
 
-MODEL_DIR = Path("backend/models")
+MODEL_DIR = Path(__file__).resolve().parent / "models"
 MODEL_FILE = MODEL_DIR / "assay-copilot-qwen0.5b-q4_k_m.gguf"
 HF_URL = "https://huggingface.co/Ashraf01k/assay-copilot-qwen0.5b-q4_k_m/resolve/main/assay-copilot-qwen0.5b-q4_k_m.gguf"
 

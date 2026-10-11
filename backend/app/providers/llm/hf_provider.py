@@ -46,6 +46,26 @@ class HuggingFaceLLMProvider:
                 self._client = None
         return self._client
 
+    async def generate_grounded(self, system_prompt: str, user_prompt: str) -> str | None:
+        """Return cloud model text, or None when Hugging Face is not configured or the call fails."""
+        client = self._get_client()
+        if client is None:
+            return None
+        try:
+            response = client.chat.completions.create(
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+                max_tokens=220,
+                temperature=0.1,
+            )
+            text = (response.choices[0].message.content or "").strip()
+            return text or None
+        except Exception as exc:
+            logger.warning(f"[HuggingFaceLLMProvider] Grounded generation failed: {exc}")
+            return None
+
     async def explain_affordability(
         self,
         question: str,

@@ -233,10 +233,17 @@ def execute_audited_copilot_query(
         shortfall = max(0.0, min_reserve - lowest_bal)
 
         headline = "Risk of Running Short"
-        answer = (
-            f"After scheduled loan EMIs and rent auto-debits process, your available checking cash is projected "
-            f"to reach Expected Cash of {_format_inr(lowest_bal)}. That is {_format_inr(shortfall)} below your Safety Buffer of {_format_inr(min_reserve)}."
-        )
+        if shortfall > 0:
+            answer = (
+                f"After scheduled loan EMIs and rent auto-debits process, Expected Cash reaches {_format_inr(lowest_bal)}. "
+                f"That is {_format_inr(shortfall)} below your Safety Buffer of {_format_inr(min_reserve)}."
+            )
+        else:
+            above = max(0.0, lowest_bal - min_reserve)
+            answer = (
+                f"After scheduled loan EMIs and rent auto-debits process, Expected Cash reaches {_format_inr(lowest_bal)}. "
+                f"That is {_format_inr(above)} above your Safety Buffer of {_format_inr(min_reserve)}."
+            )
 
         what_we_know = [
             {

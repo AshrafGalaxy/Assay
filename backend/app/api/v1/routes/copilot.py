@@ -4,11 +4,13 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.copilot_audit import CopilotAuditLog
+from app.providers.llm.copilot_explainer import CopilotExplainer
 from app.schemas.financial_health import (
     CopilotInsightItem,
     CopilotQueryRequest,
     CopilotQueryResponse,
 )
+from app.services.ai_settings import get_ai_preference
 from app.services.financial_intelligence.copilot_engine import (
     execute_audited_copilot_query,
     get_proactive_audited_insights,
@@ -18,14 +20,14 @@ router = APIRouter(prefix="/copilot", tags=["copilot"])
 
 
 @router.post("/query", response_model=CopilotQueryResponse)
-def query_copilot(
+async def query_copilot(
     request: CopilotQueryRequest,
     db: Session = Depends(get_db),
 ):
     """
     Copilot query endpoint.
     Retrieves authorized financial facts, computes deterministic metrics,
-    and returns an audited explanation with supporting evidence.
+    then phrases the answer with the model selected in Settings.
     """
     if not request.question or not request.question.strip():
         raise HTTPException(
@@ -39,6 +41,21 @@ def query_copilot(
         user_id=request.user_id,
         context=request.context,
     )
+    preference = get_ai_preference(db, user_id=request.user_id)
+    phrased = await CopilotExplainer().phrase_verified_answer(
+        question=request.question,
+        draft_answer=result["answer"],
+        facts={
+            "headline": result.get("headline"),
+            "analysis": result.get("analysis") or {},
+            "what_we_know": result.get("what_we_know") or [],
+        },
+        mode=preference["mode"],
+    )
+    result["answer"] = phrased["answer"]
+    result["provider"] = phrased["provider"]
+    result["model_mode"] = preference["mode"]
+    result["model_label"] = phrased["model_label"]
     return CopilotQueryResponse(**result)
 
 

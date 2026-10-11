@@ -632,7 +632,29 @@ export type CopilotQueryResponse = {
   recommendation?: Record<string, any>;
   confidence?: number;
   limitations?: string[];
+  provider?: string;
+  model_mode?: 'local' | 'cloud';
+  model_label?: string;
 };
+
+export type AiPreference = {
+  mode: 'local' | 'cloud';
+  local_available: boolean;
+  cloud_available: boolean;
+  local_model_name: string;
+  cloud_model_name: string;
+  local_status?: string;
+};
+
+export async function fetchAiPreference(): Promise<AiPreference> {
+  const { data } = await api.get<AiPreference>(endpoints.settings.ai);
+  return data;
+}
+
+export async function saveAiPreference(mode: 'local' | 'cloud'): Promise<AiPreference> {
+  const { data } = await api.post<AiPreference>(endpoints.settings.ai, { mode });
+  return data;
+}
 
 export type CopilotInsightItem = {
   id: string;

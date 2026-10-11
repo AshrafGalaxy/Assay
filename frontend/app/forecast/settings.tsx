@@ -1,16 +1,47 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, ActivityIndicator } from 'react-native';
+import { View, ScrollView, StyleSheet, TouchableOpacity, Switch, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Slider from '@react-native-community/slider';
 import { Typography } from '../../components/Typography';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import { ChevronLeft, Info, Check } from 'lucide-react-native';
+import { ChevronLeft, Info } from 'lucide-react-native';
 import {
   fetchForecastSettings,
   saveForecastSettings,
-  ForecastSettings,
+  formatINR,
 } from '../../services/finance';
+
+function AmountInput({
+  value,
+  onChangeValue,
+}: {
+  value: number;
+  onChangeValue: (next: number) => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  return (
+    <TextInput
+      style={styles.amountInput}
+      keyboardType="number-pad"
+      value={focused ? draft : formatINR(value)}
+      onFocus={() => {
+        setFocused(true);
+        setDraft(value > 0 ? String(Math.round(value)) : '');
+      }}
+      onChangeText={(raw) => {
+        const digits = raw.replace(/[^0-9]/g, '');
+        setDraft(digits);
+        onChangeValue(digits ? parseInt(digits, 10) : 0);
+      }}
+      onBlur={() => setFocused(false)}
+      selectTextOnFocus
+      placeholder="₹0"
+      placeholderTextColor="#9CA3AF"
+    />
+  );
+}
 
 export default function ForecastSettingsScreen() {
   const router = useRouter();
@@ -134,34 +165,10 @@ export default function ForecastSettingsScreen() {
             Safety Buffer
           </Typography>
 
-          <View style={styles.reserveSettingRow}>
-            <Typography variant="caption" color={COLORS.textSecondary}>
-              Current setting
-            </Typography>
-            <Typography variant="bodyBold" color={COLORS.primary} style={styles.reserveValue}>
-              ₹{minReserve.toLocaleString('en-IN')}
-            </Typography>
-          </View>
-
-          {/* Slider */}
-          <Slider
-            style={styles.slider}
-            minimumValue={5000}
-            maximumValue={Math.max(50000, minReserve)}
-            step={1000}
-            value={minReserve}
-            onValueChange={setMinReserve}
-            minimumTrackTintColor={COLORS.primary}
-            maximumTrackTintColor="#E2E8F0"
-            thumbTintColor={COLORS.primary}
-          />
-
-          <View style={styles.sliderMarkers}>
-            <Typography variant="caption" color={COLORS.textSecondary}>₹5K</Typography>
-            <Typography variant="caption" color={COLORS.textSecondary}>₹15K</Typography>
-            <Typography variant="caption" color={COLORS.textSecondary}>₹30K</Typography>
-            <Typography variant="caption" color={COLORS.textSecondary}>₹50K</Typography>
-          </View>
+          <Typography variant="caption" color={COLORS.textSecondary} style={styles.reserveLabel}>
+            Current setting
+          </Typography>
+          <AmountInput value={minReserve} onChangeValue={setMinReserve} />
 
           <View style={styles.recommendationBox}>
             <Info size={14} color={COLORS.gold} style={{ marginRight: 6, marginTop: 2 }} />
@@ -329,25 +336,18 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 13.5,
   },
-  reserveSettingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+  reserveLabel: {
+    marginBottom: 8,
   },
-  reserveValue: {
-    fontSize: 18,
+  amountInput: {
     fontFamily: FONTS.bodyBold,
-  },
-  slider: {
-    width: '100%',
-    height: 36,
-  },
-  sliderMarkers: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    fontSize: 28,
+    color: COLORS.primary,
+    backgroundColor: '#F8F7F4',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     marginBottom: 14,
-    paddingHorizontal: 4,
   },
   recommendationBox: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ Implements the 5-layer robustness stack:
 5. Zero-downtime deterministic fallback circuit breaker to base.py.
 """
 
+import json
 import re
 import logging
 from typing import Dict, Any, List, Optional, Tuple
@@ -58,10 +59,10 @@ class CopilotExplainer:
             numbers.add(round(val, 1))
             numbers.add(round(val, 2))
         elif isinstance(payload, str):
-            # Also extract valid numbers present in the input query/context (e.g. "iPhone 16", "3 months")
-            for token in re.findall(r"\b(\d+(?:\.\d+)?)\b", payload):
+            # Also extract numbers in the query or draft, including ₹1,202,140.
+            for token in re.findall(r"(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)", payload, re.IGNORECASE):
                 try:
-                    v = float(token)
+                    v = float(token.replace(",", ""))
                     numbers.add(round(v, 0))
                     numbers.add(round(v, 1))
                     numbers.add(round(v, 2))
@@ -104,6 +105,111 @@ class CopilotExplainer:
 
         is_faithful = len(ungrounded) == 0
         return is_faithful, ungrounded
+
+    @staticmethod
+    def _amount_token(token: str) -> Optional[float]:
+        """Parse a currency token. A bare comma is not a number."""
+        cleaned = token.replace(",", "").strip()
+        if not cleaned or cleaned == ".":
+            return None
+        try:
+            return float(cleaned)
+        except ValueError:
+            return None
+
+    @staticmethod
+    def _currency_amounts(text: str) -> List[float]:
+        amounts = []
+        for token in re.findall(r"(?:₹|rs\.?|inr)\s*([\d,]+(?:\.\d+)?)", text, re.IGNORECASE):
+            value = CopilotExplainer._amount_token(token)
+            if value is not None:
+                amounts.append(value)
+        return amounts
+
+    @staticmethod
+    def _first_amount(tokens: List[str]) -> Optional[float]:
+        for token in tokens:
+            value = CopilotExplainer._amount_token(token)
+            if value is not None:
+                return value
+        return None
+
+    @staticmethod
+    def labels_match_draft(draft: str, generated_text: str) -> bool:
+        """A named amount in the reply must be the same amount named in the draft."""
+        labels = (
+            "Expected Cash",
+            "Safety Buffer",
+            "Money Above Buffer",
+            "Risk of Running Short",
+            "Monthly Income",
+            "Monthly Spending & Bills",
+            "Money Left Each Month",
+            "Possible Cash Range",
+        )
+        for label in labels:
+            pattern = rf"{re.escape(label)}[^0-9₹]{{0,48}}₹?\s*([\d,]+(?:\.\d+)?)"
+            draft_value = CopilotExplainer._first_amount(re.findall(pattern, draft))
+            reply_value = CopilotExplainer._first_amount(re.findall(pattern, generated_text))
+            if reply_value is None:
+                continue
+            if draft_value is None or abs(reply_value - draft_value) > 1:
+                return False
+        return True
+
+    @staticmethod
+    def claimed_differences_hold(text: str) -> bool:
+        """Reject '₹A, which is ₹B above ₹C' when B is not A − C."""
+        pattern = re.compile(
+            r"₹\s*([\d,]+(?:\.\d+)?)(?:(?!₹).){0,90}?"
+            r"(?:which is|that is|this amount is|this is)\s+"
+            r"₹\s*([\d,]+(?:\.\d+)?)\s+(above|below)"
+            r"(?:(?!₹).){0,90}?₹\s*([\d,]+(?:\.\d+)?)",
+            re.IGNORECASE,
+        )
+        for left, gap, direction, right in pattern.findall(text):
+            left_value = CopilotExplainer._amount_token(left)
+            gap_value = CopilotExplainer._amount_token(gap)
+            right_value = CopilotExplainer._amount_token(right)
+            if left_value is None or gap_value is None or right_value is None:
+                return False
+            expected = (left_value - right_value) if direction.lower() == "above" else (right_value - left_value)
+            if abs(expected - gap_value) > 1:
+                return False
+        return True
+
+    @staticmethod
+    def rewrite_keeps_figures(draft: str, generated_text: str) -> bool:
+        """A cloud rewrite may use only the figures already written in the verified draft."""
+        try:
+            faithful, _ungrounded = CopilotExplainer.audit_faithfulness(
+                generated_text, {"draft_answer": draft}
+            )
+            if not faithful:
+                return False
+            draft_numbers = CopilotExplainer.extract_numbers_from_payload(draft)
+            for token in re.findall(r"(?:₹|rs\.?|inr)?\s*([\d,]+(?:\.\d+)?)", generated_text, re.IGNORECASE):
+                if "." not in token:
+                    continue
+                value = CopilotExplainer._amount_token(token)
+                if value is None or not any(abs(value - valid) < 0.01 for valid in draft_numbers):
+                    return False
+            if not CopilotExplainer.labels_match_draft(draft, generated_text):
+                return False
+            if not CopilotExplainer.claimed_differences_hold(generated_text):
+                return False
+            if re.search(r"cannot answer|can't answer|not able to", generated_text, re.IGNORECASE):
+                return False
+            if re.search(r"expected cash.{0,80}includes", generated_text, re.IGNORECASE):
+                return False
+            reply_amounts = CopilotExplainer._currency_amounts(generated_text)
+            for amount in CopilotExplainer._currency_amounts(draft):
+                if not any(abs(amount - other) <= 1 for other in reply_amounts):
+                    return False
+            return True
+        except Exception:
+            logger.warning("[CopilotExplainer] Could not audit the model reply; keeping the verified answer.")
+            return False
 
     def generate_grounded_explanation(
         self,
@@ -373,3 +479,84 @@ class CopilotExplainer:
         res["ungrounded_detected"] = ungrounded
         res["verified_math"] = verified_math
         return res
+
+    async def phrase_verified_answer(
+        self,
+        *,
+        question: str,
+        draft_answer: str,
+        facts: Dict[str, Any],
+        mode: str,
+    ) -> Dict[str, Any]:
+        """Rewrite a verified answer with the model the user selected.
+
+        Numbers that are not already in the verified facts or the draft are
+        rejected, and the original answer is kept. If the selected model is not
+        configured, the verified answer is returned as-is.
+        """
+        system_prompt = (
+            "You are the Assay Grounded Financial Copilot. "
+            "CRITICAL SAFETY CONSTRAINTS:\n"
+            "1. You must NEVER invent currency amounts or percentages.\n"
+            "2. Every number in your reply MUST already appear in the VERIFIED FACTS JSON.\n"
+            "3. Use only this vocabulary: Expected Cash, Safety Buffer, Money Above Buffer, "
+            "Risk of Running Short, Monthly Income, Monthly Spending & Bills, Money Left Each Month, "
+            "Possible Cash Range, Update My Plan.\n"
+            "4. Reply in 2 sentences. Change only the words around the figures.\n"
+            "5. Keep each amount beside the same name it has in the draft. "
+            "Expected Cash, Safety Buffer, and Money Above Buffer are different figures.\n"
+            "6. Copy amounts from the draft answer. Do not use a more precise figure from the JSON.\n"
+            "7. Do not connect two different figures with 'which is', and do not say Expected Cash includes the Safety Buffer."
+        )
+        user_prompt = (
+            f"User question: {question}\n\n"
+            f"DRAFT ANSWER:\n{draft_answer}\n\n"
+            "Rewrite the draft. Change only the words around the figures. "
+            "Copy every amount from the draft, not from any other number."
+        )
+
+        if mode == "cloud":
+            text = await self.groq_provider.generate_grounded(system_prompt, user_prompt)
+            provider = "groq"
+            label = f"Cloud · {self.groq_provider.model_id}"
+            if not text:
+                text = await self.hf_provider.generate_grounded(system_prompt, user_prompt)
+                provider = f"huggingface/{self.hf_provider.model_id}"
+                label = f"Cloud · {self.hf_provider.model_id}"
+            if text and not self.rewrite_keeps_figures(draft_answer, text):
+                correction = (
+                    f"{user_prompt}\n\n"
+                    "The previous reply was rejected. Rewrite the draft again. "
+                    "Keep every amount next to the same name. "
+                    "Do not connect two figures with 'which is'.\n\n"
+                    f"DRAFT:\n{draft_answer}"
+                )
+                retried = await self.groq_provider.generate_grounded(system_prompt, correction)
+                if retried:
+                    text = retried
+            if not text:
+                return {
+                    "answer": draft_answer,
+                    "provider": "deterministic",
+                    "model_label": "Verified rules (cloud model is not configured)",
+                }
+        else:
+            text = await self.local_slm_provider.generate_grounded(system_prompt, user_prompt)
+            provider = "local_slm"
+            label = "Local · Qwen2.5 0.5B"
+            if not text:
+                return {
+                    "answer": draft_answer,
+                    "provider": "deterministic",
+                    "model_label": "Verified rules (local model is not installed)",
+                }
+
+        faithful = self.rewrite_keeps_figures(draft_answer, text)
+        if not faithful:
+            logger.warning("[CopilotExplainer] Selected model added numbers that are not in the verified answer.")
+            return {
+                "answer": draft_answer,
+                "provider": "deterministic",
+                "model_label": "Verified rules (model reply did not match the figures)",
+            }
+        return {"answer": text, "provider": provider, "model_label": label}

@@ -44,6 +44,8 @@ class CopilotQueryResponse(BaseModel):
     limitations: List[str] = []
     audit_passed: Optional[bool] = True
     provider: Optional[str] = None
+    model_mode: Optional[str] = None
+    model_label: Optional[str] = None
 
 
 class CopilotInsightItem(BaseModel):

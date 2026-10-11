@@ -119,6 +119,7 @@ export const endpoints = {
   },
   settings: {
     forecast: '/settings/forecast',
+    ai: '/settings/ai',
   },
   copilot: {
     query: '/copilot/query',

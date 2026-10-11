@@ -6,6 +6,7 @@ using pre-calculated mathematical facts and strict negative constraint prompting
 
 import json
 import logging
+import re
 from typing import Dict, Any, Optional
 import httpx
 
@@ -31,6 +32,62 @@ class GroqLLMProvider:
     def is_configured(self) -> bool:
         """Returns True if a valid Groq API key is provided."""
         return bool(self.api_key and self.api_key.startswith("gsk_") and len(self.api_key.strip()) > 10)
+
+    @staticmethod
+    def _visible_answer(text: str) -> str:
+        """Drop a reasoning trace so only the reply the user should see remains."""
+        cleaned = re.sub(r"<think>.*?</think>", "", text or "", flags=re.DOTALL | re.IGNORECASE)
+        return cleaned.strip()
+
+    def _chat_payload(self, messages: list, max_tokens: int, disable_reasoning: bool) -> dict:
+        payload = {
+            "model": self.model_id,
+            "messages": messages,
+            "temperature": 0.1,
+            "max_tokens": max_tokens,
+        }
+        # Qwen on Groq spends the token budget on a hidden trace unless this is set,
+        # and the visible answer then comes back empty.
+        if disable_reasoning:
+            payload["reasoning_effort"] = "none"
+        return payload
+
+    async def _complete(self, messages: list, max_tokens: int) -> str | None:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        try:
+            async with httpx.AsyncClient(timeout=20.0) as client:
+                payload = self._chat_payload(messages, max_tokens, disable_reasoning=True)
+                res = await client.post(self.endpoint, headers=headers, json=payload)
+                if res.status_code == 400 and "reasoning_effort" in res.text:
+                    payload = self._chat_payload(messages, max_tokens, disable_reasoning=False)
+                    res = await client.post(self.endpoint, headers=headers, json=payload)
+                if res.status_code != 200:
+                    logger.warning(
+                        "[GroqLLMProvider] API error HTTP %s: %s",
+                        res.status_code,
+                        res.text[:300],
+                    )
+                    return None
+                message = res.json()["choices"][0]["message"]
+                return self._visible_answer(message.get("content") or "") or None
+        except Exception as exc:
+            logger.warning(f"[GroqLLMProvider] Grounded generation failed: {exc}")
+            return None
+
+    async def generate_grounded(self, system_prompt: str, user_prompt: str) -> str | None:
+        """Return cloud model text, or None when Groq is not configured or the call fails."""
+        if not self.is_configured:
+            return None
+        return await self._complete(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            max_tokens=250,
+        )
 
     async def explain_affordability(
         self,
@@ -85,65 +142,47 @@ class GroqLLMProvider:
             "Provide a grounded, helpful 2-to-3 sentence explanation directly referencing the verified facts."
         )
 
-        headers = {
-            "Authorization": f"Bearer {self.api_key}",
-            "Content-Type": "application/json",
-        }
-        payload = {
-            "model": self.model_id,
-            "messages": [
+        answer_text = await self._complete(
+            [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_content},
             ],
-            "temperature": 0.1,
-            "max_tokens": 250,
-        }
+            max_tokens=250,
+        )
+        if answer_text:
+            observed = [
+                {"name": "Current Liquid Balance", "value": f"₹{current_balance:,.0f}"},
+                {"name": "Target Item Cost", "value": f"₹{item_cost:,.0f}"},
+                {"name": "Money Above Buffer", "value": f"₹{buffer_after:,.0f}"},
+                {"name": "Safety Buffer", "value": f"₹{settings.MINIMUM_RESERVE_FLOOR:,.0f}"},
+            ]
 
-        try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                res = await client.post(self.endpoint, headers=headers, json=payload)
-                if res.status_code == 200:
-                    data = res.json()
-                    answer_text = data["choices"][0]["message"]["content"].strip()
+            analysis = {
+                "can_afford": can_afford,
+                "shortfall": shortfall,
+                "projected_trough": buffer_after,
+                "declared_reserve": settings.MINIMUM_RESERVE_FLOOR,
+                "buffer_deficit": shortfall > 0,
+            }
 
-                    observed = [
-                        {"name": "Current Liquid Balance", "value": f"₹{current_balance:,.0f}"},
-                        {"name": "Target Item Cost", "value": f"₹{item_cost:,.0f}"},
-                        {"name": "Money Above Buffer", "value": f"₹{buffer_after:,.0f}"},
-                        {"name": "Safety Buffer", "value": f"₹{settings.MINIMUM_RESERVE_FLOOR:,.0f}"},
-                    ]
+            recommendation = {
+                "action": "Proceed with Purchase" if can_afford else "Consider 3-Month EMI or Delay",
+                "strategy": "lump_sum" if can_afford else "emi_shield",
+                "max_safe_emi": round(projected_buffer / 3, 2),
+            }
 
-                    analysis = {
-                        "can_afford": can_afford,
-                        "shortfall": shortfall,
-                        "projected_trough": buffer_after,
-                        "declared_reserve": settings.MINIMUM_RESERVE_FLOOR,
-                        "buffer_deficit": shortfall > 0,
-                    }
+            return {
+                "intent": "affordability",
+                "answer": answer_text,
+                "observed": observed,
+                "analysis": analysis,
+                "recommendation": recommendation,
+                "confidence": 0.98,
+                "limitations": [f"Inference generated via Groq ({self.model_id}) with deterministic math verification."],
+                "provider": "groq",
+                "verified_facts": verified_facts,
+            }
 
-                    recommendation = {
-                        "action": "Proceed with Purchase" if can_afford else "Consider 3-Month EMI or Delay",
-                        "strategy": "lump_sum" if can_afford else "emi_shield",
-                        "max_safe_emi": round(projected_buffer / 3, 2),
-                    }
-
-                    return {
-                        "intent": "affordability",
-                        "answer": answer_text,
-                        "observed": observed,
-                        "analysis": analysis,
-                        "recommendation": recommendation,
-                        "confidence": 0.98,
-                        "limitations": [f"Inference generated via Groq ({self.model_id}) with deterministic math verification."],
-                        "provider": "groq",
-                        "verified_facts": verified_facts,
-                    }
-                else:
-                    logger.warning(f"[GroqLLMProvider] API error HTTP {res.status_code}: {res.text}")
-        except Exception as e:
-            logger.warning(f"[GroqLLMProvider] Request failed: {e}. Falling back to deterministic rules.")
-
-        # Fallback to local verified template on any error
         return await self.fallback.explain_affordability(
             question=question,
             current_balance=current_balance,

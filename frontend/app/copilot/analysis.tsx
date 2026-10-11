@@ -380,6 +380,11 @@ export default function AssayCopilotScreen() {
                     </View>
                   )}
 
+                  {msg.data?.model_label ? (
+                    <Typography variant="caption" color={COLORS.textSecondary} style={styles.assistantTimestamp}>
+                      {msg.data.model_label}
+                    </Typography>
+                  ) : null}
                   <Typography variant="caption" color={COLORS.textSecondary} style={styles.assistantTimestamp}>
                     {msg.timestamp}
                   </Typography>
