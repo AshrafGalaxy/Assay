@@ -16,6 +16,7 @@ from app.providers.llm.base import LLMProvider
 from app.providers.llm.hf_provider import HuggingFaceLLMProvider
 from app.providers.llm.groq_provider import GroqLLMProvider
 from app.providers.llm.local_slm_provider import LocalSLMProvider
+from app.providers.llm.ohttp_client import ohttp_client, OHTTPClient, DeviceHardwareProfiler
 
 
 logger = logging.getLogger(__name__)
@@ -31,11 +32,13 @@ class CopilotExplainer:
         hf_provider: Optional[HuggingFaceLLMProvider] = None,
         groq_provider: Optional[GroqLLMProvider] = None,
         local_slm_provider: Optional[LocalSLMProvider] = None,
+        ohttp_relay_client: Optional[OHTTPClient] = None,
     ):
         self.fallback_provider = fallback_provider or LLMProvider()
         self.hf_provider = hf_provider or HuggingFaceLLMProvider()
         self.groq_provider = groq_provider or GroqLLMProvider()
         self.local_slm_provider = local_slm_provider or LocalSLMProvider()
+        self.ohttp_client = ohttp_relay_client or ohttp_client
 
 
     @staticmethod
@@ -54,6 +57,16 @@ class CopilotExplainer:
             numbers.add(round(val, 0))
             numbers.add(round(val, 1))
             numbers.add(round(val, 2))
+        elif isinstance(payload, str):
+            # Also extract valid numbers present in the input query/context (e.g. "iPhone 16", "3 months")
+            for token in re.findall(r"\b(\d+(?:\.\d+)?)\b", payload):
+                try:
+                    v = float(token)
+                    numbers.add(round(v, 0))
+                    numbers.add(round(v, 1))
+                    numbers.add(round(v, 2))
+                except ValueError:
+                    pass
         return numbers
 
     @staticmethod
@@ -97,20 +110,29 @@ class CopilotExplainer:
         intent: str,
         verified_math: Dict[str, Any],
         user_query: Optional[str] = None,
+        user_mode: Optional[str] = None,
+        user_consented: bool = False,
     ) -> Dict[str, Any]:
         """
         Generates a verified, audit-passed explanation from the pre-computed mathematical facts.
+        Respects user-consented settings: Local SLM (default) or Cloud OHTTP (with explicit consent).
         If audit fails or API is unavailable, fires the deterministic circuit breaker.
         """
         explanation_text = ""
+        effective_mode = user_mode or settings.LLM_PROVIDER
+
+        # Cloud OHTTP Mode requires explicit user consent in Settings
+        if effective_mode == "cloud_ohttp" and not user_consented:
+            logger.warning("[CopilotExplainer] Cloud mode requested without user consent; falling back to On-Device SLM.")
+            effective_mode = "local_slm"
 
         if intent == "decision_flip":
             seq_a = verified_math.get("sequence_a", {})
             seq_b = verified_math.get("sequence_b", {})
             r_min = verified_math.get("declared_reserve_min", 25000.0)
 
-            # Attempt on-device SLM inference if configured
-            if self.local_slm_provider.is_configured and settings.LLM_PROVIDER in ["local_slm", "hybrid"]:
+            # Attempt on-device SLM inference if in local_slm or hybrid mode
+            if self.local_slm_provider.is_configured and effective_mode in ["local_slm", "hybrid"]:
                 try:
                     explanation_text = self.local_slm_provider.explain_decision_flip(verified_math)
                 except Exception as e:
@@ -137,7 +159,7 @@ class CopilotExplainer:
             status = verified_math.get("status", "REBALANCED")
 
             # Attempt on-device SLM inference if configured
-            if self.local_slm_provider.is_configured and settings.LLM_PROVIDER in ["local_slm", "hybrid"]:
+            if self.local_slm_provider.is_configured and effective_mode in ["local_slm", "hybrid"]:
                 try:
                     explanation_text = self.local_slm_provider.explain_replanning_shock(verified_math)
                 except Exception as e:
@@ -187,10 +209,12 @@ class CopilotExplainer:
         current_balance: float,
         projected_buffer: float,
         item_cost: float,
+        user_mode: Optional[str] = None,
+        user_consented: bool = False,
     ) -> Dict[str, Any]:
         """
-        Grounded affordability explainer integrating Hugging Face open models
-        with deterministic faithfulness regex audit.
+        Grounded affordability explainer integrating On-Device SLM (default)
+        or user-consented Cloud OHTTP inference with deterministic faithfulness regex audit.
         """
         can_afford = projected_buffer >= item_cost
         shortfall = max(0.0, item_cost - projected_buffer)
@@ -206,31 +230,115 @@ class CopilotExplainer:
             "minimum_reserve": settings.MINIMUM_RESERVE_FLOOR,
             "installment_3mo": round(item_cost / 3, 2),
             "installment_months": 3,
+            "question": question,
         }
 
+        effective_mode = user_mode or settings.LLM_PROVIDER
+        if effective_mode == "cloud_ohttp" and not user_consented:
+            logger.warning("[CopilotExplainer] Cloud mode requested without user consent; falling back to On-Device SLM.")
+            effective_mode = "local_slm"
 
-        # Provider dispatch: Local SLM (if selected or configured) -> Groq -> HuggingFace -> Deterministic Fallback
-        if settings.LLM_PROVIDER == "local_slm" or (self.local_slm_provider.is_configured and not self.groq_provider.is_configured):
-            res = await self.local_slm_provider.explain_affordability(
-                question=question,
-                current_balance=current_balance,
-                projected_buffer=projected_buffer,
-                item_cost=item_cost,
-            )
-        elif self.groq_provider.is_configured:
-            res = await self.groq_provider.explain_affordability(
-                question=question,
-                current_balance=current_balance,
-                projected_buffer=projected_buffer,
-                item_cost=item_cost,
-            )
-        elif self.hf_provider.is_configured:
+        # Provider dispatch:
+        # 1. Explicit local_slm
+        if effective_mode == "local_slm":
+            if self.local_slm_provider.is_configured:
+                res = await self.local_slm_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+            else:
+                res = await self.fallback_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+        # 2. Cloud OHTTP with explicit user consent
+        elif effective_mode == "cloud_ohttp" and user_consented:
+            if self.groq_provider.is_configured:
+                res = await self.groq_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+            elif self.hf_provider.is_configured:
+                res = await self.hf_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+            else:
+                res = await self.fallback_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+        # 3. Explicit Groq (with HF fallback if Groq is unconfigured)
+        elif effective_mode == "groq":
+            if self.groq_provider.is_configured:
+                res = await self.groq_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+            elif self.hf_provider.is_configured:
+                res = await self.hf_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+            else:
+                res = await self.fallback_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+        # 4. Explicit Hugging Face
+        elif effective_mode == "huggingface" and self.hf_provider.is_configured:
             res = await self.hf_provider.explain_affordability(
                 question=question,
                 current_balance=current_balance,
                 projected_buffer=projected_buffer,
                 item_cost=item_cost,
             )
+        # 5. Hybrid mode: on-device SLM if configured; else cloud providers (Groq/HF) if configured; else fallback
+        elif effective_mode == "hybrid":
+            if self.local_slm_provider.is_configured:
+                res = await self.local_slm_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+            elif self.groq_provider.is_configured:
+                res = await self.groq_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+            elif self.hf_provider.is_configured:
+                res = await self.hf_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
+            else:
+                res = await self.fallback_provider.explain_affordability(
+                    question=question,
+                    current_balance=current_balance,
+                    projected_buffer=projected_buffer,
+                    item_cost=item_cost,
+                )
         else:
             res = await self.fallback_provider.explain_affordability(
                 question=question,

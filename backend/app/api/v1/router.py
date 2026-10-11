@@ -9,6 +9,7 @@ from app.api.v1.routes import (
     uploads,
     simulator,
     planning,
+    ohttp,
 )
 
 api_router = APIRouter()
@@ -22,3 +23,4 @@ api_router.include_router(recommendations.router)
 api_router.include_router(uploads.router)
 api_router.include_router(simulator.router)
 api_router.include_router(planning.router)
+api_router.include_router(ohttp.router)

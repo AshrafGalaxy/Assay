@@ -1,0 +1,7 @@
+name = "assay-ohttp-relay"
+main = "ohttp-relay-worker.js"
+compatibility_date = "2024-09-23"
+
+# Environment variables
+[vars]
+GATEWAY_URL = "https://api.assay.finance/api/v1/ohttp/gateway"
