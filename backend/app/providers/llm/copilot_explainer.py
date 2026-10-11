@@ -15,6 +15,7 @@ from app.core.config import settings
 from app.providers.llm.base import LLMProvider
 from app.providers.llm.hf_provider import HuggingFaceLLMProvider
 from app.providers.llm.groq_provider import GroqLLMProvider
+from app.providers.llm.local_slm_provider import LocalSLMProvider
 
 
 logger = logging.getLogger(__name__)
@@ -29,10 +30,12 @@ class CopilotExplainer:
         fallback_provider: Optional[LLMProvider] = None,
         hf_provider: Optional[HuggingFaceLLMProvider] = None,
         groq_provider: Optional[GroqLLMProvider] = None,
+        local_slm_provider: Optional[LocalSLMProvider] = None,
     ):
         self.fallback_provider = fallback_provider or LLMProvider()
         self.hf_provider = hf_provider or HuggingFaceLLMProvider()
         self.groq_provider = groq_provider or GroqLLMProvider()
+        self.local_slm_provider = local_slm_provider or LocalSLMProvider()
 
 
     @staticmethod
@@ -106,17 +109,26 @@ class CopilotExplainer:
             seq_b = verified_math.get("sequence_b", {})
             r_min = verified_math.get("declared_reserve_min", 25000.0)
 
-            # High-fidelity grounded template
-            explanation_text = (
-                f"Under deterministic median conditions, {seq_a.get('name', 'Sequence A')} projects an ending "
-                f"balance of ₹{seq_a.get('ending_balance_expected', 0):,.2f}. However, accounting for cash flow "
-                f"uncertainty, Sequence A carries an unacceptable {seq_a.get('shortfall_risk_pct', 0)}% risk "
-                f"of breaching your ₹{r_min:,.0f} minimum reserve threshold. "
-                f"By contrast, {seq_b.get('name', 'Sequence B')} implements a ₹{seq_b.get('discretionary_budget_monthly', 0):,.2f}/mo "
-                f"discretionary budget, collapsing your shortfall risk to {seq_b.get('shortfall_risk_pct', 0)}% "
-                f"while securing ₹{seq_b.get('ending_balance_expected', 0):,.2f} in final reserves. "
-                f"Sequence B is mathematically safer."
-            )
+            # Attempt on-device SLM inference if configured
+            if self.local_slm_provider.is_configured and settings.LLM_PROVIDER in ["local_slm", "hybrid"]:
+                try:
+                    explanation_text = self.local_slm_provider.explain_decision_flip(verified_math)
+                except Exception as e:
+                    logger.warning(f"[CopilotExplainer] Local SLM generation failed ({e}), using grounded template.")
+                    explanation_text = ""
+
+            if not explanation_text:
+                # High-fidelity grounded template
+                explanation_text = (
+                    f"Under deterministic median conditions, {seq_a.get('name', 'Sequence A')} projects an ending "
+                    f"balance of ₹{seq_a.get('ending_balance_expected', 0):,.2f}. However, accounting for cash flow "
+                    f"uncertainty, Sequence A carries an unacceptable {seq_a.get('shortfall_risk_pct', 0)}% risk "
+                    f"of breaching your ₹{r_min:,.0f} minimum reserve threshold. "
+                    f"By contrast, {seq_b.get('name', 'Sequence B')} implements a ₹{seq_b.get('discretionary_budget_monthly', 0):,.2f}/mo "
+                    f"discretionary budget, collapsing your shortfall risk to {seq_b.get('shortfall_risk_pct', 0)}% "
+                    f"while securing ₹{seq_b.get('ending_balance_expected', 0):,.2f} in final reserves. "
+                    f"Sequence B is mathematically safer."
+                )
 
         elif intent == "replan_shock":
             shock = verified_math.get("shock_applied", "Financial shock")
@@ -124,10 +136,19 @@ class CopilotExplainer:
             ending_bal = verified_math.get("ending_cash_balance", 0.0)
             status = verified_math.get("status", "REBALANCED")
 
-            explanation_text = (
-                f"Evaluating shock: {shock}. {conflicts}. "
-                f"Plan status is {status} with a rebalanced ending cash reserve of ₹{ending_bal:,.2f}."
-            )
+            # Attempt on-device SLM inference if configured
+            if self.local_slm_provider.is_configured and settings.LLM_PROVIDER in ["local_slm", "hybrid"]:
+                try:
+                    explanation_text = self.local_slm_provider.explain_replanning_shock(verified_math)
+                except Exception as e:
+                    logger.warning(f"[CopilotExplainer] Local SLM generation failed ({e}), using grounded template.")
+                    explanation_text = ""
+
+            if not explanation_text:
+                explanation_text = (
+                    f"Evaluating shock: {shock}. {conflicts}. "
+                    f"Plan status is {status} with a rebalanced ending cash reserve of ₹{ending_bal:,.2f}."
+                )
 
         else:
             # General fallback to existing provider
@@ -188,8 +209,15 @@ class CopilotExplainer:
         }
 
 
-        # Call Groq provider if configured, else HF, else fallback
-        if self.groq_provider.is_configured:
+        # Provider dispatch: Local SLM (if selected or configured) -> Groq -> HuggingFace -> Deterministic Fallback
+        if settings.LLM_PROVIDER == "local_slm" or (self.local_slm_provider.is_configured and not self.groq_provider.is_configured):
+            res = await self.local_slm_provider.explain_affordability(
+                question=question,
+                current_balance=current_balance,
+                projected_buffer=projected_buffer,
+                item_cost=item_cost,
+            )
+        elif self.groq_provider.is_configured:
             res = await self.groq_provider.explain_affordability(
                 question=question,
                 current_balance=current_balance,

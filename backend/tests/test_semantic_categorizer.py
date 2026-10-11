@@ -1,4 +1,7 @@
 import pytest
+
+pytest.importorskip("transformers", reason="transformers is required for local semantic embedding classification")
+
 from app.services.categorization.semantic_classifier import semantic_categorizer
 from app.services.categorization.categorizer import categorizer
 

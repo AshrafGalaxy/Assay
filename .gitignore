@@ -89,6 +89,14 @@ supabase/.temp/
 # IDE & local db
 .vscode/
 /assay.db
+backend/assay.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Large Model Binaries (distributed via HF / Local)
+backend/models/*.gguf
+*.gguf
 
 # Local Dev Runner Scripts (Never Committed)
 run_dev.js

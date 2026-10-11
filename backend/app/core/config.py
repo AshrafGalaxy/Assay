@@ -21,12 +21,15 @@ class Settings(BaseSettings):
     MANAGE_SCHEMA: bool | None = None
 
     # Providers
-    LLM_PROVIDER: str = "groq"  # "groq" | "huggingface" | "mock" | "openai" | "gemini"
+    LLM_PROVIDER: str = "groq"  # "groq" | "huggingface" | "local_slm" | "mock" | "openai" | "gemini"
     GROQ_API_KEY: str = ""
     GROQ_MODEL_ID: str = "qwen/qwen3.8-27b"
 
     HF_TOKEN: str = ""
     HF_MODEL_ID: str = "meta-llama/Llama-3.1-8B-Instruct"
+
+    # Local Quantized 485 MB SLM (GGUF Q4_K_M)
+    LOCAL_SLM_MODEL_PATH: str = "backend/models/assay-copilot-qwen0.5b-q4_k_m.gguf"
     AA_PROVIDER: str = "mock"
 
 
