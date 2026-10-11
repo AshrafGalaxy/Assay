@@ -297,6 +297,19 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 - OpenAPI: `http://localhost:8000/api/v1/docs`  
 - Tests: `pytest`
 
+### On-Device SLM (Small Language Model) Setup
+Assay uses a fine-tuned, 4-bit quantized 379 MB SLM (`Qwen2.5-0.5B-Instruct` GGUF). Because GitHub restricts files larger than 100 MB, the `.gguf` binary is distributed via Hugging Face.
+
+To download the model locally into your backend:
+```bash
+python backend/download_model.py
+```
+Or download directly:
+- **Hugging Face Model Repo**: [Ashraf01k/assay-copilot-qwen0.5b-q4_k_m](https://huggingface.co/Ashraf01k/assay-copilot-qwen0.5b-q4_k_m)
+- **Direct File Download**: [assay-copilot-qwen0.5b-q4_k_m.gguf (379 MB)](https://huggingface.co/Ashraf01k/assay-copilot-qwen0.5b-q4_k_m/resolve/main/assay-copilot-qwen0.5b-q4_k_m.gguf) → place in `backend/models/assay-copilot-qwen0.5b-q4_k_m.gguf`
+
+> **Note for Expo / Mobile**: The mobile app (Expo) talks to the backend over HTTP (`/api/v1/copilot/explain`). Friends running Expo on their phone do NOT need to install or run the 400 MB C++ model directly inside Expo Go; the backend handles the SLM inference. Even if the SLM binary is not downloaded, the backend automatically falls back to Groq Cloud API or grounded deterministic reasoning with zero downtime.
+
 ---
 
 ## Development principles
