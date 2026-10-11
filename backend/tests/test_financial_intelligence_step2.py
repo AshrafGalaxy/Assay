@@ -1,5 +1,7 @@
 """Tests for Assay Financial Intelligence Step 2: Forecast Engine & Functional Features."""
 
+from datetime import date
+
 from fastapi.testclient import TestClient
 from app.main import app
 from app.core.database import SessionLocal
@@ -114,18 +116,19 @@ def test_scenario_analysis_api():
 
 def test_affordability_check_calculation():
     """Verify forward-looking affordability assessment."""
-    # Scenario A: Large purchase causing shortfall before payday
+    # A purchase larger than the cash balance has to fail. ₹50,000 does not,
+    # because the balance is the ledger total, not a small demo balance.
     res = client.post(
         "/api/v1/analytics/affordability",
         json={
-            "purchase_amount": 50000.0,
+            "purchase_amount": 10000000.0,
             "purchase_date": "2026-10-25",
             "expense_type": "onetime",
         },
     )
     assert res.status_code == 200
     body = res.json()
-    assert body["purchase_amount"] == 50000.0
+    assert body["purchase_amount"] == 10000000.0
     assert body["verdict"] in {"shortfall", "caution"}
     assert len(body["alternatives"]) >= 2
 
@@ -151,6 +154,8 @@ def test_upcoming_obligations_projection_api():
     assert data6["horizon_months"] == 6
     assert data6["count"] > 0
     assert data6["total_commitments"] > 0
+    today = date.today().isoformat()
+    assert all(item["due_date_iso"] >= today for item in data6["obligations"])
 
     res12 = client.get("/api/v1/analytics/obligations?horizon_months=12")
     assert res12.status_code == 200

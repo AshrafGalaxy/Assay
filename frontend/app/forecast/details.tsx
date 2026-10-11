@@ -70,8 +70,8 @@ export default function ForecastDetailsScreen() {
 
           {/* 4. Forecast Settings */}
           <FeatureCard
-            title="Forecast Settings"
-            description="Adjust inputs and preferences"
+            title="Update My Plan"
+            description="Change income, spending, and your Safety Buffer"
             icon={<Settings size={20} color={COLORS.gold} />}
             onPress={() => router.push('/forecast/settings')}
           />

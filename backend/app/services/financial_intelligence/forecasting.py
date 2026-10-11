@@ -164,7 +164,8 @@ class RunRateForecastProvider(ForecastProvider):
         savings = run_rate["savings"]
         monthly_out = essential + discretionary + emi + savings
         daily_net = _money((income - monthly_out) / 30.0)
-        volatility = float(profile.get("income_volatility") or 0.05)
+        from app.services.financial_intelligence.engine import _income_volatility
+        volatility = _income_volatility(profile, transactions)
 
         points: list[dict[str, Any]] = []
         balance = float(opening_balance)
@@ -261,7 +262,48 @@ class MlForecastProvider(ForecastProvider):
                 sign = 1.0 if tx.get("type") == "credit" else -1.0
                 monthly_totals[m_key] = monthly_totals.get(m_key, 0.0) + sign * amt
 
-            history = list(monthly_totals.values()) if len(monthly_totals) >= 4 else [12000.0, 14500.0, 11000.0, 13200.0]
+            # Not enough history to fit the conformal model: report a flat projection
+            # from the observed net instead of inventing a baseline series.
+            if len(monthly_totals) < 4:
+                observed = list(monthly_totals.values())
+                daily_drift = (sum(observed) / len(observed) / 30.0) if observed else 0.0
+                points = []
+                current_bal = float(opening_balance)
+                min_bal = current_bal
+                trough_day = 1
+                for day_idx in range(horizon_days):
+                    curr_date = start_date + timedelta(days=day_idx)
+                    current_bal += daily_drift
+                    if current_bal < min_bal:
+                        min_bal = current_bal
+                        trough_day = day_idx + 1
+                    points.append({
+                        "day": day_idx + 1,
+                        "date": curr_date.isoformat(),
+                        "label": f"{curr_date.day} {curr_date.strftime('%b')}",
+                        "balance": round(current_bal, 2),
+                        "balance_low": round(current_bal, 2),
+                        "balance_high": round(current_bal, 2),
+                        "is_forecast": True,
+                    })
+                return {
+                    "horizon_days": horizon_days,
+                    "opening_balance": round(float(opening_balance), 2),
+                    "closing_balance": points[-1]["balance"] if points else round(float(opening_balance), 2),
+                    "minimum_balance": round(min_bal, 2),
+                    "minimum_balance_day": trough_day,
+                    "minimum_reserve": round(float(minimum_reserve), 2),
+                    "reserve_breached": any(p["balance"] < minimum_reserve for p in points),
+                    "points": points,
+                    "source": "observed_run_rate",
+                    "model_id": f"{self.model_id}:insufficient_history",
+                    "limitations": [
+                        "Fewer than 4 months of history, so no conformal interval was fitted; "
+                        "the path is a flat projection of the observed average monthly net.",
+                    ],
+                }
+
+            history = list(monthly_totals.values())
             
             engine = ConformalQuantileEngine(target_coverage=self.target_coverage, lag_order=3)
             engine.fit(history)
@@ -279,7 +321,7 @@ class MlForecastProvider(ForecastProvider):
             p90 = forecast.get("P90", [0.0])[0]
 
             daily_p50_drift = p50 / 30.0
-            daily_margin = max(100.0, (p90 - p10) / 60.0)
+            daily_margin = (p90 - p10) / 60.0
 
             points = []
             current_bal = float(opening_balance)

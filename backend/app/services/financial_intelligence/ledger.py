@@ -111,12 +111,13 @@ def _resolve_default_user_id(data_dir_str: str, mtime: float, configured_user: s
 
 
 def _empty_profile(user_id: str = "local") -> dict[str, Any]:
+    """Clean-slate profile: no declared figures; callers derive from transactions."""
     return {
         "user_id": user_id,
         "base_monthly_income": 0.0,
-        "income_volatility": 0.05,
+        "income_volatility": 0.0,
         "starting_balance": 0.0,
-        "minimum_reserve": 10000.0,
+        "minimum_reserve": 0.0,
         "monthly_emi": 0.0,
         "savings_target": 0.0,
         "scenario_type": None,

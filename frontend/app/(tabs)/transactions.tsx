@@ -45,7 +45,10 @@ function groupTransactionsByDate(txList: Transaction[]): DateGroup[] {
       dateLabel = 'Yesterday';
       timeLabel = tx.transaction_date.replace('Yesterday,', '').trim();
     } else if (tx.transaction_date.includes('-')) {
-      const d = new Date(tx.transaction_date);
+      const normalized = tx.transaction_date.includes('T')
+        ? tx.transaction_date
+        : tx.transaction_date.replace(' ', 'T');
+      const d = new Date(normalized);
       if (!isNaN(d.getTime())) {
         const today = new Date();
         if (d.toDateString() === today.toDateString()) {
@@ -184,6 +187,7 @@ export default function TransactionsScreen() {
       </View>
 
       <ScrollView
+        style={styles.list}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -327,6 +331,9 @@ const styles = StyleSheet.create({
   },
   filterTextInactive: {
     color: COLORS.text,
+  },
+  list: {
+    flex: 1,
   },
   scrollContent: {
     paddingHorizontal: 20,

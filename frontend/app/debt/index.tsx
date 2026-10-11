@@ -41,67 +41,8 @@ interface DebtBreakdownData {
     payoff_amount: number;
     annual_interest_saved: number;
     recommendation_text: string;
-  };
+  } | null;
 }
-
-const DEFAULT_DEBT_DATA: DebtBreakdownData = {
-  total_outstanding_debt: 482450,
-  dti_ratio: 28,
-  dti_status: 'Healthy',
-  total_monthly_emis: 26900,
-  avg_blended_apr: 11.4,
-  loans: [
-    {
-      id: 'debt_icici_cc',
-      name: 'ICICI Sapphiro Credit Card',
-      bank: 'icici',
-      balance: 24450,
-      detail: '42% Limit Used',
-      schedule: 'Due 24 Sep • Min: ₹1,200',
-      monthly_emi: 1200,
-      apr: '38.4% APR (High)',
-      apr_rate: 38.4,
-      is_high_apr: true,
-      progress: 0.42,
-      progress_label: '42% used',
-    },
-    {
-      id: 'debt_axis_car',
-      name: 'Axis Car Loan (Fixed)',
-      bank: 'axis',
-      balance: 218000,
-      detail: '',
-      schedule: '26 of 60 EMIs Paid • ₹8,400/mo',
-      monthly_emi: 8400,
-      apr: '8.75% APR',
-      apr_rate: 8.75,
-      is_high_apr: false,
-      progress: 0.43,
-      progress_label: '43% repaid',
-    },
-    {
-      id: 'debt_hdfc_edu',
-      name: 'HDFC Education Loan',
-      bank: 'hdfc',
-      balance: 240000,
-      detail: '',
-      schedule: '18 of 48 EMIs Paid • ₹17,300/mo',
-      monthly_emi: 17300,
-      apr: '9.20% APR',
-      apr_rate: 9.20,
-      is_high_apr: false,
-      progress: 0.38,
-      progress_label: '38% repaid',
-    },
-  ],
-  avalanche_recommendation: {
-    target_debt_id: 'debt_icici_cc',
-    target_name: 'ICICI Sapphiro Credit Card',
-    payoff_amount: 24450,
-    annual_interest_saved: 8920,
-    recommendation_text: 'Pay off ₹24,450 on ICICI Card first to eliminate 38.4% APR compounding interest. Saves ₹8,920 in annual finance charges.',
-  },
-};
 
 interface LoanItemProps {
   name: string;
@@ -179,20 +120,20 @@ function LoanItem({
 
 export default function DebtAndLiabilitiesScreen() {
   const router = useRouter();
-  const [data, setData] = useState<DebtBreakdownData>(DEFAULT_DEBT_DATA);
-  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<DebtBreakdownData | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchDebtBreakdown = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
+    else setLoading(true);
     try {
       const res = await api.get(endpoints.planning.debtBreakdown);
-      if (res.data) {
-        setData(res.data);
-      }
+      setData(res.data ?? null);
     } catch (err) {
-      // Graceful fallback to verified profile state
+      setData(null);
     } finally {
+      setLoading(false);
       if (isRefresh) setRefreshing(false);
     }
   }, []);
@@ -200,6 +141,29 @@ export default function DebtAndLiabilitiesScreen() {
   useEffect(() => {
     fetchDebtBreakdown();
   }, [fetchDebtBreakdown]);
+
+  if (loading || !data) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.topHeader}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()} activeOpacity={0.7}>
+            <ChevronLeft color={COLORS.text} size={24} />
+          </TouchableOpacity>
+          <Typography variant="h2" style={styles.screenTitle}>Debt & Liabilities</Typography>
+          <View style={{ width: 32 }} />
+        </View>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          {loading ? (
+            <ActivityIndicator color={COLORS.primary} />
+          ) : (
+            <Typography variant="secondary" color={COLORS.textSecondary} style={{ textAlign: 'center' }}>
+              No debt data yet. Debt is derived from recurring loan and EMI payments in your transactions.
+            </Typography>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -241,7 +205,7 @@ export default function DebtAndLiabilitiesScreen() {
         <View style={styles.heroCard}>
           <View style={styles.heroTopRow}>
             <Typography variant="caption" style={styles.heroLabel}>
-              Total Outstanding Debt
+              Total Repaid (from transactions)
             </Typography>
             <View style={styles.dtiBadge}>
               <Sprout color="#4ADE80" size={14} style={{ marginRight: 4 }} />
@@ -274,7 +238,7 @@ export default function DebtAndLiabilitiesScreen() {
                 Avg. Blended APR
               </Typography>
               <Typography variant="h3" style={styles.heroStatValue}>
-                {data.avg_blended_apr.toFixed(1)}%
+                {data.avg_blended_apr > 0 ? `${data.avg_blended_apr.toFixed(1)}%` : 'n/a'}
               </Typography>
             </View>
           </View>

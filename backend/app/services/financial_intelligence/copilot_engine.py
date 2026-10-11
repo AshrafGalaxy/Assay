@@ -1,7 +1,7 @@
 import json
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy.orm import Session
@@ -54,18 +54,26 @@ def execute_audited_copilot_query(
     unified = get_unified_financial_data(db, user_id=user_id)
     settings = get_user_forecast_settings(db, user_id=user_id)
 
-    current_balance = float(unified.get("available_balance", 42850.0))
-    min_reserve = float(settings.get("minimum_reserve", 15000.0) if isinstance(settings, dict) else getattr(settings, "minimum_reserve", 15000.0))
+    current_balance = float(unified.get("available_balance") or 0.0)
+    min_reserve = float((settings.get("minimum_reserve") if isinstance(settings, dict) else getattr(settings, "minimum_reserve", 0.0)) or 0.0)
     last_synced = unified.get("last_synced_at") or datetime.now(timezone.utc).isoformat()
     raw_txns = unified.get("transactions", [])
 
     # 2. Compute 1-month and 6-month forecast
+    include = {
+        "include_income": bool(settings.get("include_income", True)) if isinstance(settings, dict) else True,
+        "include_essential": bool(settings.get("include_essential", True)) if isinstance(settings, dict) else True,
+        "include_discretionary": bool(settings.get("include_discretionary", True)) if isinstance(settings, dict) else True,
+        "include_debt": bool(settings.get("include_debt", True)) if isinstance(settings, dict) else True,
+        "include_obligations": bool(settings.get("include_obligations", True)) if isinstance(settings, dict) else True,
+    }
     forecast_1m = build_cash_flow_forecast(
         raw_txns,
         profile=profile,
         horizon_months=1,
         opening_balance=current_balance,
         minimum_reserve=min_reserve,
+        **include,
     )
     forecast_6m = build_cash_flow_forecast(
         raw_txns,
@@ -73,16 +81,30 @@ def execute_audited_copilot_query(
         horizon_months=6,
         opening_balance=current_balance,
         minimum_reserve=min_reserve,
+        **include,
     )
 
     # 3. Compute upcoming obligations
     obligations_data = get_upcoming_obligations_projection(raw_txns, horizon_months=6)
     upcoming_list = obligations_data.get("obligations", [])
-    near_term_obligations = [ob for ob in upcoming_list if "Apr" in ob["due_date"] or ob.get("due_date_iso", "") <= "2025-05-01"]
-    near_term_total = sum(ob["amount"] for ob in near_term_obligations) if near_term_obligations else 28900.0
+    today_iso = date.today().isoformat()
+    soon_iso = (date.today() + timedelta(days=31)).isoformat()
+    near_term_obligations = [
+        ob for ob in upcoming_list
+        if today_iso <= str(ob.get("due_date_iso", ""))[:10] <= soon_iso
+    ]
+    if not near_term_obligations and upcoming_list:
+        first_month = str(upcoming_list[0].get("due_date_iso", ""))[:7]
+        near_term_obligations = [
+            ob for ob in upcoming_list if str(ob.get("due_date_iso", "")).startswith(first_month)
+        ]
+    near_term_total = sum(ob["amount"] for ob in near_term_obligations)
+    near_term_detail = ", ".join(
+        f"{ob['name']} ({_format_inr(ob['amount'])})" for ob in near_term_obligations[:3]
+    ) or "No upcoming bills in the transaction history"
 
     # Baseline monthly discretionary pace
-    disc_baseline = forecast_1m.get("monthly_discretionary", 15200.0)
+    disc_baseline = float(forecast_1m.get("monthly_discretionary") or 0.0)
     weekly_disc_pace = round(disc_baseline / 4.0)
 
     # 4. Classify intent
@@ -100,17 +122,19 @@ def execute_audited_copilot_query(
         intent = "obligations"
     elif any(k in q_lower for k in ["trend", "burn", "cash flow", "trajectory"]):
         intent = "cash_flow_change"
+    if intent == "affordability" and not (extracted_cost and extracted_cost > 0):
+        intent = "general_inquiry"
 
     insight_id = f"ins_{uuid.uuid4().hex[:10]}"
     audit_id = str(uuid.uuid4())
 
     # 5. Build Grounded Answer Structure
     if intent == "affordability":
-        item_cost = extracted_cost if extracted_cost and extracted_cost > 0 else 15000.0
+        item_cost = extracted_cost if extracted_cost and extracted_cost > 0 else 0.0
         afford_res = calculate_affordability(
             raw_txns,
             purchase_amount=item_cost,
-            purchase_date="2025-04-15",
+            purchase_date=date.today().isoformat(),
             expense_type="onetime",
             opening_balance=current_balance,
             minimum_reserve=min_reserve,
@@ -126,15 +150,15 @@ def execute_audited_copilot_query(
         if can_afford:
             answer = (
                 f"Yes, you can afford this purchase of {_format_inr(item_cost)}. "
-                f"Your projected checking balance will remain safe at {_format_inr(post_bal)}, "
-                f"leaving {_format_inr(headroom)} above your safety buffer of {_format_inr(min_reserve)}."
+                f"Expected Cash stays at {_format_inr(post_bal)}, "
+                f"with Money Above Buffer of {_format_inr(headroom)} over your Safety Buffer of {_format_inr(min_reserve)}."
             )
         else:
             deficit = abs(headroom)
             answer = (
                 f"Making this {_format_inr(item_cost)} purchase right now will create cash-flow pressure, "
                 f"reducing your liquidity trough to {_format_inr(trough)}. This is {_format_inr(deficit)} below "
-                f"your safety buffer of {_format_inr(min_reserve)}. We recommend deferring or selecting an installment plan."
+                f"your Safety Buffer of {_format_inr(min_reserve)}. We recommend deferring or selecting an installment plan."
             )
 
         what_we_know = [
@@ -151,7 +175,7 @@ def execute_audited_copilot_query(
                 "source": "Bank Ledger",
             },
             {
-                "label": "Configured Safety Buffer",
+                "label": "Safety Buffer",
                 "value": _format_inr(min_reserve),
                 "detail": "User-defined reserve threshold",
                 "source": "Forecast Settings",
@@ -170,7 +194,7 @@ def execute_audited_copilot_query(
                 else "Test 3-Month No-Cost EMI or delay purchase until after payday"
             ),
             "impact": (
-                f"Maintains {_format_inr(headroom)} buffer headroom"
+                f"Keeps Money Above Buffer at {_format_inr(headroom)}"
                 if can_afford
                 else f"Avoids cash deficit of {_format_inr(deficit)} before payday"
             ),
@@ -200,14 +224,18 @@ def execute_audited_copilot_query(
         }
 
     elif intent == "reserve_shortfall":
-        lowest_bal = forecast_1m.get("minimum_balance", 2400.0)
-        trough_date = "25 Apr 2025"
+        lowest_bal = float(forecast_1m.get("minimum_balance") or 0.0)
+        trough_period = min(
+            forecast_1m.get("periods") or [{"closing_balance": lowest_bal, "period_label": "the next month"}],
+            key=lambda p: p.get("closing_balance", lowest_bal),
+        )
+        trough_date = trough_period.get("period_label", "the next month")
         shortfall = max(0.0, min_reserve - lowest_bal)
 
-        headline = "Projected Liquidity Trough Before Payday"
+        headline = "Risk of Running Short"
         answer = (
             f"After scheduled loan EMIs and rent auto-debits process, your available checking cash is projected "
-            f"to reach {_format_inr(lowest_bal)}. This dips {_format_inr(shortfall)} below your configured safety buffer of {_format_inr(min_reserve)}."
+            f"to reach Expected Cash of {_format_inr(lowest_bal)}. That is {_format_inr(shortfall)} below your Safety Buffer of {_format_inr(min_reserve)}."
         )
 
         what_we_know = [
@@ -220,31 +248,31 @@ def execute_audited_copilot_query(
             {
                 "label": "Mandatory Contractual Bills",
                 "value": _format_inr(near_term_total),
-                "detail": "Rent (₹18,000), Car EMI (₹6,000), Credit Card (₹2,000)",
+                "detail": near_term_detail,
                 "source": "Contractual Obligations",
             },
             {
                 "label": "Discretionary Spending Pace",
                 "value": f"{_format_inr(weekly_disc_pace)}/wk",
-                "detail": "Pacing approximately 18% above median baseline",
+                "detail": "Average discretionary spending from your transactions",
                 "source": "Transaction Categorization",
             },
         ]
 
         what_may_happen = (
             f"Checking balance trough occurs around {trough_date} before payday. "
-            f"If discretionary spending continues at current rate, headroom will turn negative by {_format_inr(shortfall)}."
+            f"If spending continues at the current rate, Money Above Buffer turns negative by {_format_inr(shortfall)}."
         )
 
         what_you_can_do = {
             "action": f"Cap discretionary spending to {_format_inr(weekly_disc_pace * 0.7)} this week",
-            "impact": f"Preserves {_format_inr(shortfall + 2000)} liquidity cushion and protects your safety buffer",
+            "impact": f"Protects your Safety Buffer and restores Money Above Buffer",
             "action_url": "/simulator",
-            "action_label": "Simulate in What-If Simulator",
+            "action_label": "Update My Plan",
         }
 
         assumptions = [
-            "Assumes monthly salary credit deposits on 28th",
+            "Income timing follows the credits already in your transactions",
             "Rent and loan EMIs auto-debit on scheduled contractual due dates",
         ]
         limitations = [
@@ -321,7 +349,7 @@ def execute_audited_copilot_query(
         headline = "Savings Optimization Opportunity"
         answer = (
             f"Reducing discretionary expenses by 20% would liberate approximately {_format_inr(disc_baseline * 0.20)}/month "
-            f"({_format_inr(annual_potential)}/year) into your reserve buffer without impacting essential obligations."
+            f"({_format_inr(annual_potential)}/year) toward your Safety Buffer, without changing the rest of Monthly Spending & Bills."
         )
 
         what_we_know = [
@@ -333,22 +361,22 @@ def execute_audited_copilot_query(
             },
             {
                 "label": "Essential Outflows",
-                "value": f"{_format_inr(forecast_1m.get('monthly_essential', 27000.0))}/mo",
+                "value": f"{_format_inr(forecast_1m.get('monthly_essential') or 0.0)}/mo",
                 "detail": "Rent, utilities, groceries, and insurance",
                 "source": "Core Ledger",
             },
         ]
 
         what_may_happen = (
-            f"Boosting monthly savings by {_format_inr(disc_baseline * 0.20)} increases your safety buffer headroom "
+            f"Boosting monthly savings by {_format_inr(disc_baseline * 0.20)} increases Money Above Buffer "
             f"from {_format_inr(max(0.0, current_balance - min_reserve))} to {_format_inr(current_balance - min_reserve + (disc_baseline * 0.20))} in 30 days."
         )
 
         what_you_can_do = {
             "action": "Simulate a 20% discretionary spending reduction plan",
-            "impact": f"Yields {_format_inr(disc_baseline * 0.20)} monthly surplus for emergency savings",
+            "impact": f"Adds {_format_inr(disc_baseline * 0.20)} to Money Left Each Month",
             "action_url": "/simulator",
-            "action_label": "Test in What-If Simulator",
+            "action_label": "Update My Plan",
         }
 
         assumptions = ["Discretionary spending is flexible and can be trimmed without penalty."]
@@ -365,12 +393,13 @@ def execute_audited_copilot_query(
         }
 
     else:  # general_inquiry / cash_flow_change
-        surplus = forecast_1m.get("projected_income", 45000.0) - forecast_1m.get("projected_expenses", 33000.0)
+        surplus = forecast_1m.get("projected_income", 0.0) - forecast_1m.get("projected_expenses", 0.0)
         headline = "Audited Cash Flow Health Summary"
         answer = (
             f"Your liquid position is {_format_inr(current_balance)} across linked accounts. "
-            f"Over the next month, projected inflows of {_format_inr(forecast_1m.get('projected_income', 45000.0))} "
-            f"against total outflows of {_format_inr(forecast_1m.get('projected_expenses', 33000.0))} yield an expected surplus of {_format_inr(surplus)}."
+            f"Monthly Income of {_format_inr(forecast_1m.get('projected_income', 0.0))} "
+            f"against Monthly Spending & Bills of {_format_inr(forecast_1m.get('projected_expenses', 0.0))} "
+            f"leaves Money Left Each Month of {_format_inr(surplus)}."
         )
 
         what_we_know = [
@@ -381,22 +410,22 @@ def execute_audited_copilot_query(
                 "source": "Bank Accounts",
             },
             {
-                "label": "Monthly Inflows",
-                "value": _format_inr(forecast_1m.get("projected_income", 45000.0)),
+                "label": "Monthly Income",
+                "value": _format_inr(forecast_1m.get("projected_income", 0.0)),
                 "detail": "Expected confirmed salary schedule",
                 "source": "Income Ledger",
             },
             {
-                "label": "Monthly Total Outflows",
-                "value": _format_inr(forecast_1m.get("projected_expenses", 33000.0)),
+                "label": "Monthly Spending & Bills",
+                "value": _format_inr(forecast_1m.get("projected_expenses", 0.0)),
                 "detail": "Essential bills, debt EMIs, and discretionary spend",
                 "source": "Expenditure Ledger",
             },
         ]
 
         what_may_happen = (
-            f"Ending balance in 6 months is projected at {_format_inr(forecast_6m.get('ending_balance', 122000.0))}, "
-            f"consistently above your minimum reserve of {_format_inr(min_reserve)}."
+            f"Expected Cash in 6 months is {_format_inr(forecast_6m.get('ending_balance', 0.0))}, "
+            f"above your Safety Buffer of {_format_inr(min_reserve)}."
         )
 
         what_you_can_do = {
@@ -494,59 +523,71 @@ def get_proactive_audited_insights(db: Session, user_id: Optional[str] = None) -
     unified = get_unified_financial_data(db, user_id=user_id)
     settings = get_user_forecast_settings(db, user_id=user_id)
 
-    current_balance = float(unified.get("available_balance", 42850.0))
-    min_reserve = float(settings.get("minimum_reserve", 15000.0) if isinstance(settings, dict) else getattr(settings, "minimum_reserve", 15000.0))
+    current_balance = float(unified.get("available_balance") or 0.0)
+    min_reserve = float((settings.get("minimum_reserve") if isinstance(settings, dict) else getattr(settings, "minimum_reserve", 0.0)) or 0.0)
     raw_txns = unified.get("transactions", [])
 
+    include = {
+        "include_income": bool(settings.get("include_income", True)) if isinstance(settings, dict) else True,
+        "include_essential": bool(settings.get("include_essential", True)) if isinstance(settings, dict) else True,
+        "include_discretionary": bool(settings.get("include_discretionary", True)) if isinstance(settings, dict) else True,
+        "include_debt": bool(settings.get("include_debt", True)) if isinstance(settings, dict) else True,
+        "include_obligations": bool(settings.get("include_obligations", True)) if isinstance(settings, dict) else True,
+    }
     forecast_1m = build_cash_flow_forecast(
         raw_txns,
         profile=profile,
         horizon_months=1,
         opening_balance=current_balance,
         minimum_reserve=min_reserve,
+        **include,
     )
 
     insights = []
 
     # 1. Trough / Shortfall Insight
-    lowest_bal = forecast_1m.get("minimum_balance", 2400.0)
+    lowest_bal = float(forecast_1m.get("minimum_balance") or 0.0)
     shortfall = max(0.0, min_reserve - lowest_bal)
     if shortfall > 0:
         insights.append({
             "id": f"ins_trough_{uuid.uuid4().hex[:6]}",
             "category": "reserve_shortfall",
             "severity": "high",
-            "title": "Projected Liquidity Trough on 25 Apr",
-            "summary": f"Available checking balance will drop to {_format_inr(lowest_bal)}, dipping {_format_inr(shortfall)} below your safety buffer.",
+            "title": "Risk of Running Short",
+            "summary": f"Expected Cash drops to {_format_inr(lowest_bal)}, {_format_inr(shortfall)} below your Safety Buffer.",
             "evidence": [
                 f"Current Total Bank Balance: {_format_inr(current_balance)}",
-                f"Upcoming contractual bills: ₹28,900",
+                f"Upcoming contractual bills: {_format_inr(float(forecast_1m.get('monthly_essential') or 0.0) + float(forecast_1m.get('monthly_debt') or 0.0))}",
                 f"Configured Safety Buffer: {_format_inr(min_reserve)}",
             ],
-            "recommendation": "Cap discretionary dining to ₹2,000 this week to maintain safety headroom.",
+            "recommendation": "Trim spending this week so Expected Cash stays above your Safety Buffer.",
             "action_url": "/simulator",
-            "action_label": "Simulate in What-If Simulator",
+            "action_label": "Update My Plan",
         })
 
-    # 2. Large upcoming obligation
-    insights.append({
-        "id": f"ins_ob_{uuid.uuid4().hex[:6]}",
-        "category": "large_payment",
-        "severity": "medium",
-        "title": "Upcoming Rent Payment (₹18,000)",
-        "summary": "Scheduled auto-debit on 1st of month accounts for 40% of monthly mandatory expenses.",
-        "evidence": [
-            "Contractual recurring rent auto-debit",
-            f"Available liquid funds: {_format_inr(current_balance)}",
-        ],
-        "recommendation": "Keep funds consolidated in primary checking account 24h prior to debit.",
-        "action_url": "/forecast/obligations",
-        "action_label": "View Upcoming Obligations",
-    })
+    # 2. Largest upcoming obligation actually in the projection
+    upcoming = get_upcoming_obligations_projection(raw_txns, horizon_months=1).get("obligations") or []
+    if upcoming:
+        top = max(upcoming, key=lambda ob: ob.get("amount") or 0.0)
+        insights.append({
+            "id": f"ins_ob_{uuid.uuid4().hex[:6]}",
+            "category": "large_payment",
+            "severity": "medium",
+            "title": f"Upcoming {top['name']} ({_format_inr(top['amount'])})",
+            "summary": f"{top['name']} of {_format_inr(top['amount'])} is due {top['due_date']}.",
+            "evidence": [
+                top.get("recurrence") or "Recurring payment from your transactions",
+                f"Available liquid funds: {_format_inr(current_balance)}",
+            ],
+            "recommendation": "Keep this amount available before the debit date.",
+            "action_url": "/forecast/obligations",
+            "action_label": "View Upcoming Obligations",
+        })
 
     # 3. Discretionary Spending Alert
-    disc_baseline = forecast_1m.get("monthly_discretionary", 15200.0)
-    insights.append({
+    disc_baseline = float(forecast_1m.get("monthly_discretionary") or 0.0)
+    if disc_baseline > 0:
+        insights.append({
         "id": f"ins_disc_{uuid.uuid4().hex[:6]}",
         "category": "savings_opportunity",
         "severity": "low",
@@ -558,7 +599,7 @@ def get_proactive_audited_insights(db: Session, user_id: Optional[str] = None) -
         ],
         "recommendation": "Set a weekly discretionary target to accelerate emergency reserve growth.",
         "action_url": "/simulator",
-        "action_label": "Test in What-If Simulator",
+        "action_label": "Update My Plan",
     })
 
     return insights

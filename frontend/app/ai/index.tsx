@@ -114,8 +114,8 @@ export default function FinancialIntelligenceHub() {
 
           {/* Card 2: What-If Simulator */}
           <FeatureCard
-            title="What-If Simulator"
-            description="Test different scenarios"
+            title="Update My Plan"
+            description="Change income, spending, and your Safety Buffer"
             icon={<Sliders size={22} color="#D6A928" strokeWidth={2.2} />}
             onPress={() => router.push('/simulator')}
           />

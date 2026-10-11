@@ -66,8 +66,12 @@ class ActionPlanner:
                 # Stochastic income draw around median with 6% variance
                 sim_inc = rng.normal(incomes[t], incomes[t] * 0.06)
                 
-                # Stochastic essential outflow with positive skew (Poisson shocks)
-                shock = float(rng.choice([0.0, 15000.0, 30000.0], p=[0.82, 0.12, 0.06]))
+                # Stochastic essential outflow with positive skew. Shock sizes scale with
+                # this period's essential spending (no fixed rupee amounts).
+                shock = float(rng.choice(
+                    [0.0, essential_expenses[t] * 0.3, essential_expenses[t] * 0.6],
+                    p=[0.82, 0.12, 0.06],
+                ))
                 sim_ess = rng.normal(essential_expenses[t], essential_expenses[t] * 0.05) + shock
 
                 net_sim = sim_inc - sim_ess - discretionary_budget - debt_payment
@@ -100,6 +104,9 @@ class ActionPlanner:
         starting_cash: float,
         incomes: List[float],
         essential_expenses: List[float],
+        baseline_discretionary: float,
+        baseline_debt: float,
+        baseline_savings: float,
     ) -> SimulationResponse:
         """
         Generates and compares Sequence A vs Sequence B, demonstrating the Decision-Flip:
@@ -108,44 +115,53 @@ class ActionPlanner:
         - Sequence B (Balanced Discretionary Adjustment):
           ₹5,000 discretionary cut -> drops shortfall risk to 4.2%, preserving the emergency buffer.
         """
-        # Sequence A: Aggressive debt payment (₹8,000/mo extra) with zero discretionary cut (₹16,500/mo)
+        # Sequence A: status quo — observed discretionary spend and debt repayment.
         seq_a = self.simulate_sequence(
             name="Sequence A (Status Quo & Aggressive Debt)",
-            description="Maintains unconstrained discretionary spend (₹16,500/mo) and accelerates debt repayment by ₹8,000/mo.",
+            description=(
+                f"Keeps discretionary spending at the observed ₹{baseline_discretionary:,.0f}/mo "
+                f"and debt repayment at ₹{baseline_debt:,.0f}/mo."
+            ),
             starting_cash=starting_cash,
             incomes=incomes,
             essential_expenses=essential_expenses,
-            discretionary_budget=16500.0,
-            debt_payment=8000.0,
-            savings_monthly=2000.0,
+            discretionary_budget=baseline_discretionary,
+            debt_payment=baseline_debt,
+            savings_monthly=baseline_savings,
             rng_seed=101,
         )
 
-        # Sequence B: Moderate ₹5,000 discretionary reduction (to ₹11,500/mo) with standard debt servicing
+        # Sequence B: cut 30% of discretionary spending and redirect it to savings.
+        discretionary_cut = round(baseline_discretionary * 0.3, 2)
         seq_b = self.simulate_sequence(
             name="Sequence B (Balanced Liquidity Protection)",
-            description="Applies a targeted ₹5,000/mo discretionary reduction (to ₹11,500/mo) and directs surplus into liquidity defense.",
+            description=(
+                f"Cuts discretionary spending by ₹{discretionary_cut:,.0f}/mo (30%) "
+                f"and redirects it into savings."
+            ),
             starting_cash=starting_cash,
             incomes=incomes,
             essential_expenses=essential_expenses,
-            discretionary_budget=11500.0,
-            debt_payment=0.0,
-            savings_monthly=7000.0,
+            discretionary_budget=round(baseline_discretionary - discretionary_cut, 2),
+            debt_payment=baseline_debt,
+            savings_monthly=round(baseline_savings + discretionary_cut, 2),
             rng_seed=202,
         )
 
-        # Decision-Flip logic:
-        # If deterministic ending balance of A >= B or looks promising, but shortfall risk of A >> B
-        decision_flip = (seq_a.shortfall_risk_pct > 20.0) and (seq_b.shortfall_risk_pct <= 10.0)
+        # Decision-Flip: downside risk makes the status quo materially less safe than the
+        # reduced-discretionary plan (a gap of at least 10 percentage points).
+        decision_flip = (
+            seq_a.shortfall_risk_pct > seq_b.shortfall_risk_pct
+            and (seq_a.shortfall_risk_pct - seq_b.shortfall_risk_pct) >= 10.0
+        )
 
         explanation = (
-            f"Under deterministic expectations, Sequence A appears viable with an expected balance of "
-            f"₹{seq_a.ending_balance_expected:,.2f}. However, accounting for income and expense uncertainty, "
-            f"Sequence A incurs an unacceptable {seq_a.shortfall_risk_pct}% probability of breaching your "
-            f"declared ₹{self.declared_reserve_min:,.0f} minimum reserve in Month 3 or 4. "
-            f"Sequence B introduces a disciplined ₹5,000/month discretionary spending adjustment, "
-            f"collapsing shortfall risk to just {seq_b.shortfall_risk_pct}% while securing an ending cash balance "
-            f"of ₹{seq_b.ending_balance_expected:,.2f}. Downside uncertainty therefore flips the rational preference to Sequence B."
+            f"Expected Cash under Sequence A is ₹{seq_a.ending_balance_expected:,.2f}. "
+            f"Accounting for income and spending uncertainty, Sequence A has a {seq_a.shortfall_risk_pct}% "
+            f"Risk of Running Short against your Safety Buffer of ₹{self.declared_reserve_min:,.0f}. "
+            f"Sequence B cuts Monthly Spending & Bills by ₹{discretionary_cut:,.0f} a month, "
+            f"bringing Risk of Running Short to {seq_b.shortfall_risk_pct}% and Expected Cash to "
+            f"₹{seq_b.ending_balance_expected:,.2f}."
         )
 
         return SimulationResponse(

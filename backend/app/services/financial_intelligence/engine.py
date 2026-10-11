@@ -12,6 +12,49 @@ from typing import Any, Iterable
 
 import numpy as np
 
+from app.services.financial_intelligence.ledger_metrics import (
+    derive_minimum_reserve,
+    is_debt_payment,
+    is_savings_transfer,
+    monthly_aggregates,
+)
+
+
+def _derived_reserve(profile: dict[str, Any], transactions: list[dict[str, Any]]) -> float:
+    """Declared reserve from the ledger profile, else one month of observed
+    non-negotiable outflows. Never a constant."""
+    declared = profile.get("minimum_reserve")
+    if declared:
+        return float(declared)
+    return derive_minimum_reserve(transactions)
+
+
+def _income_volatility(profile: dict[str, Any], transactions: list[dict[str, Any]]) -> float:
+    """Coefficient of variation of monthly inflows observed in the ledger."""
+    declared = profile.get("income_volatility")
+    if declared:
+        return float(declared)
+    incomes = [agg.income for agg in monthly_aggregates(transactions) if agg.income > 0]
+    if len(incomes) < 2:
+        return 0.0
+    mean = float(np.mean(incomes))
+    return float(np.std(incomes) / mean) if mean > 0 else 0.0
+
+
+def _observed_worst_shock(transactions: list[dict[str, Any]]) -> float:
+    """Largest single non-recurring, non-discretionary debit ever observed — the
+    empirical 'emergency expense' used for the worst-case scenario."""
+    shocks = [
+        float(tx.get("amount", 0.0))
+        for tx in transactions
+        if tx.get("type") == "debit"
+        and not tx.get("is_recurring")
+        and not tx.get("is_discretionary")
+        and not is_savings_transfer(tx)
+        and not is_debt_payment(tx)
+    ]
+    return _money(max(shocks)) if shocks else 0.0
+
 
 def _money(value: float) -> float:
     return round(float(value), 2)
@@ -254,6 +297,50 @@ def simulate_reduction(transactions: list[dict[str, Any]], *, category: str, mon
     }
 
 
+def _is_internal_transfer(tx: dict[str, Any]) -> bool:
+    if tx.get("is_internal_transfer"):
+        return True
+    category = str(tx.get("category") or "").lower()
+    merchant = str(tx.get("merchant_name") or "").lower()
+    return (
+        category in {"transfer", "self transfer", "internal transfer"}
+        or "self transfer" in merchant
+        or "internal transfer" in merchant
+    )
+
+
+def _trailing_window(transactions: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], int]:
+    """Latest six months that have a transaction on or before today."""
+    today = date.today()
+    dated = [tx for tx in transactions if _date(tx["transaction_date"]) <= today]
+    window_keys = sorted({_month_key(_date(tx["transaction_date"])) for tx in dated})[-6:]
+    window = set(window_keys)
+    window_txs = [tx for tx in dated if _month_key(_date(tx["transaction_date"])) in window]
+    return window_txs, max(1, len(window_keys))
+
+
+def monthly_spending_by_category(transactions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Monthly average spend by category over the same window as the run rate.
+
+    Amounts are per month, so they add up to Monthly Spending & Bills.
+    """
+    window_txs, month_count = _trailing_window(transactions)
+    totals: dict[str, float] = defaultdict(float)
+    for tx in window_txs:
+        if tx.get("type") != "debit" or _is_internal_transfer(tx):
+            continue
+        totals[str(tx.get("category") or "Other")] += float(tx.get("amount") or 0.0)
+    total = sum(totals.values())
+    return [
+        {
+            "name": name,
+            "amount": _money(amount / month_count),
+            "percentage": round((amount / total) * 100, 1) if total else 0,
+        }
+        for name, amount in sorted(totals.items(), key=lambda item: item[1], reverse=True)
+    ]
+
+
 def _baseline_run_rate(transactions: list[dict[str, Any]]) -> dict[str, float]:
     """Derive monthly run-rates from observed ledger history (does not mutate records)."""
     if not transactions:
@@ -261,19 +348,21 @@ def _baseline_run_rate(transactions: list[dict[str, Any]]) -> dict[str, float]:
             "income": 0.0, "essential": 0.0, "discretionary": 0.0,
             "emi": 0.0, "savings": 0.0, "opening": 0.0,
         }
-    cash = build_cash_flow(transactions, months=6)
-    months = cash["monthly_summary"] or []
-    n = max(1, len(months))
-    income = sum(item["inflow"] for item in months) / n
+    window_txs, month_count = _trailing_window(transactions)
+    income = sum(
+        float(tx["amount"])
+        for tx in window_txs
+        if tx.get("type") == "credit" and not _is_internal_transfer(tx)
+    ) / month_count
 
     essential = 0.0
     discretionary = 0.0
     emi = 0.0
     savings = 0.0
-    for tx in transactions:
+    for tx in window_txs:
         if tx["type"] != "debit":
             continue
-        if tx.get("is_internal_transfer") or str(tx.get("category", "")).lower() in {"transfer", "self transfer", "internal transfer"}:
+        if _is_internal_transfer(tx):
             continue
         amount = float(tx["amount"])
         category = str(tx.get("category", ""))
@@ -286,8 +375,6 @@ def _baseline_run_rate(transactions: list[dict[str, Any]]) -> dict[str, float]:
         else:
             essential += amount
 
-    # Average across distinct months present in the ledger.
-    month_count = len({_month_key(_date(tx["transaction_date"])) for tx in transactions}) or 1
     health = build_financial_health(transactions)
     return {
         "income": _money(income),
@@ -349,8 +436,8 @@ def _project_plan_path(
                 "available_cash": closing,
                 "deficit": _money(minimum_reserve - closing),
                 "reason": (
-                    f"Closing cash {closing:,.2f} falls below minimum reserve "
-                    f"{minimum_reserve:,.2f} after mandatory payments."
+                    f"Expected Cash {closing:,.2f} falls below your Safety Buffer "
+                    f"{minimum_reserve:,.2f} after Monthly Spending & Bills."
                 ),
                 "corrective_actions": [
                     "Reduce discretionary spending further",
@@ -430,6 +517,7 @@ def simulate_what_if(
     *,
     assumptions: dict[str, Any],
     profile: dict[str, Any] | None = None,
+    opening_balance: float | None = None,
 ) -> dict[str, Any]:
     """Compare baseline vs Protect Liquidity vs Accelerate Debt under scenario assumptions.
 
@@ -448,8 +536,8 @@ def simulate_what_if(
     extra_debt = max(0.0, float(assumptions.get("extra_debt_payment") or 0.0))
     savings_delta = float(assumptions.get("savings_contribution_delta") or 0.0)
     income_change_pct = float(assumptions.get("income_change_pct") or 0.0)
-    if not -50 <= income_change_pct <= 50:
-        raise ValueError("income_change_pct must be between -50 and 50")
+    if not -100 <= income_change_pct <= 1000:
+        raise ValueError("income_change_pct must be between -100 and 1000")
     essential_shock = max(0.0, float(assumptions.get("essential_expense_shock") or 0.0))
 
     profile = profile or {}
@@ -457,15 +545,15 @@ def simulate_what_if(
     minimum_reserve = float(
         assumptions["minimum_reserve"]
         if assumptions.get("minimum_reserve") is not None
-        else profile.get("minimum_reserve", max(10000.0, run_rate["income"] * 0.25))
+        else _derived_reserve(profile, transactions)
     )
     savings_target = float(
         assumptions["savings_target"]
         if assumptions.get("savings_target") is not None
         else profile.get("savings_target", run_rate["savings"] * horizon)
     )
-    income_volatility = float(profile.get("income_volatility") or 0.05)
-    opening = run_rate["opening"]
+    income_volatility = _income_volatility(profile, transactions)
+    opening = float(opening_balance) if opening_balance is not None else run_rate["opening"]
 
     base_income = _money(run_rate["income"] * (1.0 + income_change_pct / 100.0))
     base_essential = run_rate["essential"]
@@ -617,6 +705,51 @@ def simulate_what_if(
         "Historical transactions are never mutated by this simulation.",
     ]
 
+    observed_emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 0.0)
+    status_quo = _project_plan_path(
+        opening=opening,
+        income=run_rate["income"],
+        essential=run_rate["essential"],
+        discretionary=run_rate["discretionary"],
+        emi=observed_emi,
+        savings=run_rate["savings"],
+        extra_debt=0.0,
+        essential_shock=0.0,
+        minimum_reserve=minimum_reserve,
+        horizon=horizon,
+        income_volatility=income_volatility,
+    )
+    status_quo.update({
+        "id": "status_quo",
+        "name": "Expected Cash",
+        "summary": "Six-month cash if income, spending, debt, and savings stay at the amounts from your transactions.",
+        "trade_offs": [],
+    })
+
+    def _typed(key: str, fallback: float) -> float:
+        raw = assumptions.get(key)
+        return fallback if raw is None else max(0.0, float(raw))
+
+    user_plan = _project_plan_path(
+        opening=opening,
+        income=_typed("monthly_income", run_rate["income"]),
+        essential=_typed("monthly_spending", run_rate["essential"] + run_rate["discretionary"]),
+        discretionary=0.0,
+        emi=_typed("monthly_debt", observed_emi),
+        savings=_typed("monthly_savings", run_rate["savings"]),
+        extra_debt=0.0,
+        essential_shock=_typed("one_time_expense", 0.0),
+        minimum_reserve=minimum_reserve,
+        horizon=horizon,
+        income_volatility=income_volatility,
+    )
+    user_plan.update({
+        "id": "user_plan",
+        "name": "Revised Expected Cash",
+        "summary": "Six-month cash using the monthly income, spending, debt, savings, and one-time amount you entered.",
+        "trade_offs": [],
+    })
+
     return {
         "forecast_updated_at": date.today().isoformat(),
         "horizon_months": horizon,
@@ -637,6 +770,8 @@ def simulate_what_if(
             "savings_target": _money(savings_target),
         },
         "baseline": baseline,
+        "status_quo": status_quo,
+        "user_plan": user_plan,
         "plans": [plan_a, plan_b],
         "recommended_plan_id": recommended["id"],
         "preference_reason": preference_reason,
@@ -761,12 +896,12 @@ def _build_forecast_risks(
         risks.append({
             "id": "opening_below_reserve",
             "severity": "critical",
-            "title": "Opening cash already below reserve",
-            "what": f"Current opening balance is below the declared reserve of ₹{minimum_reserve:,.0f}.",
+            "title": "Expected Cash is already below your Safety Buffer",
+            "what": f"Expected Cash is below your Safety Buffer of ₹{minimum_reserve:,.0f}.",
             "when": "Now (period M1 opening)",
             "factors": ["Opening balance", "Minimum reserve"],
             "impact": "Immediate liquidity constraint before any forecast month completes.",
-            "action": "Open the What-If Simulator to cut discretionary spend or pause extra savings.",
+            "action": "Open the Update My Plan to cut discretionary spend or pause extra savings.",
         })
 
     for violation in path.get("violations") or []:
@@ -774,12 +909,12 @@ def _build_forecast_risks(
             risks.append({
                 "id": f"reserve_breach_m{violation['period_index']}",
                 "severity": "critical",
-                "title": f"Reserve breach projected in {violation['period_label']}",
+                "title": f"Risk of Running Short in {violation['period_label']}",
                 "what": violation["reason"],
                 "when": violation["period_label"],
                 "factors": ["Essential expenses", "Mandatory debt", "Discretionary spending", "Income"],
                 "impact": f"Expected deficit versus reserve: ₹{violation['deficit']:,.0f}.",
-                "action": "Investigate discretionary cuts and EMI timing in the What-If Simulator.",
+                "action": "Investigate discretionary cuts and EMI timing in the Update My Plan.",
             })
         elif violation["type"] == "mandatory_shortfall":
             risks.append({
@@ -790,7 +925,7 @@ def _build_forecast_risks(
                 "when": violation["period_label"],
                 "factors": ["Income", "Essential expenses", "Mandatory debt"],
                 "impact": f"Mandatory shortfall of ₹{violation['deficit']:,.0f}.",
-                "action": "Increase income assumptions or reduce non-mandatory essentials in What-If.",
+                "action": "Update My Plan: raise Monthly Income or trim Monthly Spending & Bills.",
             })
 
     income = run_rate["income"]
@@ -807,7 +942,7 @@ def _build_forecast_risks(
             "when": "Every projected month under current run-rates",
             "factors": ["Income", "Essential expenses", "Mandatory debt"],
             "impact": "Structural deficit before discretionary spend or savings.",
-            "action": "Review income variability and fixed obligations; stress-test in What-If.",
+            "action": "Review Monthly Income and Monthly Spending & Bills, then Update My Plan.",
         })
 
     if income_volatility >= 0.15:
@@ -839,7 +974,7 @@ def _build_forecast_risks(
             "when": "Each month under current habits",
             "factors": ["Discretionary spending", "Mandatory outflows"],
             "impact": "Savings contributions are easily crowded out.",
-            "action": "Reduce discretionary spending in the What-If Simulator.",
+            "action": "Reduce discretionary spending in the Update My Plan.",
         })
 
     if not savings_target_feasible:
@@ -851,7 +986,7 @@ def _build_forecast_risks(
             "when": f"By end of M{len(periods)}",
             "factors": ["Savings target", "Reserve constraint", "Discretionary spending"],
             "impact": "Goal may be infeasible without income increase or spend cuts.",
-            "action": "Lower the target or extend the horizon in What-If.",
+            "action": "Lower the target or extend the horizon in Update My Plan.",
         })
 
     if periods and all(p["closing_balance"] >= p["opening_balance"] for p in periods):
@@ -863,7 +998,7 @@ def _build_forecast_risks(
             "when": f"M1–M{len(periods)}",
             "factors": ["Income", "Spending run-rates"],
             "impact": "Reserve headroom is expanding on the expected path.",
-            "action": "Optionally accelerate debt or savings in the What-If Simulator.",
+            "action": "Optionally accelerate debt or savings in the Update My Plan.",
         })
 
     # Deduplicate by id while preserving order
@@ -918,7 +1053,7 @@ def _build_forecast_insights(
                 "body": (
                     f"Closing cash may fall to ₹{minimum_balance:,.0f}, below your reserve of "
                     f"₹{minimum_reserve:,.0f}. Review discretionary purchases (₹{run_rate['discretionary']:,.0f}/mo) "
-                    "in the What-If Simulator."
+                    "in the Update My Plan."
                 ),
                 "metrics_cited": ["minimum_balance", "minimum_reserve", "discretionary"],
             })
@@ -1025,10 +1160,10 @@ def build_cash_flow_forecast(
     run_rate = _baseline_run_rate(transactions)
     min_reserve = float(
         minimum_reserve if minimum_reserve is not None
-        else (profile.get("minimum_reserve") or max(10000.0, run_rate["income"] * 0.25))
+        else _derived_reserve(profile, transactions)
     )
     savings_target = float(profile.get("savings_target") or run_rate["savings"] * horizon_months)
-    income_volatility = float(profile.get("income_volatility") or 0.05)
+    income_volatility = _income_volatility(profile, transactions)
     opening = float(opening_balance if opening_balance is not None else run_rate["opening"])
     emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 0.0)
 
@@ -1198,11 +1333,11 @@ def build_forecast_scenarios(
     run_rate = _baseline_run_rate(transactions)
     min_reserve = float(
         minimum_reserve if minimum_reserve is not None
-        else (profile.get("minimum_reserve") or max(10000.0, run_rate["income"] * 0.25))
+        else _derived_reserve(profile, transactions)
     )
     opening = float(opening_balance if opening_balance is not None else run_rate["opening"])
     emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 0.0)
-    income_volatility = float(profile.get("income_volatility") or 0.05)
+    income_volatility = _income_volatility(profile, transactions)
 
     # 1. Expected Case
     expected_path = _project_plan_path(
@@ -1236,10 +1371,10 @@ def build_forecast_scenarios(
         income_volatility=income_volatility,
     )
 
-    # 3. Worst Case: -10% income, +10% discretionary, ₹15,000 emergency cost
+    # 3. Worst Case: -10% income, +10% discretionary, plus the largest emergency expense observed in the ledger
     worst_income = _money(run_rate["income"] * 0.90)
     worst_disc = _money(run_rate["discretionary"] * 1.10)
-    worst_shock = 15000.0
+    worst_shock = _observed_worst_shock(transactions)
     worst_path = _project_plan_path(
         opening=opening,
         income=worst_income,
@@ -1341,12 +1476,12 @@ def calculate_affordability(
     run_rate = _baseline_run_rate(transactions)
     min_reserve = float(
         minimum_reserve if minimum_reserve is not None
-        else (profile.get("minimum_reserve") or 15000.0)
+        else _derived_reserve(profile, transactions)
     )
     current_cash = float(opening_balance if opening_balance is not None else run_rate["opening"])
 
     # Upcoming obligations before payday (EMI + essential bills)
-    emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 6000.0)
+    emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 0.0)
     upcoming_bills = _money(emi + run_rate["essential"] * 0.5)  # typically ~half-month obligations due before payday
 
     post_purchase = _money(current_cash - purchase_amount)
@@ -1367,17 +1502,17 @@ def calculate_affordability(
         )
     elif headroom < 0:
         verdict = "caution"
-        headline = "Reserve Breached"
+        headline = "Safety Buffer Breached"
         explanation = (
-            f"You can cover all bills, but purchasing upfront reduces your cash buffer to "
-            f"₹{trough_before_payday:,.0f}, dipping into your ₹{min_reserve:,.0f} minimum reserve."
+            f"You can cover Monthly Spending & Bills, but this purchase drops Expected Cash to "
+            f"₹{trough_before_payday:,.0f}, below your Safety Buffer of ₹{min_reserve:,.0f}."
         )
     else:
         verdict = "affordable"
         headline = "Purchase is Affordable"
         explanation = (
-            f"Your cash stays above your ₹{min_reserve:,.0f} minimum reserve with ₹{headroom:,.0f} headroom "
-            f"even after covering upcoming bills."
+            f"Expected Cash stays above your Safety Buffer of ₹{min_reserve:,.0f}, "
+            f"with Money Above Buffer of ₹{headroom:,.0f} after Monthly Spending & Bills."
         )
 
     # Tailored alternatives
@@ -1427,59 +1562,73 @@ def get_upcoming_obligations_projection(
     horizon_months: int = 6,
     profile: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Project known scheduled contractual and recurring obligations chronologically."""
+    """Project recurring obligations observed in the ledger forward chronologically.
+
+    Each stream is a recurring debit (same merchant + category). The amount is the
+    average paid in the same six-month window as Monthly Spending. The next due
+    date is one month after that bill was last paid. A bill whose next date is
+    already past is left off, instead of being copied onto a future month.
+    """
     profile = profile or {}
-    run_rate = _baseline_run_rate(transactions)
-    emi = run_rate["emi"] if run_rate["emi"] > 0 else float(profile.get("monthly_emi") or 6000.0)
+    streams: dict[str, dict[str, Any]] = {}
+    for tx in transactions:
+        if tx.get("type") != "debit" or not tx.get("is_recurring") or tx.get("is_internal_transfer"):
+            continue
+        if is_savings_transfer(tx):
+            continue
+        name = str(tx.get("merchant_name") or tx.get("description") or tx.get("category") or "Obligation")
+        category = str(tx.get("category") or "")
+        key = f"{name.lower()}|{category.lower()}"
+        entry = streams.setdefault(key, {"name": name, "category": category, "by_month": {}, "days": []})
+        month = str(tx.get("transaction_date", ""))[:7]
+        entry["by_month"][month] = entry["by_month"].get(month, 0.0) + float(tx.get("amount", 0.0))
+        try:
+            entry["days"].append(int(str(tx.get("transaction_date", ""))[8:10]))
+        except ValueError:
+            pass
 
-    # Base monthly obligation templates
-    templates = [
-        {"name": "Rent Payment", "amount": 18000.0, "day": 1, "type": "rent", "recurrence": "Monthly • Auto-debit", "status": "confirmed"},
-        {"name": "Car EMI", "amount": emi if emi > 0 else 6000.0, "day": 5, "type": "emi", "recurrence": "Monthly • HDFC Auto Loan", "status": "confirmed"},
-        {"name": "Credit Card Payment", "amount": 2000.0, "day": 10, "type": "credit_card", "recurrence": "Monthly • Axis Bank", "status": "confirmed"},
-        {"name": "Broadband & Utilities", "amount": 2200.0, "day": 18, "type": "subscription", "recurrence": "Monthly • AirFiber", "status": "inferred"},
-    ]
-
-    annual_items = [
-        {"name": "Insurance Premium", "amount": 12000.0, "month_offset": 0, "day": 25, "type": "insurance", "recurrence": "Annual • HDFC ERGO", "status": "confirmed"},
-        {"name": "Cloud Subscription", "amount": 4000.0, "month_offset": 1, "day": 20, "type": "subscription", "recurrence": "Annual • Cloud Services", "status": "inferred"},
-    ]
+    type_by_category = {
+        "housing & rent": "rent",
+        "debt & emi": "emi",
+        "subscriptions": "subscription",
+        "utilities": "subscription",
+    }
 
     today = date.today()
+    window_txs, _ = _trailing_window(transactions)
+    window_months = {str(tx.get("transaction_date", ""))[:7] for tx in window_txs}
+
     obligations: list[dict[str, Any]] = []
-
-    for m in range(horizon_months):
-        target_year = today.year + (today.month - 1 + m) // 12
-        target_month = ((today.month - 1 + m) % 12) + 1
-
-        for tmpl in templates:
-            due_d = date(target_year, target_month, min(tmpl["day"], monthrange(target_year, target_month)[1]))
+    for key, entry in streams.items():
+        recent = {month: amount for month, amount in entry["by_month"].items() if month in window_months}
+        if not recent:
+            continue
+        last_month = max(recent)
+        year, month = int(last_month[:4]), int(last_month[5:7])
+        # Next due is the month after this bill was last paid. A bill that
+        # stopped last year is not given a fresh due date.
+        next_year, next_month = (year + 1, 1) if month == 12 else (year, month + 1)
+        days = sorted(entry["days"]) or [1]
+        due_day = days[len(days) // 2]
+        first_due = date(next_year, next_month, min(due_day, monthrange(next_year, next_month)[1]))
+        if first_due < today:
+            continue
+        amount = sum(recent.values()) / len(recent)
+        for step in range(horizon_months):
+            target_year = next_year + (next_month - 1 + step) // 12
+            target_month = ((next_month - 1 + step) % 12) + 1
+            due_d = date(target_year, target_month, min(due_day, monthrange(target_year, target_month)[1]))
             obligations.append({
-                "id": f"obl-{m}-{tmpl['name'].lower().replace(' ', '-')}",
-                "name": tmpl["name"],
+                "id": f"obl-{step}-{key.replace(' ', '-')}",
+                "name": entry["name"],
                 "due_date": due_d.strftime("%d %b %Y"),
                 "due_date_iso": due_d.isoformat(),
-                "amount": float(tmpl["amount"]),
-                "type": tmpl["type"],
-                "recurrence": tmpl["recurrence"],
-                "status": tmpl["status"],
+                "amount": _money(amount),
+                "type": type_by_category.get(entry["category"].lower(), "emi"),
+                "recurrence": f"Monthly • {entry['category']}" if entry["category"] else "Monthly",
+                "status": "confirmed",
             })
 
-        for ann in annual_items:
-            if ann["month_offset"] == m:
-                due_d = date(target_year, target_month, min(ann["day"], monthrange(target_year, target_month)[1]))
-                obligations.append({
-                    "id": f"obl-ann-{m}-{ann['name'].lower().replace(' ', '-')}",
-                    "name": ann["name"],
-                    "due_date": due_d.strftime("%d %b %Y"),
-                    "due_date_iso": due_d.isoformat(),
-                    "amount": float(ann["amount"]),
-                    "type": ann["type"],
-                    "recurrence": ann["recurrence"],
-                    "status": ann["status"],
-                })
-
-    # Sort chronologically by due date
     obligations.sort(key=lambda o: o["due_date_iso"])
     total_commitments = sum(o["amount"] for o in obligations)
 

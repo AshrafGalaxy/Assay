@@ -10,10 +10,12 @@ FastAPI-powered Financial Intelligence Copilot API.
 
 ## Core financial API
 
-By default the API uses a **clean slate**: synthetic CSVs are disabled
-(`SYNTHETIC_LEDGER_ENABLED=false`). Endpoints below use manual / DB transactions
-when present; otherwise they return empty or zero baselines. Optional synthetic
-datasets can still be generated for demos and ML evaluation.
+By default the API is driven by the ledger in
+`data/synthetic_finance/transactions.csv` (`SYNTHETIC_LEDGER_ENABLED=true`):
+balances, reserves, forecasts, planning baselines and AA demo accounts are all
+derived from those transactions, merged with any manual / DB transactions. Set
+`SYNTHETIC_LEDGER_ENABLED=false` for a clean slate (manual / bank data only), in
+which case endpoints return empty or zero baselines.
 
 - `GET /api/v1/transactions` — normalised transaction feed, with category and type filters
 - `GET /api/v1/financial-health` — income, spend, savings rate, health score, and evidence signals

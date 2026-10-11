@@ -13,7 +13,6 @@ from typing import Optional, List
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.config import settings
 from app.schemas.planning import (
     ForecastPeriod,
     ForecastResponse,
@@ -27,13 +26,35 @@ from app.schemas.planning import (
     AvalancheRecommendation,
 )
 from app.services.forecasting.conformal_engine import ConformalQuantileEngine
-from app.services.forecasting.synthesizer import FinancialSynthesizer
 from app.services.forecasting.evaluator import ForecastEvaluator
 from app.services.planning.action_planner import ActionPlanner
 from app.services.planning.replanner import DynamicReplanner
 from app.services.planning.velocity_engine import SpendVelocityEngine
+from app.services.financial_intelligence.unified_data import get_unified_financial_data
+from app.services.financial_intelligence.ledger_metrics import (
+    average_monthly_debt,
+    average_monthly_discretionary,
+    average_monthly_income,
+    average_monthly_savings,
+    build_period_ledgers,
+    month_to_date_snapshot,
+    monthly_aggregates,
+    recurring_debt_payments,
+    seasonal_projection,
+    split_chronological,
+)
 
 router = APIRouter(prefix="/planning", tags=["planning"])
+
+
+def _ledger_history(db: Session, user_id: str | None = None):
+    """Monthly history, reserve and current balance derived entirely from transactions."""
+    unified = get_unified_financial_data(db, user_id=user_id)
+    transactions = unified["transactions"]
+    opening = float(unified["profile"].get("starting_balance") or 0.0)
+    periods = build_period_ledgers(transactions, opening)
+    reserve = float(unified["settings"].get("minimum_reserve") or 0.0)
+    return unified, transactions, periods, reserve
 
 
 @router.get("/forecast", response_model=ForecastResponse)
@@ -46,10 +67,15 @@ def get_probabilistic_forecast(
     Returns 6-month calibrated probabilistic cash flow forecast bounds (P10, P50, P90)
     using Conformal Quantile Autoregression (CQ-AR) with Split-Conformal Calibration.
     """
-    # 1. Synthesize verified 24-month ledger baseline
-    synthesizer = FinancialSynthesizer(seed=42)
-    history = synthesizer.generate_24_months()
-    train_s, val_s, test_s = synthesizer.get_splits(history)
+    # 1. Monthly history derived from the transaction ledger
+    _unified, _txs, history, reserve = _ledger_history(db)
+    train_s, val_s, test_s = split_chronological(history)
+    if len(train_s) < 4 or not val_s:
+        return ForecastResponse(
+            horizon_months=horizon_months,
+            periods=[],
+            summary={"declared_reserve_min": reserve, "note": "Not enough transaction history to fit a forecast."},
+        )
 
     # 2. Train and calibrate Conformal Quantile Engine for Income
     train_inc = [p.total_income for p in train_s]
@@ -87,7 +113,7 @@ def get_probabilistic_forecast(
                 essential_p50=e_pred["p50"],
                 essential_p90=e_pred["p90"],
                 net_cash_p50=net_p50,
-                reserve_threshold=settings.MINIMUM_RESERVE_FLOOR,
+                reserve_threshold=reserve,
             )
         )
 
@@ -99,7 +125,7 @@ def get_probabilistic_forecast(
         conformal_coverage_pct=round(confidence_level * 100, 1),
         periods=periods,
         summary={
-            "declared_reserve_min": settings.MINIMUM_RESERVE_FLOOR,
+            "declared_reserve_min": reserve,
             "average_net_surplus_p50": avg_surplus,
             "guaranteed_coverage": f">={round(confidence_level * 100)}%",
         },
@@ -107,15 +133,16 @@ def get_probabilistic_forecast(
 
 
 @router.get("/benchmark", response_model=BenchmarkComparisonResponse)
-def get_benchmark_comparison():
+def get_benchmark_comparison(db: Session = Depends(get_db)):
     """
     Returns statistical evaluation metrics (MAE, RMSE, CRPS, 80% Coverage %, Interval Width)
     benchmarking the proposed CQ-AR model against Historical Moving Average and Fixed Recurring baselines
     on held-out test data.
     """
-    synth = FinancialSynthesizer(seed=42)
-    history = synth.generate_24_months()
-    train_s, val_s, test_s = synth.get_splits(history)
+    _unified, _txs, history, _reserve = _ledger_history(db)
+    train_s, val_s, test_s = split_chronological(history)
+    if not test_s:
+        test_s = val_s or train_s
 
     train_inc = [p.total_income for p in train_s]
     val_inc = [p.total_income for p in val_s]
@@ -133,63 +160,75 @@ def get_benchmark_comparison():
 
 
 @router.post("/simulate-actions", response_model=SimulationResponse)
-def simulate_action_sequences():
+def simulate_action_sequences(db: Session = Depends(get_db)):
     """
     Compares Sequence A (Aggressive Debt Prepayment) vs Sequence B (Balanced Liquidity Shield)
     across a 6-month horizon under a declared minimum cash reserve constraint (R_min = ₹25,000).
     Demonstrates the Decision-Flip Theorem under cash flow uncertainty.
     """
-    planner = ActionPlanner(declared_reserve_min=settings.MINIMUM_RESERVE_FLOOR, horizon_months=6)
-    starting_cash = 45000.0
-    incomes = [75000.0, 75000.0, 87000.0, 75000.0, 75000.0, 87000.0]
-    essentials = [49500.0, 49500.0, 52000.0, 49500.0, 49500.0, 52000.0]
+    unified, transactions, periods, reserve = _ledger_history(db)
+    horizon = min(6, len(periods)) or 1
+    planner = ActionPlanner(declared_reserve_min=reserve, horizon_months=horizon)
+
+    # Project the next horizon months from the observed seasonal pattern.
+    incomes = seasonal_projection([p.total_income for p in periods], horizon)
+    essentials = seasonal_projection([p.total_essential for p in periods], horizon)
 
     return planner.compare_and_prove_decision_flip(
-        starting_cash=starting_cash,
+        starting_cash=unified["available_balance"],
         incomes=incomes,
         essential_expenses=essentials,
+        baseline_discretionary=average_monthly_discretionary(transactions),
+        baseline_debt=average_monthly_debt(transactions),
+        baseline_savings=average_monthly_savings(transactions),
     )
 
 
 @router.post("/replan", response_model=ReplanResponse)
-def dynamic_replan_shock(request: ReplanRequest):
+def dynamic_replan_shock(request: ReplanRequest, db: Session = Depends(get_db)):
     """
     Evaluates sudden unexpected financial shocks (e.g. -25% salary cut, ₹35,000 emergency medical expense)
     and executes prioritized 3-tier constraint relaxation to maintain cash solvency.
     """
-    replanner = DynamicReplanner(declared_reserve_min=settings.MINIMUM_RESERVE_FLOOR, horizon_months=6)
-    starting_cash = 30000.0
-    incomes = [75000.0] * 6
-    essentials = [49500.0] * 6
+    unified, transactions, periods, reserve = _ledger_history(db)
+    horizon = min(6, len(periods)) or 1
+    replanner = DynamicReplanner(declared_reserve_min=reserve, horizon_months=horizon)
 
     return replanner.evaluate_and_replan(
-        starting_cash=starting_cash,
-        baseline_incomes=incomes,
-        baseline_essential=essentials,
+        starting_cash=unified["available_balance"],
+        baseline_incomes=seasonal_projection([p.total_income for p in periods], horizon),
+        baseline_essential=seasonal_projection([p.total_essential for p in periods], horizon),
+        baseline_discretionary=average_monthly_discretionary(transactions),
+        baseline_savings_goal=average_monthly_savings(transactions),
         shock_request=request,
     )
 
 
 @router.get("/velocity", response_model=SpendVelocityResponse)
 def get_spend_velocity(
-    current_day: Optional[int] = Query(default=None, ge=1, le=31, description="Day of month (default: current day)"),
-    discretionary_spent: float = Query(default=16800.0, ge=0.0, description="Discretionary spend logged so far this month"),
-    current_liquid_balance: float = Query(default=42850.0, ge=0.0, description="Current available liquid balance"),
-    upcoming_fixed_bills: float = Query(default=15200.0, ge=0.0, description="Upcoming bills/EMIs before next payday"),
+    current_day: Optional[int] = Query(default=None, ge=1, le=31, description="Day of month (default: latest ledger day)"),
+    db: Session = Depends(get_db),
 ):
     """
     Analyzes intra-month daily spending burn velocity and returns proactive behavioral micro-nudges.
+    All inputs are derived from the transaction ledger.
     """
-    today = date.today()
-    eval_day = current_day or min(today.day, 30)
+    unified, transactions, _periods, reserve = _ledger_history(db)
+    snapshot = month_to_date_snapshot(transactions)
+    aggs = monthly_aggregates(transactions)
+    # Fixed bills still ahead this month: a typical month's non-negotiable outflows
+    # minus what has already been paid in the current month.
+    typical_fixed = (sum(a.non_negotiable for a in aggs) / len(aggs)) if aggs else 0.0
+    upcoming_fixed = max(0.0, typical_fixed - snapshot["fixed_paid"])
 
-    velocity_engine = SpendVelocityEngine(reserve_floor=settings.MINIMUM_RESERVE_FLOOR)
+    velocity_engine = SpendVelocityEngine(reserve_floor=reserve)
     metrics = velocity_engine.analyze_velocity(
-        current_day=eval_day,
-        days_in_month=30,
-        discretionary_spent_so_far=discretionary_spent,
-        current_liquid_balance=current_liquid_balance,
-        upcoming_fixed_bills=upcoming_fixed_bills,
+        current_day=current_day or snapshot["day"] or 1,
+        days_in_month=snapshot["days_in_month"],
+        discretionary_spent_so_far=snapshot["discretionary_spent"],
+        current_liquid_balance=unified["available_balance"],
+        upcoming_fixed_bills=round(upcoming_fixed, 2),
+        monthly_discretionary_budget=average_monthly_discretionary(transactions),
     )
     return SpendVelocityResponse(**metrics)
 
@@ -199,130 +238,50 @@ def get_debt_breakdown(
     db: Session = Depends(get_db),
 ):
     """
-    Returns live dynamic breakdown of all active loans and credit facilities,
-    including blended APR, debt-to-income (DTI) ratio, and algorithmic Avalanche
-    repayment order to minimize interest charges.
-    """
-    from app.models.account import Account
+    Debt breakdown derived from recurring debt/EMI payments in the transaction ledger.
 
-    # Query DB for credit and loan accounts if populated
-    db_accounts = (
-        db.query(Account)
-        .filter(Account.account_type.in_(["credit", "loan"]))
-        .all()
-    )
+    Outstanding principal and APR are not present in transaction history, so this
+    reports what is observable: the monthly repayment, how long it has been paid,
+    and the total repaid. DTI uses observed monthly income.
+    """
+    _unified, transactions, _periods, _reserve = _ledger_history(db)
+    streams = recurring_debt_payments(transactions)
 
     loans: List[LoanItemSchema] = []
-
-    if db_accounts:
-        for acc in db_accounts:
-            bal = abs(float(acc.balance or 0.0))
-            is_credit = acc.account_type == "credit"
-            apr_val = 38.4 if is_credit else 9.5
-            emi_est = round(bal * 0.05, 0) if is_credit else round(bal * 0.038, 0)
-            loans.append(
-                LoanItemSchema(
-                    id=f"acc_{acc.id}",
-                    name=f"{acc.institution_name} {acc.account_type.capitalize()}",
-                    bank=acc.institution_name.lower(),
-                    balance=bal,
-                    detail="Limit Used" if is_credit else "",
-                    schedule="Monthly due" if is_credit else f"₹{int(emi_est)}/mo",
-                    monthly_emi=emi_est,
-                    apr=f"{apr_val:.1f}% APR {'(High)' if apr_val > 20 else ''}".strip(),
-                    apr_rate=apr_val,
-                    is_high_apr=apr_val > 20,
-                    progress=0.42 if is_credit else 0.40,
-                    progress_label="42% used" if is_credit else "40% repaid",
-                )
+    for index, stream in enumerate(streams):
+        loans.append(
+            LoanItemSchema(
+                id=f"debt_{index}",
+                name=stream["name"],
+                bank="ledger",
+                balance=stream["total_paid"],
+                detail=f"Repaid over {stream['months_paid']} months (outstanding principal is not in the transaction history)",
+                schedule=f"₹{int(stream['monthly_amount']):,}/mo observed",
+                monthly_emi=stream["monthly_amount"],
+                apr="APR not in transaction history",
+                apr_rate=0.0,
+                is_high_apr=False,
+                progress=0.0,
+                progress_label=f"{stream['months_paid']} months paid",
             )
+        )
 
-    # If no accounts exist in DB yet, synthesize verified profile accounts matching ledger
-    if not loans:
-        loans = [
-            LoanItemSchema(
-                id="debt_icici_cc",
-                name="ICICI Sapphiro Credit Card",
-                bank="icici",
-                balance=24450.0,
-                detail="42% Limit Used",
-                schedule="Due 24 Sep • Min: ₹1,200",
-                monthly_emi=1200.0,
-                apr="38.4% APR (High)",
-                apr_rate=38.4,
-                is_high_apr=True,
-                progress=0.42,
-                progress_label="42% used",
-            ),
-            LoanItemSchema(
-                id="debt_axis_car",
-                name="Axis Car Loan (Fixed)",
-                bank="axis",
-                balance=218000.0,
-                detail="",
-                schedule="26 of 60 EMIs Paid • ₹8,400/mo",
-                monthly_emi=8400.0,
-                apr="8.75% APR",
-                apr_rate=8.75,
-                is_high_apr=False,
-                progress=0.43,
-                progress_label="43% repaid",
-            ),
-            LoanItemSchema(
-                id="debt_hdfc_edu",
-                name="HDFC Education Loan",
-                bank="hdfc",
-                balance=240000.0,
-                detail="",
-                schedule="18 of 48 EMIs Paid • ₹17,300/mo",
-                monthly_emi=17300.0,
-                apr="9.20% APR",
-                apr_rate=9.20,
-                is_high_apr=False,
-                progress=0.38,
-                progress_label="38% repaid",
-            ),
-        ]
-
-    total_outstanding = sum(l.balance for l in loans)
+    total_repaid = sum(l.balance for l in loans)
     total_emis = sum(l.monthly_emi for l in loans)
-    blended_apr = (
-        round(sum(l.balance * l.apr_rate for l in loans) / max(total_outstanding, 1.0), 1)
-        if total_outstanding > 0
-        else 0.0
-    )
 
-    # Estimate DTI against verified monthly income of ₹95,000
-    monthly_income = 95000.0
-    dti_val = round((total_emis / monthly_income) * 100, 1)
+    monthly_income = average_monthly_income(transactions)
+    dti_val = round((total_emis / monthly_income) * 100, 1) if monthly_income > 0 else 0.0
     dti_label = "Healthy" if dti_val < 36.0 else ("Moderate" if dti_val < 43.0 else "High Risk")
 
-    # Algorithmic Avalanche recommendation (order by highest APR)
-    sorted_by_apr = sorted(loans, key=lambda l: l.apr_rate, reverse=True)
-    top_apr_loan = sorted_by_apr[0] if sorted_by_apr else loans[0]
-    annual_saved = round(
-        top_apr_loan.balance * (top_apr_loan.apr_rate - min(l.apr_rate for l in loans)) / 100.0,
-        0,
-    )
-
-    avalanche = AvalancheRecommendation(
-        target_debt_id=top_apr_loan.id,
-        target_name=top_apr_loan.name,
-        payoff_amount=top_apr_loan.balance,
-        annual_interest_saved=annual_saved,
-        recommendation_text=(
-            f"Pay off ₹{int(top_apr_loan.balance):,} on {top_apr_loan.name.split(' ')[0]} Card first "
-            f"to eliminate {top_apr_loan.apr_rate:.1f}% APR compounding interest. "
-            f"Saves ₹{int(annual_saved):,} in annual finance charges."
-        ),
-    )
+    # Without interest rates an avalanche ordering cannot be computed honestly.
+    avalanche = None
 
     return DebtBreakdownResponse(
-        total_outstanding_debt=total_outstanding,
+        total_outstanding_debt=total_repaid,
         dti_ratio=dti_val,
         dti_status=dti_label,
         total_monthly_emis=total_emis,
-        avg_blended_apr=blended_apr,
+        avg_blended_apr=0.0,
         loans=loans,
         avalanche_recommendation=avalanche,
     )

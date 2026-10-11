@@ -28,14 +28,23 @@ def test_financial_health():
     assert "savings" in data
 
 
-def test_transactions_clean_slate_has_no_synthetic_ledger():
-    """Default config has synthetic ledger off — only DB/manual rows (if any)."""
-    response = client.get("/api/v1/transactions?limit=5")
+def test_transactions_served_from_ledger_by_default():
+    """The transaction ledger is the default data source, newest dates first."""
+    response = client.get("/api/v1/transactions?limit=20")
     assert response.status_code == 200
     data = response.json()
     assert "items" in data
-    assert "total" in data
-    assert all(item.get("source_type") != "synthetic" for item in data["items"])
+    assert data["total"] > 0
+    dates = [item["transaction_date"] for item in data["items"]]
+    assert dates == sorted(dates, reverse=True)
+
+    ledger = client.get("/api/v1/transactions?limit=5&source_type=synthetic")
+    assert ledger.status_code == 200
+    ledger_items = ledger.json()["items"]
+    assert ledger_items
+    assert all(item.get("source_type") == "synthetic" for item in ledger_items)
+    ledger_dates = [item["transaction_date"] for item in ledger_items]
+    assert ledger_dates == sorted(ledger_dates, reverse=True)
 
 
 def test_recommendations_endpoint():

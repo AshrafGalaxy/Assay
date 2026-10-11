@@ -8,74 +8,25 @@ import { MonthlyBreakdownCard, MonthlyBreakdownData } from '../../components/fi/
 import { fetchCashFlowForecast, CashFlowForecast } from '../../services/finance';
 import { ChevronLeft, ChevronDown } from 'lucide-react-native';
 
-const PREVIEW_MONTHS: MonthlyBreakdownData[] = [
-  {
-    month: 'April 2025',
-    openingBalance: 50000,
-    income: 45000,
-    expenses: 27000,
-    debtPayments: 6000,
-    closingBalance: 62000,
-  },
-  {
-    month: 'May 2025',
-    openingBalance: 62000,
-    income: 45000,
-    expenses: 27000,
-    debtPayments: 6000,
-    closingBalance: 74000,
-    isTrough: true,
-  },
-  {
-    month: 'June 2025',
-    openingBalance: 74000,
-    income: 45000,
-    expenses: 27000,
-    debtPayments: 6000,
-    closingBalance: 86000,
-  },
-  {
-    month: 'July 2025',
-    openingBalance: 86000,
-    income: 45000,
-    expenses: 27000,
-    debtPayments: 6000,
-    closingBalance: 98000,
-  },
-  {
-    month: 'August 2025',
-    openingBalance: 98000,
-    income: 45000,
-    expenses: 27000,
-    debtPayments: 6000,
-    closingBalance: 110000,
-  },
-  {
-    month: 'September 2025',
-    openingBalance: 110000,
-    income: 45000,
-    expenses: 27000,
-    debtPayments: 6000,
-    closingBalance: 122000,
-  },
-];
-
 export default function MonthlyBreakdownScreen() {
   const router = useRouter();
   const [selectedHorizon, setSelectedHorizon] = useState<'3M' | '6M' | '12M'>('6M');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [forecastData, setForecastData] = useState<CashFlowForecast | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const horizonMonths = selectedHorizon === '3M' ? 3 : selectedHorizon === '6M' ? 6 : 12;
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const data = await fetchCashFlowForecast(horizonMonths);
       setForecastData(data);
     } catch {
       setForecastData(null);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -85,24 +36,19 @@ export default function MonthlyBreakdownScreen() {
     void loadData();
   }, [loadData]);
 
+  // Rendered strictly from the forecast API periods; empty when no data.
   const monthsToShow: MonthlyBreakdownData[] = useMemo(() => {
-    if (forecastData?.periods && forecastData.periods.length > 0) {
-      return forecastData.periods.map((p) => ({
-        month: p.period_label,
-        openingBalance: p.opening_balance,
-        income: p.income,
-        expenses: p.essential_expenses + p.discretionary_spending,
-        debtPayments: p.mandatory_debt,
-        closingBalance: p.closing_balance,
-        isTrough: p.reserve_violated || p.closing_balance === forecastData.minimum_balance,
-      }));
-    }
-    return selectedHorizon === '3M'
-      ? PREVIEW_MONTHS.slice(0, 3)
-      : selectedHorizon === '6M'
-      ? PREVIEW_MONTHS.slice(0, 6)
-      : PREVIEW_MONTHS;
-  }, [forecastData, selectedHorizon]);
+    if (!forecastData?.periods || forecastData.periods.length === 0) return [];
+    return forecastData.periods.map((p) => ({
+      month: p.period_label,
+      openingBalance: p.opening_balance,
+      income: p.income,
+      expenses: p.essential_expenses + p.discretionary_spending,
+      debtPayments: p.mandatory_debt,
+      closingBalance: p.closing_balance,
+      isTrough: p.reserve_violated || p.closing_balance === forecastData.minimum_balance,
+    }));
+  }, [forecastData]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -168,16 +114,46 @@ export default function MonthlyBreakdownScreen() {
           Monthly projected cash accounting for opening balance, expected inflows, bills, and mandatory debt obligations.
         </Typography>
 
-        {/* Expandable Monthly Cards */}
-        <View style={styles.list}>
-          {monthsToShow.map((m, idx) => (
-            <MonthlyBreakdownCard
-              key={m.month}
-              data={m}
-              initiallyExpanded={idx === 0}
-            />
-          ))}
-        </View>
+        {/* Loading / error / empty / data states */}
+        {loading ? (
+          <View style={styles.stateCard}>
+            <ActivityIndicator color={COLORS.primary} />
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+              Loading monthly projection…
+            </Typography>
+          </View>
+        ) : loadError ? (
+          <View style={styles.stateCard}>
+            <Typography variant="bodyBold" color={COLORS.primary}>
+              Breakdown unavailable
+            </Typography>
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+              We couldn't load your forecast. Check your connection and try again.
+            </Typography>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => void loadData()} activeOpacity={0.8}>
+              <Typography variant="bodyBold" color={COLORS.white}>Retry</Typography>
+            </TouchableOpacity>
+          </View>
+        ) : monthsToShow.length === 0 ? (
+          <View style={styles.stateCard}>
+            <Typography variant="bodyBold" color={COLORS.primary}>
+              No projection yet
+            </Typography>
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+              No forecast periods were returned for this horizon. Add transactions to build a month-wise projection.
+            </Typography>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {monthsToShow.map((m, idx) => (
+              <MonthlyBreakdownCard
+                key={`${m.month}-${idx}`}
+                data={m}
+                initiallyExpanded={idx === 0}
+              />
+            ))}
+          </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -268,5 +244,26 @@ const styles = StyleSheet.create({
   },
   list: {
     gap: 4,
+  },
+  stateCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: SIZES.radius,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    alignItems: 'center',
+    gap: 10,
+  },
+  stateText: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginTop: 4,
   },
 });

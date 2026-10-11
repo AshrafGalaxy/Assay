@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   ScrollView,
@@ -7,14 +7,13 @@ import {
   ActivityIndicator,
   Modal,
   TextInput,
-  Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { Typography } from '../../components/Typography';
 import { COLORS, FONTS } from '../../constants/theme';
-import { GlassSlider } from '../../components/ui/GlassSlider';
 import {
   WhatIfAssumptions,
   WhatIfResponse,
@@ -36,37 +35,62 @@ import {
 
 type SegmentTab = 'Income' | 'Expenses' | 'One-time' | 'Savings';
 
+function AmountInput({
+  value,
+  onChangeValue,
+}: {
+  value: number;
+  onChangeValue: (next: number) => void;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  return (
+    <TextInput
+      style={styles.amountInput}
+      keyboardType="number-pad"
+      value={focused ? draft : formatINR(value)}
+      onFocus={() => {
+        setFocused(true);
+        setDraft(value > 0 ? String(Math.round(value)) : '');
+      }}
+      onChangeText={(raw) => {
+        const digits = raw.replace(/[^0-9]/g, '');
+        setDraft(digits);
+        onChangeValue(digits ? parseInt(digits, 10) : 0);
+      }}
+      onBlur={() => setFocused(false)}
+      selectTextOnFocus
+      placeholder="₹0"
+      placeholderTextColor="#9CA3AF"
+    />
+  );
+}
+
 export default function WhatIfSimulatorScreen() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<SegmentTab>('Income');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [applying, setApplying] = useState(false);
-  const [scrollEnabled, setScrollEnabled] = useState(true);
   const [result, setResult] = useState<WhatIfResponse | null>(null);
   const [showInfoModal, setShowInfoModal] = useState(false);
 
   // Core financial values
-  const [monthlyIncome, setMonthlyIncome] = useState<number>(45000);
-  const [monthlyExpenses, setMonthlyExpenses] = useState<number>(28000);
-  const [monthlyDebt, setMonthlyDebt] = useState<number>(8000);
+  const [monthlyIncome, setMonthlyIncome] = useState<number>(0);
+  const [monthlyExpenses, setMonthlyExpenses] = useState<number>(0);
+  const [monthlyDebt, setMonthlyDebt] = useState<number>(0);
   const [oneTimeExpense, setOneTimeExpense] = useState<number>(0);
-  const [voluntarySavings, setVoluntarySavings] = useState<number>(5000);
+  const [voluntarySavings, setVoluntarySavings] = useState<number>(0);
 
   // Baseline values loaded from backend
-  const [baselineIncome, setBaselineIncome] = useState<number>(45000);
-  const [baselineExpenses, setBaselineExpenses] = useState<number>(28000);
-  const [baselineDebt, setBaselineDebt] = useState<number>(8000);
-
-  // Numeric edit modal state
-  const [editField, setEditField] = useState<{
-    key: string;
-    label: string;
-    currentValue: number;
-    min: number;
-    max: number;
-  } | null>(null);
-  const [editInputText, setEditInputText] = useState('');
+  const [baselineIncome, setBaselineIncome] = useState<number>(0);
+  const [baselineExpenses, setBaselineExpenses] = useState<number>(0);
+  const [baselineDebt, setBaselineDebt] = useState<number>(0);
+  const [baselineSavings, setBaselineSavings] = useState<number>(0);
+  const seededFromLedger = useRef(false);
+  const userEdited = useRef(false);
 
   // Default baseline assumptions
   const defaultAssumptions: WhatIfAssumptions = useMemo(() => ({
@@ -80,32 +104,31 @@ export default function WhatIfSimulatorScreen() {
     savings_target: null,
   }), []);
 
-  // Derive assumptions from state
+  const markEdited = (apply: (next: number) => void) => (next: number) => {
+    userEdited.current = true;
+    apply(next);
+  };
+
+  // Absolute monthly amounts. Percent cuts and one-month shocks left both cash
+  // figures on the same path, so a typed change produced a ₹0 difference.
   const buildCurrentAssumptions = useCallback((): WhatIfAssumptions => {
-    const incomePct = baselineIncome > 0
-      ? ((monthlyIncome - baselineIncome) / baselineIncome) * 100
-      : 0;
-
-    const expenseDelta = baselineExpenses - monthlyExpenses;
-    const discPct = baselineExpenses > 0 && expenseDelta > 0
-      ? (expenseDelta / baselineExpenses) * 100
-      : 0;
-    const expenseShock = expenseDelta < 0 ? Math.abs(expenseDelta) : 0;
-
-    const extraDebt = Math.max(0, monthlyDebt - baselineDebt);
-    const savingsDelta = voluntarySavings - 5000;
-
+    const unchanged =
+      monthlyIncome === baselineIncome &&
+      monthlyExpenses === baselineExpenses &&
+      monthlyDebt === baselineDebt &&
+      voluntarySavings === baselineSavings &&
+      oneTimeExpense === 0;
+    if (unchanged) return defaultAssumptions;
     return {
-      horizon_months: 6,
-      income_change_pct: Number(incomePct.toFixed(1)),
-      discretionary_reduction_pct: Math.min(100, Math.max(0, Number(discPct.toFixed(1)))),
-      essential_expense_shock: expenseShock + oneTimeExpense,
-      extra_debt_payment: extraDebt,
-      savings_contribution_delta: savingsDelta,
-      minimum_reserve: null,
-      savings_target: null,
+      ...defaultAssumptions,
+      monthly_income: monthlyIncome,
+      monthly_spending: monthlyExpenses,
+      monthly_debt: monthlyDebt,
+      monthly_savings: voluntarySavings,
+      one_time_expense: oneTimeExpense,
     };
   }, [
+    defaultAssumptions,
     baselineIncome,
     monthlyIncome,
     baselineExpenses,
@@ -114,26 +137,38 @@ export default function WhatIfSimulatorScreen() {
     baselineDebt,
     voluntarySavings,
     oneTimeExpense,
+    baselineSavings,
   ]);
 
   const fetchSimulation = useCallback(async (assumptions: WhatIfAssumptions) => {
     try {
       const data = await runWhatIfSimulation(assumptions);
       setResult(data);
+      setLoadError(false);
 
       if (data.baseline_run_rate) {
-        const bInc = Math.round(data.baseline_run_rate.income || 45000);
-        const bEss = Math.round(data.baseline_run_rate.essential || 20000);
-        const bDisc = Math.round(data.baseline_run_rate.discretionary || 8000);
-        const bDebt = Math.round(data.baseline_run_rate.emi || 8000);
+        const bInc = Math.round(data.baseline_run_rate.income || 0);
+        const bEss = Math.round(data.baseline_run_rate.essential || 0);
+        const bDisc = Math.round(data.baseline_run_rate.discretionary || 0);
+        const bDebt = Math.round(data.baseline_run_rate.emi || 0);
+        const bSav = Math.round(data.baseline_run_rate.savings || 0);
         const bExp = bEss + bDisc;
 
         setBaselineIncome(bInc);
         setBaselineExpenses(bExp);
         setBaselineDebt(bDebt);
+        setBaselineSavings(bSav);
+        if (!seededFromLedger.current) {
+          setMonthlyIncome(bInc);
+          setMonthlyExpenses(bExp);
+          setMonthlyDebt(bDebt);
+          setVoluntarySavings(bSav);
+          seededFromLedger.current = true;
+        }
       }
     } catch {
-      // Retain fallback simulation state if network is unavailable
+      setLoadError(true);
+      setResult(null);
     }
   }, []);
 
@@ -141,6 +176,22 @@ export default function WhatIfSimulatorScreen() {
     setLoading(true);
     fetchSimulation(defaultAssumptions).finally(() => setLoading(false));
   }, [defaultAssumptions, fetchSimulation]);
+
+  useEffect(() => {
+    if (!userEdited.current) return;
+    const handle = setTimeout(() => {
+      void fetchSimulation(buildCurrentAssumptions());
+    }, 400);
+    return () => clearTimeout(handle);
+  }, [
+    monthlyIncome,
+    monthlyExpenses,
+    monthlyDebt,
+    oneTimeExpense,
+    voluntarySavings,
+    buildCurrentAssumptions,
+    fetchSimulation,
+  ]);
 
   const handleApply = async () => {
     setApplying(true);
@@ -153,46 +204,23 @@ export default function WhatIfSimulatorScreen() {
   };
 
   const handleReset = () => {
+    userEdited.current = false;
     setMonthlyIncome(baselineIncome);
     setMonthlyExpenses(baselineExpenses);
     setMonthlyDebt(baselineDebt);
     setOneTimeExpense(0);
-    setVoluntarySavings(5000);
+    setVoluntarySavings(baselineSavings);
     void fetchSimulation(defaultAssumptions);
   };
 
-  const openNumberEdit = (key: string, label: string, currentValue: number, min: number, max: number) => {
-    setEditField({ key, label, currentValue, min, max });
-    setEditInputText(String(currentValue));
-  };
-
-  const commitNumberEdit = () => {
-    if (!editField) return;
-    const cleanNum = parseInt(editInputText.replace(/[^0-9]/g, ''), 10);
-    if (isNaN(cleanNum)) {
-      setEditField(null);
-      return;
-    }
-    const clamped = Math.min(Math.max(cleanNum, editField.min), editField.max);
-
-    if (editField.key === 'income') setMonthlyIncome(clamped);
-    else if (editField.key === 'expenses') setMonthlyExpenses(clamped);
-    else if (editField.key === 'debt') setMonthlyDebt(clamped);
-    else if (editField.key === 'onetime') setOneTimeExpense(clamped);
-    else if (editField.key === 'savings') setVoluntarySavings(clamped);
-
-    setEditField(null);
-  };
-
-  // Compact financial feedback metrics
-  const baselineClosing = result?.baseline?.ending_balance ?? 68000;
-  const planA = result?.plans?.find((p) => p.id === 'plan_a') || result?.plans?.[0];
-  const revisedClosing = planA?.ending_balance ?? (
-    baselineClosing + (monthlyIncome - baselineIncome) - (monthlyExpenses - baselineExpenses) - (monthlyDebt - baselineDebt) - oneTimeExpense
-  );
-  const netChange = revisedClosing - baselineClosing;
-  const reserveThreshold = result?.minimum_reserve ?? 15000;
-  const breachesReserve = revisedClosing < reserveThreshold;
+  // Expected Cash is the untouched transaction projection. Revised Expected Cash
+  // is the same horizon with the typed monthly amounts.
+  const baselineClosing = result?.status_quo?.ending_balance ?? null;
+  const revisedClosing = result?.user_plan?.ending_balance ?? null;
+  const revisedLow = result?.user_plan?.minimum_balance ?? revisedClosing;
+  const netChange = baselineClosing != null && revisedClosing != null ? revisedClosing - baselineClosing : null;
+  const reserveThreshold = result?.minimum_reserve ?? null;
+  const breachesReserve = revisedLow != null && reserveThreshold != null && revisedLow < reserveThreshold;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -217,20 +245,31 @@ export default function WhatIfSimulatorScreen() {
         </TouchableOpacity>
       </View>
 
+      {loadError && (
+        <View style={styles.titleSection}>
+          <Typography variant="body" color={COLORS.textSecondary}>
+            Couldn't load your plan from your transactions. Check the connection and try again.
+          </Typography>
+        </View>
+      )}
+
       <View style={styles.titleSection}>
         <Typography variant="h1" color={COLORS.primary} style={styles.pageTitle}>
-          What-If Simulator
+          Update My Plan
         </Typography>
         <Typography variant="body" color={COLORS.textSecondary} style={styles.subtitle}>
-          Adjust key inputs and see how your future cash position changes.
+          Expected Cash stays on your transactions. Revised Expected Cash follows the amounts you type.
         </Typography>
       </View>
 
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        scrollEnabled={scrollEnabled}
       >
         {/* 3. Assumption Selector (4 horizontal segmented controls) */}
         <View style={styles.segmentedContainer}>
@@ -274,32 +313,12 @@ export default function WhatIfSimulatorScreen() {
                     Monthly Income
                   </Typography>
                   <Typography variant="caption" color={COLORS.textSecondary}>
-                    Adjust your expected monthly income.
+                    Type your monthly income.
                   </Typography>
                 </View>
               </View>
 
-              <TouchableOpacity
-                onPress={() => openNumberEdit('income', 'Monthly Income', monthlyIncome, 0, 100000)}
-                activeOpacity={0.8}
-                style={styles.amountTouch}
-              >
-                <Typography variant="h2" color={COLORS.primary} style={styles.amountText}>
-                  {formatINR(monthlyIncome)}
-                </Typography>
-              </TouchableOpacity>
-
-              <GlassSlider
-                value={monthlyIncome}
-                min={0}
-                max={100000}
-                step={1000}
-                onValueChange={setMonthlyIncome}
-                onDragStart={() => setScrollEnabled(false)}
-                onDragEnd={() => setScrollEnabled(true)}
-                minLabel="₹0"
-                maxLabel="₹1,00,000"
-              />
+              <AmountInput value={monthlyIncome} onChangeValue={markEdited(setMonthlyIncome)} />
             </View>
 
             {/* Card 2: Monthly Expenses */}
@@ -310,35 +329,15 @@ export default function WhatIfSimulatorScreen() {
                 </View>
                 <View style={styles.cardHeaderTextCol}>
                   <Typography variant="bodyBold" color={COLORS.primary} style={styles.cardTitle}>
-                    Monthly Expenses
+                    Monthly Spending & Bills
                   </Typography>
                   <Typography variant="caption" color={COLORS.textSecondary}>
-                    Adjust your expected monthly expenses.
+                    Type your monthly spending and bills.
                   </Typography>
                 </View>
               </View>
 
-              <TouchableOpacity
-                onPress={() => openNumberEdit('expenses', 'Monthly Expenses', monthlyExpenses, 0, 100000)}
-                activeOpacity={0.8}
-                style={styles.amountTouch}
-              >
-                <Typography variant="h2" color={COLORS.primary} style={styles.amountText}>
-                  {formatINR(monthlyExpenses)}
-                </Typography>
-              </TouchableOpacity>
-
-              <GlassSlider
-                value={monthlyExpenses}
-                min={0}
-                max={100000}
-                step={1000}
-                onValueChange={setMonthlyExpenses}
-                onDragStart={() => setScrollEnabled(false)}
-                onDragEnd={() => setScrollEnabled(true)}
-                minLabel="₹0"
-                maxLabel="₹1,00,000"
-              />
+              <AmountInput value={monthlyExpenses} onChangeValue={markEdited(setMonthlyExpenses)} />
             </View>
 
             {/* Card 3: Monthly Debt Payments */}
@@ -352,32 +351,12 @@ export default function WhatIfSimulatorScreen() {
                     Monthly Debt Payments
                   </Typography>
                   <Typography variant="caption" color={COLORS.textSecondary}>
-                    Adjust your total EMI and loan payments.
+                    Type your monthly debt payments.
                   </Typography>
                 </View>
               </View>
 
-              <TouchableOpacity
-                onPress={() => openNumberEdit('debt', 'Monthly Debt Payments', monthlyDebt, 0, 100000)}
-                activeOpacity={0.8}
-                style={styles.amountTouch}
-              >
-                <Typography variant="h2" color={COLORS.primary} style={styles.amountText}>
-                  {formatINR(monthlyDebt)}
-                </Typography>
-              </TouchableOpacity>
-
-              <GlassSlider
-                value={monthlyDebt}
-                min={0}
-                max={100000}
-                step={1000}
-                onValueChange={setMonthlyDebt}
-                onDragStart={() => setScrollEnabled(false)}
-                onDragEnd={() => setScrollEnabled(true)}
-                minLabel="₹0"
-                maxLabel="₹1,00,000"
-              />
+              <AmountInput value={monthlyDebt} onChangeValue={markEdited(setMonthlyDebt)} />
             </View>
           </View>
         )}
@@ -391,7 +370,7 @@ export default function WhatIfSimulatorScreen() {
                 </View>
                 <View style={styles.cardHeaderTextCol}>
                   <Typography variant="bodyBold" color={COLORS.primary} style={styles.cardTitle}>
-                    Monthly Living Expenses
+                    Monthly Spending & Bills
                   </Typography>
                   <Typography variant="caption" color={COLORS.textSecondary}>
                     Essential and discretionary monthly budget.
@@ -399,27 +378,7 @@ export default function WhatIfSimulatorScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                onPress={() => openNumberEdit('expenses', 'Monthly Living Expenses', monthlyExpenses, 0, 100000)}
-                activeOpacity={0.8}
-                style={styles.amountTouch}
-              >
-                <Typography variant="h2" color={COLORS.primary} style={styles.amountText}>
-                  {formatINR(monthlyExpenses)}
-                </Typography>
-              </TouchableOpacity>
-
-              <GlassSlider
-                value={monthlyExpenses}
-                min={0}
-                max={100000}
-                step={1000}
-                onValueChange={setMonthlyExpenses}
-                onDragStart={() => setScrollEnabled(false)}
-                onDragEnd={() => setScrollEnabled(true)}
-                minLabel="₹0"
-                maxLabel="₹1,00,000"
-              />
+              <AmountInput value={monthlyExpenses} onChangeValue={markEdited(setMonthlyExpenses)} />
             </View>
 
             <View style={styles.controlCard}>
@@ -437,27 +396,7 @@ export default function WhatIfSimulatorScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                onPress={() => openNumberEdit('debt', 'Mandatory Debt & EMI', monthlyDebt, 0, 100000)}
-                activeOpacity={0.8}
-                style={styles.amountTouch}
-              >
-                <Typography variant="h2" color={COLORS.primary} style={styles.amountText}>
-                  {formatINR(monthlyDebt)}
-                </Typography>
-              </TouchableOpacity>
-
-              <GlassSlider
-                value={monthlyDebt}
-                min={0}
-                max={100000}
-                step={1000}
-                onValueChange={setMonthlyDebt}
-                onDragStart={() => setScrollEnabled(false)}
-                onDragEnd={() => setScrollEnabled(true)}
-                minLabel="₹0"
-                maxLabel="₹1,00,000"
-              />
+              <AmountInput value={monthlyDebt} onChangeValue={markEdited(setMonthlyDebt)} />
             </View>
           </View>
         )}
@@ -479,27 +418,7 @@ export default function WhatIfSimulatorScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                onPress={() => openNumberEdit('onetime', 'One-Time Planned Shock', oneTimeExpense, 0, 100000)}
-                activeOpacity={0.8}
-                style={styles.amountTouch}
-              >
-                <Typography variant="h2" color={COLORS.primary} style={styles.amountText}>
-                  {formatINR(oneTimeExpense)}
-                </Typography>
-              </TouchableOpacity>
-
-              <GlassSlider
-                value={oneTimeExpense}
-                min={0}
-                max={100000}
-                step={1000}
-                onValueChange={setOneTimeExpense}
-                onDragStart={() => setScrollEnabled(false)}
-                onDragEnd={() => setScrollEnabled(true)}
-                minLabel="₹0"
-                maxLabel="₹1,00,000"
-              />
+              <AmountInput value={oneTimeExpense} onChangeValue={markEdited(setOneTimeExpense)} />
             </View>
           </View>
         )}
@@ -521,27 +440,7 @@ export default function WhatIfSimulatorScreen() {
                 </View>
               </View>
 
-              <TouchableOpacity
-                onPress={() => openNumberEdit('savings', 'Voluntary Monthly Savings', voluntarySavings, 0, 50000)}
-                activeOpacity={0.8}
-                style={styles.amountTouch}
-              >
-                <Typography variant="h2" color={COLORS.primary} style={styles.amountText}>
-                  {formatINR(voluntarySavings)}
-                </Typography>
-              </TouchableOpacity>
-
-              <GlassSlider
-                value={voluntarySavings}
-                min={0}
-                max={50000}
-                step={1000}
-                onValueChange={setVoluntarySavings}
-                onDragStart={() => setScrollEnabled(false)}
-                onDragEnd={() => setScrollEnabled(true)}
-                minLabel="₹0"
-                maxLabel="₹50,000"
-              />
+              <AmountInput value={voluntarySavings} onChangeValue={markEdited(setVoluntarySavings)} />
             </View>
           </View>
         )}
@@ -549,25 +448,25 @@ export default function WhatIfSimulatorScreen() {
         {/* 6. Immediate Financial Feedback — WITHOUT A GRAPH */}
         <View style={styles.feedbackCard}>
           <Typography variant="bodyBold" color={COLORS.primary} style={styles.feedbackHeaderTitle}>
-            Projected Impact Comparison
+            6-month cash
           </Typography>
 
           <View style={styles.feedbackGrid}>
             <View style={styles.feedbackRow}>
               <Typography variant="body" color={COLORS.textSecondary}>
-                Current projected balance
+                Expected Cash
               </Typography>
               <Typography variant="bodyBold" color={COLORS.primary}>
-                {formatINR(baselineClosing)}
+                {baselineClosing != null ? formatINR(baselineClosing) : '—'}
               </Typography>
             </View>
 
             <View style={styles.feedbackRow}>
               <Typography variant="body" color={COLORS.textSecondary}>
-                Revised projected balance
+                Revised Expected Cash
               </Typography>
               <Typography variant="bodyBold" color={COLORS.primary}>
-                {formatINR(revisedClosing)}
+                {revisedClosing != null ? formatINR(revisedClosing) : '—'}
               </Typography>
             </View>
 
@@ -580,10 +479,14 @@ export default function WhatIfSimulatorScreen() {
               <Typography
                 variant="bodyBold"
                 style={{
-                  color: netChange >= 0 ? COLORS.primary : '#B91C1C',
+                  color: (netChange ?? 0) >= 0 ? COLORS.primary : '#B91C1C',
                 }}
               >
-                {netChange >= 0 ? `+${formatINR(netChange)}` : `-${formatINR(Math.abs(netChange))}`}
+                {netChange == null
+                  ? '—'
+                  : netChange >= 0
+                    ? `+${formatINR(netChange)}`
+                    : `-${formatINR(Math.abs(netChange))}`}
               </Typography>
             </View>
           </View>
@@ -591,9 +494,11 @@ export default function WhatIfSimulatorScreen() {
           <View style={styles.reserveNotice}>
             <ShieldCheck color={breachesReserve ? '#B91C1C' : COLORS.gold} size={16} />
             <Typography variant="caption" color={COLORS.textSecondary} style={styles.reserveNoticeText}>
-              {breachesReserve
-                ? `Revised trajectory falls below your ${formatINR(reserveThreshold)} safety reserve.`
-                : `Maintains your configured safety reserve of ${formatINR(reserveThreshold)}.`}
+              {reserveThreshold == null || revisedClosing == null
+                ? 'Expected Cash appears once your transactions have loaded.'
+                : breachesReserve
+                  ? `Revised Expected Cash falls below your Safety Buffer of ${formatINR(reserveThreshold)}.`
+                  : `Money Above Buffer stays positive against your Safety Buffer of ${formatINR(reserveThreshold)}.`}
             </Typography>
           </View>
         </View>
@@ -610,7 +515,7 @@ export default function WhatIfSimulatorScreen() {
               <ActivityIndicator color="#FFFFFF" size="small" />
             ) : (
               <Typography variant="bodyBold" style={styles.applyButtonText}>
-                Apply Changes
+                Update My Plan
               </Typography>
             )}
           </TouchableOpacity>
@@ -628,61 +533,7 @@ export default function WhatIfSimulatorScreen() {
 
         <View style={{ height: 24 }} />
       </ScrollView>
-
-      {/* Numeric Direct Entry Modal */}
-      <Modal
-        visible={!!editField}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setEditField(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Typography variant="bodyBold" color={COLORS.primary}>
-                {editField?.label ?? 'Edit Amount'}
-              </Typography>
-              <TouchableOpacity onPress={() => setEditField(null)}>
-                <X color={COLORS.primary} size={20} />
-              </TouchableOpacity>
-            </View>
-
-            <Typography variant="caption" color={COLORS.textSecondary} style={{ marginBottom: 12 }}>
-              Enter an exact amount between {formatINR(editField?.min ?? 0)} and {formatINR(editField?.max ?? 100000)}
-            </Typography>
-
-            <TextInput
-              style={styles.numericInput}
-              keyboardType="number-pad"
-              value={editInputText}
-              onChangeText={setEditInputText}
-              autoFocus
-              selectTextOnFocus
-              placeholder="0"
-              placeholderTextColor="#9CA3AF"
-            />
-
-            <View style={styles.modalButtonsRow}>
-              <TouchableOpacity
-                style={styles.modalCancelBtn}
-                onPress={() => setEditField(null)}
-              >
-                <Typography variant="body" color={COLORS.textSecondary}>
-                  Cancel
-                </Typography>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalConfirmBtn}
-                onPress={commitNumberEdit}
-              >
-                <Typography variant="bodyBold" style={{ color: '#FFFFFF' }}>
-                  Set Value
-                </Typography>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      </KeyboardAvoidingView>
 
       {/* Info Modal */}
       <Modal
@@ -695,14 +546,14 @@ export default function WhatIfSimulatorScreen() {
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
               <Typography variant="bodyBold" color={COLORS.primary}>
-                About What-If Simulator
+                About Update My Plan
               </Typography>
               <TouchableOpacity onPress={() => setShowInfoModal(false)}>
                 <X color={COLORS.primary} size={20} />
               </TouchableOpacity>
             </View>
             <Typography variant="body" color={COLORS.textSecondary} style={{ lineHeight: 20, marginTop: 8 }}>
-              The What-If Simulator lets you evaluate hypothetical changes in income, living expenses, debt payments, and savings without modifying your actual bank balances or transaction ledger.
+              Update My Plan lets you try changes to Monthly Income, Monthly Spending & Bills, and savings, then see the effect on Expected Cash and your Safety Buffer. Your transactions stay unchanged until you save.
             </Typography>
             <Typography variant="caption" color={COLORS.textSecondary} style={{ marginTop: 12 }}>
               All calculations are deterministic and powered by your ASSAY forecast engine.
@@ -863,14 +714,17 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     marginBottom: 1,
   },
-  amountTouch: {
-    paddingVertical: 2,
-    marginBottom: 6,
-  },
-  amountText: {
+  amountInput: {
     fontFamily: FONTS.bodyBold,
     fontSize: 26,
     color: COLORS.primary,
+    borderWidth: 1,
+    borderColor: '#E7E5E4',
+    backgroundColor: '#FAF9F6',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 4,
   },
   // Feedback Card (No Graph)
   feedbackCard: {

@@ -407,6 +407,11 @@ export type WhatIfAssumptions = {
   essential_expense_shock: number;
   minimum_reserve?: number | null;
   savings_target?: number | null;
+  monthly_income?: number | null;
+  monthly_spending?: number | null;
+  monthly_debt?: number | null;
+  monthly_savings?: number | null;
+  one_time_expense?: number | null;
 };
 
 export type WhatIfPeriod = {
@@ -470,6 +475,8 @@ export type WhatIfResponse = {
   baseline_run_rate: Record<string, number>;
   assumptions: WhatIfAssumptions;
   baseline: WhatIfPlan;
+  status_quo: WhatIfPlan;
+  user_plan: WhatIfPlan;
   plans: WhatIfPlan[];
   recommended_plan_id: string;
   preference_reason: string;

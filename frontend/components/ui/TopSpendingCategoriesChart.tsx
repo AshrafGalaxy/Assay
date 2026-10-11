@@ -1,10 +1,10 @@
-import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { View, StyleSheet, ActivityIndicator } from 'react-native';
 import Svg, { Path, Text as SvgText } from 'react-native-svg';
 import { COLORS, FONTS } from '../../constants/theme';
 import { Typography } from '../Typography';
-import { useTransactions } from '../../services/transactions';
-import { isCurrentCalendarMonth } from '../../utils/date';
+import { fetchSpendingBreakdown, formatINR, SpendingCategory } from '../../services/finance';
+import { CATEGORY_COLORS } from '../../services/transactions';
 
 export interface SpendingCategoryData {
   label: string;
@@ -15,48 +15,8 @@ export interface SpendingCategoryData {
   lineColor: string;
 }
 
-export const DEFAULT_SPENDING_CATEGORIES: SpendingCategoryData[] = [
-  {
-    label: 'Food & Dining',
-    percent: '35%',
-    value: 35,
-    amount: '₹11,400',
-    color: '#F59E0B', // Gold / Amber
-    lineColor: 'rgba(245, 158, 11, 0.45)',
-  },
-  {
-    label: 'Shopping',
-    percent: '25%',
-    value: 25,
-    amount: '₹8,200',
-    color: '#111827', // Deep Navy
-    lineColor: 'rgba(17, 24, 39, 0.35)',
-  },
-  {
-    label: 'Transport',
-    percent: '16%',
-    value: 16,
-    amount: '₹5,150',
-    color: '#10B981', // Emerald Green
-    lineColor: 'rgba(16, 185, 129, 0.45)',
-  },
-  {
-    label: 'Subscriptions',
-    percent: '14%',
-    value: 14,
-    amount: '₹4,400',
-    color: '#F97316', // Orange
-    lineColor: 'rgba(249, 115, 22, 0.45)',
-  },
-  {
-    label: 'Others',
-    percent: '10%',
-    value: 10,
-    amount: '₹3,300',
-    color: '#94A3B8', // Muted Grey
-    lineColor: 'rgba(148, 163, 184, 0.5)',
-  },
-];
+const MAX_SEGMENTS = 5;
+const FALLBACK_COLOR = '#94A3B8';
 
 const toRad = (deg: number) => (deg * Math.PI) / 180;
 
@@ -71,313 +31,210 @@ const getArcPath = (cx: number, cy: number, r: number, startAngle: number, endAn
   return `M ${x1} ${y1} A ${r} ${r} 0 ${largeArcFlag} 1 ${x2} ${y2}`;
 };
 
+function hexToRgba(hex: string, alpha: number): string {
+  const clean = hex.replace('#', '');
+  if (clean.length !== 6) return hex;
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** Collapse API categories into at most MAX_SEGMENTS rows (tail aggregated into "Others"). */
+function toChartCategories(apiCategories: SpendingCategory[]): SpendingCategoryData[] {
+  const sorted = [...apiCategories]
+    .filter((c) => Number(c.amount) > 0)
+    .sort((a, b) => b.amount - a.amount);
+  const total = sorted.reduce((sum, c) => sum + Number(c.amount), 0);
+  if (total <= 0) return [];
+
+  const head = sorted.slice(0, MAX_SEGMENTS - 1);
+  const tail = sorted.slice(MAX_SEGMENTS - 1);
+  const rows: Array<{ label: string; amount: number }> = head.map((c) => ({
+    label: c.name,
+    amount: Number(c.amount),
+  }));
+  if (tail.length === 1) {
+    rows.push({ label: tail[0].name, amount: Number(tail[0].amount) });
+  } else if (tail.length > 1) {
+    rows.push({ label: 'Others', amount: tail.reduce((sum, c) => sum + Number(c.amount), 0) });
+  }
+
+  return rows.map((row) => {
+    const pct = (row.amount / total) * 100;
+    const color = CATEGORY_COLORS[row.label] || FALLBACK_COLOR;
+    return {
+      label: row.label,
+      percent: `${Math.round(pct)}%`,
+      value: pct,
+      amount: formatINR(row.amount),
+      color,
+      lineColor: hexToRgba(color, 0.45),
+    };
+  });
+}
+
 export interface TopSpendingCategoriesChartProps {
   customCategories?: SpendingCategoryData[];
 }
 
 export function TopSpendingCategoriesChart({ customCategories }: TopSpendingCategoriesChartProps = {}) {
-  const { transactions } = useTransactions();
+  const hasCustom = Boolean(customCategories && customCategories.length > 0);
+  const [apiCategories, setApiCategories] = useState<SpendingCategory[] | null>(null);
+  const [loading, setLoading] = useState(!hasCustom);
+  const [error, setError] = useState(false);
 
-  const categories = useMemo(() => {
-    if (customCategories && customCategories.length > 0) {
-      return customCategories;
-    }
-
-    const baseMap: Record<string, number> = {
-      'Food & Dining': 11400,
-      'Shopping': 8200,
-      'Transport': 5150,
-      'Subscriptions': 4400,
-      'Others': 3300,
+  useEffect(() => {
+    if (hasCustom) return;
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    fetchSpendingBreakdown()
+      .then((cats) => {
+        if (!cancelled) setApiCategories(cats);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
     };
+  }, [hasCustom]);
 
-    // Incorporate current month manual debit transactions dynamically
-    for (const tx of transactions) {
-      if (
-        tx.source_type === 'manual' &&
-        tx.type === 'debit' &&
-        isCurrentCalendarMonth(tx.transaction_date)
-      ) {
-        const cat = tx.category in baseMap ? tx.category : 'Others';
-        baseMap[cat] = (baseMap[cat] || 0) + (Number(tx.amount) || 0);
-      }
-    }
-
-    const total = Object.values(baseMap).reduce((s, a) => s + a, 0);
-
-    return [
-      {
-        label: 'Food & Dining',
-        percent: `${Math.round((baseMap['Food & Dining'] / total) * 100)}%`,
-        value: Math.round((baseMap['Food & Dining'] / total) * 100),
-        amount: `₹${baseMap['Food & Dining'].toLocaleString('en-IN')}`,
-        color: '#F59E0B',
-        lineColor: 'rgba(245, 158, 11, 0.45)',
-      },
-      {
-        label: 'Shopping',
-        percent: `${Math.round((baseMap['Shopping'] / total) * 100)}%`,
-        value: Math.round((baseMap['Shopping'] / total) * 100),
-        amount: `₹${baseMap['Shopping'].toLocaleString('en-IN')}`,
-        color: '#111827',
-        lineColor: 'rgba(17, 24, 39, 0.35)',
-      },
-      {
-        label: 'Transport',
-        percent: `${Math.round((baseMap['Transport'] / total) * 100)}%`,
-        value: Math.round((baseMap['Transport'] / total) * 100),
-        amount: `₹${baseMap['Transport'].toLocaleString('en-IN')}`,
-        color: '#10B981',
-        lineColor: 'rgba(16, 185, 129, 0.45)',
-      },
-      {
-        label: 'Subscriptions',
-        percent: `${Math.round((baseMap['Subscriptions'] / total) * 100)}%`,
-        value: Math.round((baseMap['Subscriptions'] / total) * 100),
-        amount: `₹${baseMap['Subscriptions'].toLocaleString('en-IN')}`,
-        color: '#F97316',
-        lineColor: 'rgba(249, 115, 22, 0.45)',
-      },
-      {
-        label: 'Others',
-        percent: `${Math.round((baseMap['Others'] / total) * 100)}%`,
-        value: Math.round((baseMap['Others'] / total) * 100),
-        amount: `₹${baseMap['Others'].toLocaleString('en-IN')}`,
-        color: '#94A3B8',
-        lineColor: 'rgba(148, 163, 184, 0.5)',
-      },
-    ];
-  }, [transactions, customCategories]);
+  const categories = useMemo<SpendingCategoryData[]>(() => {
+    if (customCategories && customCategories.length > 0) return customCategories;
+    return toChartCategories(apiCategories || []);
+  }, [apiCategories, customCategories]);
 
   const cx = 170;
   const cy = 170;
   const r = 84;
   const strokeWidth = 24;
+  const gapDeg = 3;
+  const labelRadius = r + strokeWidth / 2 + 30;
 
-  const foodCat = categories.find((c) => c.label === 'Food & Dining') || categories[0];
-  const shopCat = categories.find((c) => c.label === 'Shopping') || categories[1];
-  const transCat = categories.find((c) => c.label === 'Transport') || categories[2];
-  const subCat = categories.find((c) => c.label === 'Subscriptions') || categories[3];
-  const otherCat = categories.find((c) => c.label === 'Others') || categories[4];
+  const segments = useMemo(() => {
+    const totalValue = categories.reduce((sum, c) => sum + c.value, 0);
+    if (totalValue <= 0) return [];
+    const usable = 360 - gapDeg * categories.length;
+    let cursor = -90;
+    return categories.map((cat) => {
+      const sweep = (cat.value / totalValue) * usable;
+      const start = cursor;
+      const end = cursor + sweep;
+      cursor = end + gapDeg;
+      const mid = (start + end) / 2;
+      const outerX = cx + (r + strokeWidth / 2) * Math.cos(toRad(mid));
+      const outerY = cy + (r + strokeWidth / 2) * Math.sin(toRad(mid));
+      const labelX = cx + labelRadius * Math.cos(toRad(mid));
+      const labelY = cy + labelRadius * Math.sin(toRad(mid));
+      const anchor: 'start' | 'end' | 'middle' =
+        Math.abs(Math.cos(toRad(mid))) < 0.25 ? 'middle' : Math.cos(toRad(mid)) > 0 ? 'start' : 'end';
+      return { cat, start, end: Math.max(end, start + 0.1), outerX, outerY, labelX, labelY, anchor };
+    });
+  }, [categories]);
+
+  const totalAmount = useMemo(() => {
+    if (customCategories && customCategories.length > 0) return null;
+    const total = (apiCategories || []).reduce((sum, c) => sum + Number(c.amount), 0);
+    return total > 0 ? formatINR(total) : null;
+  }, [apiCategories, customCategories]);
+
+  if (loading) {
+    return (
+      <View style={styles.stateBox}>
+        <ActivityIndicator color={COLORS.primary} />
+        <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+          Loading spending breakdown…
+        </Typography>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.stateBox}>
+        <Typography variant="bodyMedium" color={COLORS.text} align="center">
+          Spending data unavailable
+        </Typography>
+        <Typography variant="caption" color={COLORS.textSecondary} align="center" style={styles.stateText}>
+          Could not reach the Assay backend. Pull to refresh once it is running.
+        </Typography>
+      </View>
+    );
+  }
+
+  if (categories.length === 0) {
+    return (
+      <View style={styles.stateBox}>
+        <Typography variant="bodyMedium" color={COLORS.text} align="center">
+          No spending data yet
+        </Typography>
+        <Typography variant="caption" color={COLORS.textSecondary} align="center" style={styles.stateText}>
+          Connect an account or add transactions to see your top categories.
+        </Typography>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
       <Svg viewBox="0 0 340 355" style={styles.svg}>
-        {/* ── 1. SEGMENT 1: Food & Dining (Gold) ── */}
-        <Path
-          d={getArcPath(cx, cy, r, -78.5, 44.5)}
-          stroke="#F59E0B"
-          strokeWidth={strokeWidth}
-          strokeLinecap="butt"
-          fill="none"
-        />
+        {/* Donut segments, proportional to API amounts */}
+        {segments.map(({ cat, start, end }) => (
+          <Path
+            key={`seg-${cat.label}`}
+            d={getArcPath(cx, cy, r, start, end)}
+            stroke={cat.color}
+            strokeWidth={strokeWidth}
+            strokeLinecap="butt"
+            fill="none"
+          />
+        ))}
 
-        {/* ── 2. SEGMENT 2: Transport (Green) ── */}
-        <Path
-          d={getArcPath(cx, cy, r, 47.5, 102.1)}
-          stroke="#10B981"
-          strokeWidth={strokeWidth}
-          strokeLinecap="butt"
-          fill="none"
-        />
+        {/* Callout lines + external labels (percent + category) */}
+        {segments.map(({ cat, outerX, outerY, labelX, labelY, anchor }) => {
+          const textX = anchor === 'start' ? labelX + 4 : anchor === 'end' ? labelX - 4 : labelX;
+          return (
+            <React.Fragment key={`label-${cat.label}`}>
+              <Path
+                d={`M ${outerX} ${outerY} L ${labelX} ${labelY}`}
+                stroke={cat.lineColor}
+                strokeWidth={1.2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              <SvgText
+                x={textX}
+                y={labelY - 2}
+                fontSize={16}
+                fontWeight="700"
+                fontFamily={FONTS.bodyBold}
+                fill={COLORS.primary}
+                textAnchor={anchor}
+              >
+                {cat.percent}
+              </SvgText>
+              <SvgText
+                x={textX}
+                y={labelY + 13}
+                fontSize={11.5}
+                fontWeight="500"
+                fontFamily={FONTS.bodyMedium}
+                fill={COLORS.textSecondary}
+                textAnchor={anchor}
+              >
+                {cat.label}
+              </SvgText>
+            </React.Fragment>
+          );
+        })}
 
-        {/* ── 3. SEGMENT 3: Subscriptions (Orange) ── */}
-        <Path
-          d={getArcPath(cx, cy, r, 105.1, 152.5)}
-          stroke="#F97316"
-          strokeWidth={strokeWidth}
-          strokeLinecap="butt"
-          fill="none"
-        />
-
-        {/* ── 4. SEGMENT 4: Others (Grey) ── */}
-        <Path
-          d={getArcPath(cx, cy, r, 155.5, 188.5)}
-          stroke="#94A3B8"
-          strokeWidth={strokeWidth}
-          strokeLinecap="butt"
-          fill="none"
-        />
-
-        {/* ── 5. SEGMENT 5: Shopping (Dark Navy) ── */}
-        <Path
-          d={getArcPath(cx, cy, r, 191.5, 278.5)}
-          stroke="#111827"
-          strokeWidth={strokeWidth}
-          strokeLinecap="butt"
-          fill="none"
-        />
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            CALLOUT CONNECTING LINES
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        <Path
-          d="M 115 91 L 64 68 L 64 54"
-          stroke="rgba(17, 24, 39, 0.35)"
-          strokeWidth={1.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        <Path
-          d="M 262 142 L 278 84 L 278 58"
-          stroke="rgba(245, 158, 11, 0.45)"
-          strokeWidth={1.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        <Path
-          d="M 195 263 L 244 286"
-          stroke="rgba(16, 185, 129, 0.45)"
-          strokeWidth={1.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        <Path
-          d="M 116 250 L 136 302"
-          stroke="rgba(249, 115, 22, 0.45)"
-          strokeWidth={1.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-        <Path
-          d="M 75 183 L 48 245 L 48 266"
-          stroke="rgba(148, 163, 184, 0.5)"
-          strokeWidth={1.2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            EXTERNAL LABELS (PERCENT + CATEGORY)
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
-        {/* Upper Left: Shopping */}
-        <SvgText
-          x={18}
-          y={36}
-          fontSize={20}
-          fontWeight="700"
-          fontFamily={FONTS.bodyBold}
-          fill={COLORS.primary}
-          textAnchor="start"
-        >
-          {shopCat.percent}
-        </SvgText>
-        <SvgText
-          x={18}
-          y={53}
-          fontSize={12.5}
-          fontWeight="500"
-          fontFamily={FONTS.bodyMedium}
-          fill={COLORS.textSecondary}
-          textAnchor="start"
-        >
-          Shopping
-        </SvgText>
-
-        {/* Upper Right: Food & Dining */}
-        <SvgText
-          x={322}
-          y={36}
-          fontSize={20}
-          fontWeight="700"
-          fontFamily={FONTS.bodyBold}
-          fill={COLORS.primary}
-          textAnchor="end"
-        >
-          {foodCat.percent}
-        </SvgText>
-        <SvgText
-          x={322}
-          y={53}
-          fontSize={12.5}
-          fontWeight="500"
-          fontFamily={FONTS.bodyMedium}
-          fill={COLORS.textSecondary}
-          textAnchor="end"
-        >
-          Food & Dining
-        </SvgText>
-
-        {/* Lower Right: Transport */}
-        <SvgText
-          x={264}
-          y={296}
-          fontSize={20}
-          fontWeight="700"
-          fontFamily={FONTS.bodyBold}
-          fill={COLORS.primary}
-          textAnchor="middle"
-        >
-          {transCat.percent}
-        </SvgText>
-        <SvgText
-          x={264}
-          y={313}
-          fontSize={12.5}
-          fontWeight="500"
-          fontFamily={FONTS.bodyMedium}
-          fill={COLORS.textSecondary}
-          textAnchor="middle"
-        >
-          Transport
-        </SvgText>
-
-        {/* Bottom Center: Subscriptions */}
-        <SvgText
-          x={136}
-          y={320}
-          fontSize={20}
-          fontWeight="700"
-          fontFamily={FONTS.bodyBold}
-          fill={COLORS.primary}
-          textAnchor="middle"
-        >
-          {subCat.percent}
-        </SvgText>
-        <SvgText
-          x={136}
-          y={337}
-          fontSize={12.5}
-          fontWeight="500"
-          fontFamily={FONTS.bodyMedium}
-          fill={COLORS.textSecondary}
-          textAnchor="middle"
-        >
-          Subscriptions
-        </SvgText>
-
-        {/* Lower Left: Others */}
-        <SvgText
-          x={40}
-          y={280}
-          fontSize={20}
-          fontWeight="700"
-          fontFamily={FONTS.bodyBold}
-          fill={COLORS.primary}
-          textAnchor="middle"
-        >
-          {otherCat.percent}
-        </SvgText>
-        <SvgText
-          x={40}
-          y={297}
-          fontSize={12.5}
-          fontWeight="500"
-          fontFamily={FONTS.bodyMedium}
-          fill={COLORS.textSecondary}
-          textAnchor="middle"
-        >
-          Others
-        </SvgText>
-
-        {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-            DONUT CENTER CONTENT
-            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+        {/* Donut center content */}
         <SvgText
           x={cx}
           y={cy - 6}
@@ -392,17 +249,17 @@ export function TopSpendingCategoriesChart({ customCategories }: TopSpendingCate
         <SvgText
           x={cx}
           y={cy + 19}
-          fontSize={23}
+          fontSize={totalAmount ? 20 : 23}
           fontWeight="700"
           fontFamily={FONTS.bodyBold}
           fill={COLORS.primary}
           textAnchor="middle"
         >
-          Spend
+          {totalAmount ?? 'Spend'}
         </SvgText>
       </Svg>
 
-      {/* Legend list matching application mockup */}
+      {/* Legend list */}
       <View style={styles.legendContainer}>
         {categories.map((cat) => (
           <View key={cat.label} style={styles.legendRow}>
@@ -433,6 +290,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 8,
+  },
+  stateBox: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+    gap: 8,
+  },
+  stateText: {
+    textAlign: 'center',
+    maxWidth: 260,
   },
   svg: {
     width: '100%',

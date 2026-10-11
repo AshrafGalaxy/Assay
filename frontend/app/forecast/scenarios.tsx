@@ -13,35 +13,15 @@ import {
 } from '../../services/finance';
 import { ChevronLeft, ChevronDown, Info } from 'lucide-react-native';
 
-const DEFAULT_SCENARIOS = [
-  {
-    type: 'best' as const,
-    title: 'Best Case',
-    description: 'Higher income and lower expenses than expected. Closing balance in 6 months.',
-    projectedOutcome: '₹1,48,000',
-    outcomeLabel: 'Closing balance in 6 months',
-    assumptions: 'Income +10%, flexible spending -15%, zero emergency costs.',
-    endingBalance: 148000,
-  },
-  {
-    type: 'expected' as const,
-    title: 'Expected Case',
-    description: 'Based on most likely income and expense patterns. Closing balance in 6 months.',
-    projectedOutcome: '₹1,22,000',
-    outcomeLabel: 'Closing balance in 6 months',
-    assumptions: 'Confirmed salary schedule and median historical spend.',
-    endingBalance: 122000,
-  },
-  {
-    type: 'worst' as const,
-    title: 'Worst Case',
-    description: 'Lower income, higher expenses and one unexpected cost. Closing balance in 6 months.',
-    projectedOutcome: '₹28,500',
-    outcomeLabel: 'Closing balance in 6 months',
-    assumptions: 'Income -10%, spending +10%, one emergency cost of ₹15,000.',
-    endingBalance: 28500,
-  },
-];
+type ScenarioViewModel = {
+  type: ScenarioType;
+  title: string;
+  description: string;
+  projectedOutcome: string;
+  outcomeLabel: string;
+  assumptions: string;
+  endingBalance: number;
+};
 
 export default function ScenarioAnalysisScreen() {
   const router = useRouter();
@@ -50,16 +30,19 @@ export default function ScenarioAnalysisScreen() {
   const [activeScenario, setActiveScenario] = useState<ScenarioType>('expected');
   const [scenarioData, setScenarioData] = useState<ForecastScenariosResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const horizonMonths = selectedHorizon === '3M' ? 3 : selectedHorizon === '6M' ? 6 : 12;
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const data = await fetchForecastScenarios(horizonMonths);
       setScenarioData(data);
     } catch {
       setScenarioData(null);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -69,28 +52,37 @@ export default function ScenarioAnalysisScreen() {
     void loadData();
   }, [loadData]);
 
-  const scenarios = useMemo(() => {
-    if (scenarioData?.scenarios && scenarioData.scenarios.length >= 3) {
-      return scenarioData.scenarios.map((sc) => ({
+  // Scenario cards are built only from the API response.
+  const scenarios = useMemo<ScenarioViewModel[]>(() => {
+    if (!scenarioData?.scenarios) return [];
+    return scenarioData.scenarios
+      .filter((sc): sc is typeof sc & { type: ScenarioType } =>
+        sc.type === 'best' || sc.type === 'expected' || sc.type === 'worst',
+      )
+      .map((sc) => ({
         type: sc.type,
         title: sc.title,
         description: sc.description,
-        projectedOutcome: `₹${Math.round(sc.ending_balance).toLocaleString('en-IN')}`,
-        outcomeLabel: `Closing balance in ${horizonMonths} months`,
+        projectedOutcome: formatINR(Math.round(sc.ending_balance)),
+        outcomeLabel: `Expected Cash in ${scenarioData.horizon_months} months`,
         assumptions: sc.assumptions_summary,
         endingBalance: sc.ending_balance,
       }));
-    }
-    return DEFAULT_SCENARIOS;
-  }, [scenarioData, horizonMonths]);
+  }, [scenarioData]);
 
-  const bestVal = scenarios.find((s) => s.type === 'best')?.endingBalance || 148000;
-  const expectedVal = scenarios.find((s) => s.type === 'expected')?.endingBalance || 122000;
-  const worstVal = scenarios.find((s) => s.type === 'worst')?.endingBalance || 28500;
-  const minReserve = scenarioData?.minimum_reserve ?? 15000;
-  const probRisk = scenarioData?.probability_of_running_out_of_cash ?? 8;
+  const bestVal = scenarios.find((s) => s.type === 'best')?.endingBalance ?? null;
+  const expectedVal = scenarios.find((s) => s.type === 'expected')?.endingBalance ?? null;
+  const worstVal = scenarios.find((s) => s.type === 'worst')?.endingBalance ?? null;
+  const minReserve = scenarioData?.minimum_reserve ?? null;
+  const probRisk = scenarioData?.probability_of_running_out_of_cash ?? null;
+  const chart =
+    bestVal != null && expectedVal != null && worstVal != null && minReserve != null
+      ? { best: bestVal, expected: expectedVal, worst: worstVal, reserve: minReserve }
+      : null;
+  const hasScenarioData = chart != null;
 
-  const maxVal = Math.max(bestVal, expectedVal, worstVal, minReserve, 100000);
+  // Bar scale derived from the plotted values only (chart geometry).
+  const maxVal = chart ? Math.max(1, chart.best, chart.expected, chart.worst, chart.reserve) : 1;
   const getBarWidth = (val: number) =>
     Math.max(20, Math.min(220, (Math.max(0, val) / maxVal) * 220));
 
@@ -159,17 +151,46 @@ export default function ScenarioAnalysisScreen() {
           )}
         </View>
 
-        {/* Preview State Badge */}
-        <View style={styles.previewBadge}>
-          <Typography variant="caption" color={COLORS.textSecondary} style={styles.previewText}>
-            Simulated Path Distribution • Scenario Preview
-          </Typography>
-        </View>
+        {loading && (
+          <View style={styles.stateCard}>
+            <ActivityIndicator color={COLORS.primary} />
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+              Loading scenarios…
+            </Typography>
+          </View>
+        )}
 
+        {!loading && loadError && (
+          <View style={styles.stateCard}>
+            <Typography variant="bodyBold" color={COLORS.primary}>
+              Scenarios unavailable
+            </Typography>
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+              We couldn't load scenario analysis. Check your connection and try again.
+            </Typography>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => void loadData()} activeOpacity={0.8}>
+              <Typography variant="bodyBold" color={COLORS.white}>Retry</Typography>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!loading && !loadError && scenarioData && !hasScenarioData && (
+          <View style={styles.stateCard}>
+            <Typography variant="bodyBold" color={COLORS.primary}>
+              No scenarios yet
+            </Typography>
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+              The forecast engine did not return best/expected/worst scenarios for this horizon. Add transactions to build a projection.
+            </Typography>
+          </View>
+        )}
+
+        {!loading && !loadError && scenarioData && hasScenarioData && (
+          <>
         {/* Scenario Comparison Chart */}
         <View style={styles.chartCard}>
           <Typography variant="cardHeading" color={COLORS.primary} style={styles.chartTitle}>
-            Projected Ending Cash by Scenario
+            Expected Cash by Scenario
           </Typography>
 
           <Svg height={130} width="100%" viewBox="0 0 320 130">
@@ -177,50 +198,50 @@ export default function ScenarioAnalysisScreen() {
             <SvgText x={10} y={26} fill={COLORS.textSecondary} fontSize={11} fontFamily={FONTS.body}>
               Best
             </SvgText>
-            <Rect x={70} y={15} width={getBarWidth(bestVal)} height={16} rx={4} fill={COLORS.gold} />
+            <Rect x={70} y={15} width={getBarWidth(chart!.best)} height={16} rx={4} fill={COLORS.gold} />
             <SvgText
-              x={Math.min(270, 75 + getBarWidth(bestVal))}
+              x={Math.min(270, 75 + getBarWidth(chart!.best))}
               y={27}
               fill={COLORS.primary}
               fontSize={10}
               fontWeight="bold"
             >
-              {formatShort(bestVal)}
+              {formatShort(chart!.best)}
             </SvgText>
 
             {/* Expected Case Bar */}
             <SvgText x={10} y={61} fill={COLORS.textSecondary} fontSize={11} fontFamily={FONTS.body}>
               Expected
             </SvgText>
-            <Rect x={70} y={50} width={getBarWidth(expectedVal)} height={16} rx={4} fill={COLORS.primary} />
+            <Rect x={70} y={50} width={getBarWidth(chart!.expected)} height={16} rx={4} fill={COLORS.primary} />
             <SvgText
-              x={Math.min(270, 75 + getBarWidth(expectedVal))}
+              x={Math.min(270, 75 + getBarWidth(chart!.expected))}
               y={62}
               fill={COLORS.primary}
               fontSize={10}
               fontWeight="bold"
             >
-              {formatShort(expectedVal)}
+              {formatShort(chart!.expected)}
             </SvgText>
 
             {/* Worst Case Bar */}
             <SvgText x={10} y={96} fill={COLORS.textSecondary} fontSize={11} fontFamily={FONTS.body}>
               Worst
             </SvgText>
-            <Rect x={70} y={85} width={getBarWidth(worstVal)} height={16} rx={4} fill="#8A92A6" />
+            <Rect x={70} y={85} width={getBarWidth(chart!.worst)} height={16} rx={4} fill="#8A92A6" />
             <SvgText
-              x={Math.min(270, 75 + getBarWidth(worstVal))}
+              x={Math.min(270, 75 + getBarWidth(chart!.worst))}
               y={97}
               fill={COLORS.primary}
               fontSize={10}
               fontWeight="bold"
             >
-              {formatShort(worstVal)}
+              {formatShort(chart!.worst)}
             </SvgText>
 
             {/* Minimum Reserve Benchmark Line */}
             {(() => {
-              const resX = 70 + Math.min(220, (minReserve / maxVal) * 220);
+              const resX = 70 + Math.min(220, (chart!.reserve / maxVal) * 220);
               return (
                 <>
                   <Line
@@ -233,7 +254,7 @@ export default function ScenarioAnalysisScreen() {
                     strokeDasharray="3 3"
                   />
                   <SvgText x={Math.min(240, resX + 4)} y={120} fill={COLORS.gold} fontSize={9}>
-                    Reserve ({formatShort(minReserve)})
+                    Safety Buffer ({formatShort(chart!.reserve)})
                   </SvgText>
                 </>
               );
@@ -263,24 +284,28 @@ export default function ScenarioAnalysisScreen() {
           <View style={styles.probHeader}>
             <View style={styles.probTitleRow}>
               <Typography variant="bodyBold" color={COLORS.primary} style={styles.probTitle}>
-                Probability of running out of cash
+                Risk of Running Short
               </Typography>
               <Info size={14} color={COLORS.textSecondary} style={{ marginLeft: 4 }} />
             </View>
             <Typography variant="bodyBold" color={COLORS.primary} style={styles.probPercent}>
-              {probRisk}%
+              {scenarioData.probability_of_running_out_of_cash}%
             </Typography>
           </View>
 
           {/* Clean Progress Track */}
           <View style={styles.track}>
-            <View style={[styles.progress, { width: `${Math.max(2, Math.min(100, probRisk))}%` }]} />
+            <View style={[styles.progress, { width: `${Math.max(2, Math.min(100, scenarioData.probability_of_running_out_of_cash))}%` }]} />
           </View>
 
           <Typography variant="caption" color={COLORS.textSecondary} style={styles.probNote}>
-            Calculated across N=500 simulated stress-test paths over {horizonMonths} months with your current ₹{minReserve.toLocaleString('en-IN')} minimum reserve.
+            {scenarioData?.calculation_basis
+              ? `${scenarioData.calculation_basis} over ${horizonMonths} months with your Safety Buffer of ₹${chart!.reserve.toLocaleString('en-IN')}.`
+              : `Projected over ${horizonMonths} months with your Safety Buffer of ₹${chart!.reserve.toLocaleString('en-IN')}.`}
           </Typography>
         </View>
+          </>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -292,6 +317,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: COLORS.background,
+  },
+  stateCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 48,
+    paddingHorizontal: 24,
+  },
+  stateText: {
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  retryBtn: {
+    marginTop: 8,
+    backgroundColor: COLORS.primary,
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
   },
   header: {
     flexDirection: 'row',

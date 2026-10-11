@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   ScrollView,
@@ -43,11 +43,6 @@ const DATE_PRESETS = [
     display: new Date(Date.now() + 3 * 86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
   },
   {
-    label: '15 Apr 2025',
-    value: '2025-04-15',
-    display: '15 Apr 2025',
-  },
-  {
     label: 'End of Month',
     value: new Date(Date.now() + 15 * 86400000).toISOString().slice(0, 10),
     display: new Date(Date.now() + 15 * 86400000).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -63,8 +58,8 @@ export default function AffordabilityCheckScreen() {
   const router = useRouter();
 
   const [purchaseType, setPurchaseType] = useState<PurchaseType>('onetime');
-  const [purchaseAmountStr, setPurchaseAmountStr] = useState('50000');
-  const [selectedDateItem, setSelectedDateItem] = useState(DATE_PRESETS[2]); // Default: 15 Apr 2025
+  const [purchaseAmountStr, setPurchaseAmountStr] = useState('');
+  const [selectedDateItem, setSelectedDateItem] = useState(DATE_PRESETS[0]);
   const [recurringFrequency, setRecurringFrequency] = useState<'monthly' | 'quarterly'>('monthly');
 
   const [loading, setLoading] = useState(false);
@@ -95,44 +90,12 @@ export default function AffordabilityCheckScreen() {
       });
       setResult(res);
     } catch {
-      // Deterministic calculation fallback matching backend logic
-      const balance = 93000;
-      const minReserve = 15000;
-      const postBalance = balance - rawNum;
-      const isAffordable = postBalance >= minReserve;
-
-      setResult({
-        purchase_amount: rawNum,
-        purchase_date: selectedDateItem.value,
-        expense_type: purchaseType,
-        current_balance: balance,
-        post_purchase_balance: postBalance,
-        minimum_reserve: minReserve,
-        upcoming_obligations_total: 28900,
-        trough_before_payday: postBalance - 8000,
-        headroom_above_reserve: postBalance - minReserve,
-        verdict: isAffordable ? 'affordable' : 'caution',
-        status_headline: isAffordable ? 'You can afford this purchase' : 'May reduce balance below reserve',
-        finding_explanation: isAffordable
-          ? 'Based on your current forecast, this purchase can be made while maintaining your minimum reserve.'
-          : 'Upcoming contractual bills before your next payday may trigger a liquidity shortfall.',
-        conflicting_obligations: [
-          { name: 'Vehicle EMI', amount: 8400, due: 'In 12 days' },
-          { name: 'House Rent', amount: 18500, due: 'In 20 days' },
-        ],
-        alternatives: [],
-        limitations: ['Verified against available cash flow projections.'],
-      });
+      setResult(null);
+      setError("Couldn't check this purchase against your transactions. Check the connection and try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  // Run on mount once with default ₹50,000 to display the verified state like mockup
-  useEffect(() => {
-    void handleCheckAffordability();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const formatInputDisplay = (val: string) => {
     const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
@@ -385,7 +348,7 @@ export default function AffordabilityCheckScreen() {
             <View style={styles.resultFiguresSection}>
               <View style={styles.resultFigureRow}>
                 <Typography variant="body" color={COLORS.textSecondary}>
-                  Projected balance after purchase
+                  Expected Cash
                 </Typography>
                 <Typography variant="bodyBold" color={COLORS.primary} style={styles.figureAmount}>
                   {formatINR(result.post_purchase_balance)}
@@ -394,7 +357,7 @@ export default function AffordabilityCheckScreen() {
 
               <View style={styles.resultFigureRow}>
                 <Typography variant="body" color={COLORS.textSecondary}>
-                  Minimum cash reserve
+                  Safety Buffer
                 </Typography>
                 <Typography variant="bodyBold" color={COLORS.primary} style={styles.figureAmount}>
                   {formatINR(result.minimum_reserve)}
@@ -514,7 +477,7 @@ export default function AffordabilityCheckScreen() {
               </TouchableOpacity>
             </View>
             <Typography variant="body" color={COLORS.textSecondary} style={{ lineHeight: 20, marginTop: 8 }}>
-              Affordability is calculated by forecasting your cash position through the planned purchase date and comparing it against upcoming contractual obligations (rent, EMIs, bills) and your safety reserve.
+              Affordability compares Expected Cash through the purchase date with Monthly Spending & Bills and your Safety Buffer. Money Above Buffer is what remains after the Safety Buffer.
             </Typography>
             <Typography variant="caption" color={COLORS.textSecondary} style={{ marginTop: 12 }}>
               A positive current balance does not guarantee affordability if obligations fall due before your next payday.

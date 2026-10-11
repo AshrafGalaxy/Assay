@@ -55,7 +55,9 @@ export interface FinancialTotals {
   categorySpending: CategorySpendSummary[];
 }
 
-const STORAGE_KEY = 'assay_transactions_v1';
+// v2: cache contains backend-sourced rows only (v1 carried seeded demo rows).
+const STORAGE_KEY = 'assay_transactions_v2';
+const LOCAL_ID_PREFIX = 'tx_local_';
 
 // Category color palette matching ASSAY design tokens
 export const CATEGORY_COLORS: Record<string, string> = {
@@ -78,96 +80,36 @@ export const CATEGORY_COLORS: Record<string, string> = {
   'Other': '#94A3B8',
 };
 
-// Initial baseline transactions
-const INITIAL_BASELINE: Transaction[] = [
-  {
-    id: 'tx-1',
-    merchant_name: 'Starbucks',
-    category: 'Food & Dining',
-    transaction_date: 'Today, 9:42 AM',
-    payment_method: 'UPI',
-    amount: 250,
-    type: 'debit',
-    description: 'Morning coffee ☕',
-    source_type: 'manual',
-  },
-  {
-    id: 'tx-2',
-    merchant_name: 'Uber',
-    category: 'Transport',
-    transaction_date: 'Today, 8:20 AM',
-    payment_method: 'UPI',
-    amount: 120,
-    type: 'debit',
-    description: 'Ride to office',
-    source_type: 'manual',
-  },
-  {
-    id: 'tx-8',
-    merchant_name: 'Blinkit',
-    category: 'Groceries',
-    transaction_date: 'Today, 7:45 AM',
-    payment_method: 'UPI',
-    amount: 340,
-    type: 'debit',
-    description: 'Breakfast supplies',
-    source_type: 'manual',
-  },
-  {
-    id: 'tx-3',
-    merchant_name: 'Amazon',
-    category: 'Shopping',
-    transaction_date: 'Yesterday, 6:10 PM',
-    payment_method: 'Card',
-    amount: 899,
-    type: 'debit',
-    description: 'Office electronics',
-    source_type: 'manual',
-  },
-  {
-    id: 'tx-4',
-    merchant_name: 'Tea Stall',
-    category: 'Food & Dining',
-    transaction_date: 'Yesterday, 4:30 PM',
-    payment_method: 'Cash',
-    amount: 30,
-    type: 'debit',
-    description: 'Evening chai',
-    source_type: 'manual',
-  },
-  {
-    id: 'tx-9',
-    merchant_name: 'Netflix',
-    category: 'Subscriptions',
-    transaction_date: 'Yesterday, 1:15 PM',
-    payment_method: 'Card',
-    amount: 649,
-    type: 'debit',
-    description: 'Monthly 4K plan',
-    source_type: 'manual',
-  },
-  {
-    id: 'tx-salary-01',
-    account_id: 'acc-hdfc-4821',
-    bank_key: 'hdfc',
-    account_name: 'HDFC Bank',
-    merchant_name: 'TechCorp Solutions',
-    category: 'Salary',
-    transaction_date: '1 Oct, 09:00 AM',
-    payment_method: 'Bank',
-    amount: 45000,
-    type: 'credit',
-    description: 'Monthly salary credit',
-    source_type: 'aa',
-  },
-];
-
-let memoryTransactions: Transaction[] = [...INITIAL_BASELINE];
+// The ledger starts empty; GET /transactions is the only source of rows.
+let memoryTransactions: Transaction[] = [];
+// Sync status: null = never attempted, 'ok' = backend answered, 'error' = unreachable
+let syncStatus: 'ok' | 'error' | null = null;
+let syncInFlight: Promise<Transaction[]> | null = null;
 type TransactionListener = (transactions: Transaction[]) => void;
 const listeners = new Set<TransactionListener>();
 
+function mapBackendTransaction(item: any): Transaction {
+  return {
+    id: String(item.id),
+    user_id: item.user_id,
+    account_id: item.account_id,
+    amount: Number(item.amount),
+    type: item.type === 'credit' ? 'credit' : 'debit',
+    category: item.category || 'Other',
+    merchant_name: item.merchant_name || item.description || 'Transaction',
+    description: item.description,
+    transaction_date: item.transaction_date || new Date().toISOString(),
+    payment_method: item.payment_method || 'UPI',
+    is_recurring: Boolean(item.is_recurring),
+    is_fixed: Boolean(item.is_fixed),
+    is_discretionary: Boolean(item.is_discretionary),
+    source_type: item.source_type || 'manual',
+    created_at: item.created_at,
+  };
+}
+
 // Asynchronous storage load
-(async () => {
+void (async () => {
   try {
     let raw: string | null = null;
     if (Platform.OS === 'web' && typeof window !== 'undefined' && window.localStorage) {
@@ -178,7 +120,8 @@ const listeners = new Set<TransactionListener>();
     }
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      // Only hydrate if the backend has not already answered during this session.
+      if (Array.isArray(parsed) && parsed.length > 0 && syncStatus !== 'ok') {
         memoryTransactions = parsed;
         notifyListeners();
       }
@@ -206,44 +149,64 @@ export const TransactionService = {
     return [...memoryTransactions];
   },
 
-  async fetchFromBackend(): Promise<Transaction[]> {
-    try {
-      const response = await api.get(endpoints.transactions.list, { params: { limit: 50 } });
-      const items: any[] = response.data?.items || [];
-      if (items.length > 0) {
-        const mapped: Transaction[] = items.map((item) => ({
-          id: String(item.id),
-          user_id: item.user_id,
-          account_id: item.account_id,
-          amount: Number(item.amount),
-          type: item.type === 'credit' ? 'credit' : 'debit',
-          category: item.category || 'Other',
-          merchant_name: item.merchant_name || item.description || 'Transaction',
-          description: item.description,
-          transaction_date: item.transaction_date || new Date().toISOString(),
-          payment_method: item.payment_method || 'UPI',
-          is_recurring: Boolean(item.is_recurring),
-          is_fixed: Boolean(item.is_fixed),
-          is_discretionary: Boolean(item.is_discretionary),
-          source_type: item.source_type || 'manual',
-          created_at: item.created_at,
-        }));
+  /** 'ok' once GET /transactions has answered, 'error' if unreachable, null before first attempt. */
+  getSyncStatus(): 'ok' | 'error' | null {
+    return syncStatus;
+  },
 
-        // Deduplicate robustly across backend responses and local memory
-        const uniqueMap = new Map<string, Transaction>();
-        for (const item of [...mapped, ...memoryTransactions]) {
-          if (!uniqueMap.has(item.id)) {
-            uniqueMap.set(item.id, item);
-          }
-        }
-        memoryTransactions = Array.from(uniqueMap.values());
+  async fetchFromBackend(): Promise<Transaction[]> {
+    if (syncInFlight) return syncInFlight;
+    syncInFlight = (async () => {
+      try {
+        const pageSize = 500;
+        const items: any[] = [];
+        let offset = 0;
+        let total = 0;
+        do {
+          const response = await api.get(endpoints.transactions.list, {
+            params: { limit: pageSize, offset },
+          });
+          const page: any[] = response.data?.items || [];
+          total = Number(response.data?.total ?? page.length);
+          items.push(...page);
+          offset += page.length;
+          if (page.length === 0) break;
+        } while (offset < total);
+        const mapped = items.map(mapBackendTransaction);
+        const backendIds = new Set(mapped.map((t) => t.id));
+
+        // Backend is the source of truth. Keep only user-entered rows that were
+        // saved offline (tx_local_*) and have not reached the backend yet.
+        const pendingLocal = memoryTransactions.filter(
+          (t) => t.id.startsWith(LOCAL_ID_PREFIX) && !backendIds.has(t.id),
+        );
+        memoryTransactions = [...pendingLocal, ...mapped];
+        syncStatus = 'ok';
         notifyListeners();
-        return memoryTransactions;
+      } catch (e) {
+        // Backend is unavailable or offline: preserve whatever we have
+        syncStatus = 'error';
+        listeners.forEach((listener) => listener([...memoryTransactions]));
+      } finally {
+        syncInFlight = null;
       }
-    } catch (e) {
-      // Backend is unavailable or offline: preserve local cache
+      return memoryTransactions;
+    })();
+    return syncInFlight;
+  },
+
+  /** Load a single transaction via GET /transactions/:id. Returns null on 404 / network error. */
+  async fetchTransactionById(id: string): Promise<Transaction | null> {
+    const cached = memoryTransactions.find((t) => t.id === id);
+    try {
+      const response = await api.get(endpoints.transactions.detail(id));
+      if (response.data?.id) {
+        return mapBackendTransaction(response.data);
+      }
+    } catch (_) {
+      // fall through to cache
     }
-    return memoryTransactions;
+    return cached ? { ...cached } : null;
   },
 
   async createTransaction(input: CreateTransactionInput): Promise<Transaction> {
@@ -369,18 +332,13 @@ export const TransactionService = {
       }
     }
 
-    // Baseline fallback for realism if empty
-    if (cashIn === 0) cashIn = 45000;
-    if (cashOut === 0) cashOut = 28500;
-
     const remainingThisMonth = Math.max(0, cashIn - cashOut);
 
-    const totalExpense = Math.max(1, cashOut);
     const categorySpending: CategorySpendSummary[] = Object.entries(categoryMap)
       .map(([name, amount]) => ({
         name,
         amount,
-        percentage: Math.round((amount / totalExpense) * 100),
+        percentage: cashOut > 0 ? Math.round((amount / cashOut) * 100) : 0,
         color: CATEGORY_COLORS[name] || '#94A3B8',
       }))
       .sort((a, b) => b.amount - a.amount);
@@ -393,119 +351,17 @@ export const TransactionService = {
     };
   },
 
-  importAccountTransactions(accountId: string, bankKey: string, bankName: string): Transaction[] {
-    const existingIds = new Set(memoryTransactions.map((t) => t.id));
-    const newTxs: Transaction[] = [];
-
-    if (bankKey.toLowerCase().includes('icici')) {
-      const iciciTxs: Transaction[] = [
-        {
-          id: `tx-${accountId}-dining-01`,
-          account_id: accountId,
-          bank_key: 'icici',
-          account_name: 'ICICI Bank',
-          merchant_name: 'Social Dining & Cafe',
-          category: 'Food & Dining',
-          transaction_date: 'Today, 7:10 PM',
-          payment_method: 'UPI',
-          amount: 8200,
-          type: 'debit',
-          description: 'Weekend dinner with team',
-          source_type: 'aa',
-        },
-        {
-          id: `tx-${accountId}-shopping-02`,
-          account_id: accountId,
-          bank_key: 'icici',
-          account_name: 'ICICI Bank',
-          merchant_name: 'Zara Lifestyle',
-          category: 'Shopping',
-          transaction_date: 'Yesterday, 4:15 PM',
-          payment_method: 'Card',
-          amount: 6450,
-          type: 'debit',
-          description: 'Autumn jacket & shoes',
-          source_type: 'aa',
-        },
-        {
-          id: `tx-${accountId}-bills-03`,
-          account_id: accountId,
-          bank_key: 'icici',
-          account_name: 'ICICI Bank',
-          merchant_name: 'Tata Power',
-          category: 'Bills & Utilities',
-          transaction_date: '4 Oct, 11:00 AM',
-          payment_method: 'UPI',
-          amount: 3850,
-          type: 'debit',
-          description: 'Electricity utility bill',
-          source_type: 'aa',
-        },
-        {
-          id: `tx-${accountId}-transfer-04`,
-          account_id: accountId,
-          bank_key: 'icici',
-          account_name: 'ICICI Bank',
-          merchant_name: 'Self Transfer from HDFC',
-          category: 'Transfer',
-          transaction_date: '2 Oct, 02:00 PM',
-          payment_method: 'Bank',
-          amount: 10000,
-          type: 'credit',
-          description: 'Internal transfer between linked accounts',
-          source_type: 'aa',
-          is_internal_transfer: true,
-        },
-      ];
-      for (const t of iciciTxs) {
-        if (!existingIds.has(t.id)) {
-          newTxs.push(t);
-        }
-      }
-    } else {
-      const genericTxs: Transaction[] = [
-        {
-          id: `tx-${accountId}-gen-01`,
-          account_id: accountId,
-          bank_key: bankKey,
-          account_name: bankName,
-          merchant_name: `${bankName} Interest Yield`,
-          category: 'Investment',
-          transaction_date: 'Yesterday, 10:00 AM',
-          payment_method: 'Bank',
-          amount: 1250,
-          type: 'credit',
-          description: 'Quarterly savings interest',
-          source_type: 'aa',
-        },
-        {
-          id: `tx-${accountId}-gen-02`,
-          account_id: accountId,
-          bank_key: bankKey,
-          account_name: bankName,
-          merchant_name: 'Lifestyle Retail',
-          category: 'Shopping',
-          transaction_date: '3 Oct, 03:20 PM',
-          payment_method: 'Card',
-          amount: 3200,
-          type: 'debit',
-          description: 'Apparel purchase',
-          source_type: 'aa',
-        },
-      ];
-      for (const t of genericTxs) {
-        if (!existingIds.has(t.id)) {
-          newTxs.push(t);
-        }
-      }
-    }
-
-    if (newTxs.length > 0) {
-      memoryTransactions = [...newTxs, ...memoryTransactions];
-      persistState(memoryTransactions);
-      notifyListeners();
-    }
-    return memoryTransactions;
+  /**
+   * Account linking imports statement rows server-side (POST /accounts/link).
+   * This simply refetches GET /transactions so the UI reflects the imported ledger.
+   * Parameters are kept for call-site compatibility.
+   */
+  async importAccountTransactions(
+    _accountId: string,
+    _bankKey: string,
+    _bankName: string,
+  ): Promise<Transaction[]> {
+    return TransactionService.fetchFromBackend();
   },
 
   subscribe(listener: TransactionListener): () => void {
@@ -522,14 +378,20 @@ export function useTransactions() {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncStatusState, setSyncStatusState] = useState<'ok' | 'error' | null>(() =>
+    TransactionService.getSyncStatus()
+  );
 
   useEffect(() => {
     const unsubscribe = TransactionService.subscribe((updated) => {
       setTransactions(updated);
+      setSyncStatusState(TransactionService.getSyncStatus());
     });
 
     // Background sync with backend
-    TransactionService.fetchFromBackend().catch(() => {});
+    TransactionService.fetchFromBackend()
+      .catch(() => {})
+      .finally(() => setSyncStatusState(TransactionService.getSyncStatus()));
 
     return unsubscribe;
   }, []);
@@ -563,6 +425,10 @@ export function useTransactions() {
     transactions,
     loading,
     error,
+    /** True once GET /transactions has answered at least once this session. */
+    hasLoaded: syncStatusState === 'ok',
+    /** True if the last backend sync failed (offline / unreachable). */
+    syncError: syncStatusState === 'error',
     cashIn: totals.cashIn,
     cashOut: totals.cashOut,
     remainingThisMonth: totals.remainingThisMonth,

@@ -8,19 +8,21 @@ import { ScreenHeader } from '../../components/ui/ScreenHeader';
 import { TopSpendingCategoriesChart } from '../../components/ui/TopSpendingCategoriesChart';
 import { COLORS, SIZES, SPACING, FONTS } from '../../constants/theme';
 import { useAAState } from '../../services/aaState';
-import { useTransactions } from '../../services/transactions';
+import {
+  fetchCashFlowForecast,
+  fetchUpcomingObligations,
+  formatINR,
+  type CashFlowForecast,
+  type UpcomingObligationItem,
+} from '../../services/finance';
 import {
   ScanLine,
   Image as ImageIcon,
   Users,
   PieChart,
-  TrendingUp,
-  ShieldCheck,
-  Building2,
   Sparkles,
   Calendar,
   AlertCircle,
-  TrendingDown,
   Eye,
   EyeOff,
   ChevronRight,
@@ -32,7 +34,35 @@ export default function Dashboard() {
   const [hasUnreadNotification, setHasUnreadNotification] = React.useState(true);
   const [showBalance, setShowBalance] = React.useState(true);
 
-  const { cashIn: liveCashIn, cashOut: liveCashOut, categorySpending } = useTransactions();
+  const [forecast, setForecast] = React.useState<CashFlowForecast | null>(null);
+  const [obligations, setObligations] = React.useState<UpcomingObligationItem[]>([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetchCashFlowForecast(6, {
+      include_income: true,
+      include_essential: true,
+      include_discretionary: true,
+      include_debt: true,
+      include_obligations: true,
+    })
+      .then((data) => {
+        if (!cancelled) setForecast(data);
+      })
+      .catch(() => {
+        if (!cancelled) setForecast(null);
+      });
+    fetchUpcomingObligations(6)
+      .then((data) => {
+        if (!cancelled) setObligations(data.obligations ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setObligations([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activeAccounts = aaState.connected_accounts.filter(
     (a) => a.status !== 'disconnected'
@@ -45,13 +75,24 @@ export default function Dashboard() {
     0
   );
 
-  // Current calendar month cash flow metrics from single source of truth
-  const cashIn = hasConnectedAccounts ? liveCashIn : (liveCashIn > 45000 ? liveCashIn : 15000);
-  const cashOut = hasConnectedAccounts ? liveCashOut : (liveCashOut > 28500 ? liveCashOut : 12450);
-  // Remaining This Month: Monthly cash inflows minus monthly cash outflows
-  const remainingThisMonth = Math.max(0, cashIn - cashOut);
+  // Same monthly rates as Cash Flow Forecast: trailing run-rate from transactions,
+  // not a sum of the first page of the transaction list.
+  const monthlyIncome = forecast?.monthly_income ?? null;
+  const monthlySpending =
+    forecast != null
+      ? forecast.monthly_essential +
+        forecast.monthly_discretionary +
+        forecast.monthly_debt +
+        forecast.monthly_savings
+      : null;
+  const moneyLeft =
+    monthlyIncome != null && monthlySpending != null ? monthlyIncome - monthlySpending : null;
+  const upcomingObligations = obligations.filter(
+    (item, index, all) => all.findIndex((other) => other.name === item.name) === index,
+  ).slice(0, 2);
 
   const formatCurrency = (val: number) => `₹${val.toLocaleString('en-IN')}`;
+  const formatSigned = (val: number) => `${val < 0 ? '−' : ''}${formatINR(val)}`;
 
   const handleNotificationPress = () => {
     setHasUnreadNotification(false);
@@ -144,51 +185,48 @@ export default function Dashboard() {
                 ? showBalance
                   ? formatCurrency(totalBankBalance)
                   : '••••••'
-                : '₹12,450'}
+                : '—'}
             </Typography>
-            <View style={styles.trendBadge}>
-              <TrendingUp color={COLORS.success} size={14} strokeWidth={2} />
-              <Typography variant="caption" color={COLORS.success} style={styles.trendText}>
-                +8.4%
-              </Typography>
-            </View>
           </View>
 
           {/* Key Monthly Cash Flow Metrics: Cash In, Cash Out, Remaining This Month */}
           <View style={styles.heroMetricsGrid}>
             <View style={styles.heroMetricCol}>
               <View style={styles.metricLabelContainer}>
-                <Typography variant="caption" style={styles.metricLabel} numberOfLines={1}>
-                  Cash In
+                <Typography variant="caption" style={styles.metricLabel} numberOfLines={2}>
+                  Monthly Income
                 </Typography>
               </View>
               <Typography variant="bodyBold" color={COLORS.white} style={styles.metricValue} numberOfLines={1}>
-                {formatCurrency(cashIn)}
+                {monthlyIncome != null ? formatINR(monthlyIncome) : '—'}
               </Typography>
             </View>
 
             <View style={[styles.heroMetricCol, styles.heroMetricColCenter]}>
               <View style={styles.metricLabelContainer}>
-                <Typography variant="caption" style={styles.metricLabel} numberOfLines={1}>
-                  Cash Out
+                <Typography variant="caption" style={styles.metricLabel} numberOfLines={2}>
+                  Monthly Spending & Bills
                 </Typography>
               </View>
               <Typography variant="bodyBold" color={COLORS.white} style={styles.metricValue} numberOfLines={1}>
-                {formatCurrency(cashOut)}
+                {monthlySpending != null ? formatINR(monthlySpending) : '—'}
               </Typography>
             </View>
 
             <View style={[styles.heroMetricCol, styles.heroMetricColRight]}>
               <View style={[styles.metricLabelContainer, styles.metricLabelContainerRight]}>
                 <Typography variant="caption" style={[styles.metricLabel, styles.metricLabelRight]} numberOfLines={2}>
-                  Remaining This Month
+                  Money Left Each Month
                 </Typography>
               </View>
               <Typography variant="bodyBold" color={COLORS.gold} style={[styles.metricValue, styles.metricValueRight]} numberOfLines={1}>
-                {formatCurrency(remainingThisMonth)}
+                {moneyLeft != null ? formatSigned(moneyLeft) : '—'}
               </Typography>
             </View>
           </View>
+          <Typography variant="caption" style={styles.heroAverageNote}>
+            6-month average from your transactions, not one salary payment.
+          </Typography>
         </Card>
 
         {/* Quick Actions */}
@@ -252,50 +290,42 @@ export default function Dashboard() {
                 Upcoming Obligations
               </Typography>
               <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationSubtitle}>
-                Next 14 Days
+                {upcomingObligations.length > 0
+                  ? `Next due ${upcomingObligations[0].due_date}`
+                  : 'None found in your transactions'}
               </Typography>
             </View>
 
             <View style={styles.obligationList}>
-              <View style={styles.obligationRow}>
-                <View style={styles.calendarIconWrapper}>
-                  <Calendar size={18} color={COLORS.primary} strokeWidth={1.8} />
-                </View>
-                <View style={styles.obligationInfo}>
-                  <Typography variant="bodySemiBold" color={COLORS.primary} style={styles.obligationBillName} numberOfLines={1}>
-                    Apartment Rent
-                  </Typography>
-                  <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationMeta} numberOfLines={1}>
-                    Due 25 Sep • Auto-debit
-                  </Typography>
-                </View>
-                <View style={styles.obligationAmountWrapper}>
-                  <Typography variant="bodyBold" color={COLORS.primary} style={styles.obligationAmount} numberOfLines={1}>
-                    ₹12,000
-                  </Typography>
-                </View>
-              </View>
-
-              <View style={styles.obligationDivider} />
-
-              <View style={styles.obligationRow}>
-                <View style={styles.calendarIconWrapper}>
-                  <Calendar size={18} color={COLORS.primary} strokeWidth={1.8} />
-                </View>
-                <View style={styles.obligationInfo}>
-                  <Typography variant="bodySemiBold" color={COLORS.primary} style={styles.obligationBillName} numberOfLines={1}>
-                    Broadband & Utilities
-                  </Typography>
-                  <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationMeta} numberOfLines={1}>
-                    Due 28 Sep • AirFiber
-                  </Typography>
-                </View>
-                <View style={styles.obligationAmountWrapper}>
-                  <Typography variant="bodyBold" color={COLORS.primary} style={styles.obligationAmount} numberOfLines={1}>
-                    ₹2,200
-                  </Typography>
-                </View>
-              </View>
+              {upcomingObligations.length === 0 ? (
+                <Typography variant="caption" color={COLORS.textSecondary}>
+                  Recurring bills show here once they appear in your transactions.
+                </Typography>
+              ) : (
+                upcomingObligations.map((item, index) => (
+                  <View key={item.id}>
+                    {index > 0 ? <View style={styles.obligationDivider} /> : null}
+                    <View style={styles.obligationRow}>
+                      <View style={styles.calendarIconWrapper}>
+                        <Calendar size={18} color={COLORS.primary} strokeWidth={1.8} />
+                      </View>
+                      <View style={styles.obligationInfo}>
+                        <Typography variant="bodySemiBold" color={COLORS.primary} style={styles.obligationBillName} numberOfLines={1}>
+                          {item.name}
+                        </Typography>
+                        <Typography variant="caption" color={COLORS.textSecondary} style={styles.obligationMeta} numberOfLines={1}>
+                          {`Due ${item.due_date}${item.recurrence ? ` • ${item.recurrence}` : ''}`}
+                        </Typography>
+                      </View>
+                      <View style={styles.obligationAmountWrapper}>
+                        <Typography variant="bodyBold" color={COLORS.primary} style={styles.obligationAmount} numberOfLines={1}>
+                          {formatINR(item.amount)}
+                        </Typography>
+                      </View>
+                    </View>
+                  </View>
+                ))
+              )}
             </View>
           </Card>
         )}
@@ -499,6 +529,11 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontSize: 12,
     fontWeight: '600',
+  },
+  heroAverageNote: {
+    color: 'rgba(255, 255, 255, 0.62)',
+    marginTop: 12,
+    lineHeight: 16,
   },
   heroMetricsGrid: {
     flexDirection: 'row',

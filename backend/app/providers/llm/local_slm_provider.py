@@ -130,7 +130,7 @@ class LocalSLMProvider:
             "CRITICAL SAFETY CONSTRAINTS:\n"
             "1. You must NEVER perform calculations or invent new numbers.\n"
             "2. Every single currency amount and percentage in your reply MUST be copied directly from the VERIFIED FACTS JSON.\n"
-            "3. State clearly whether the user can afford the item, explain the safety buffer impact, and suggest splitting into installments if there is cash-flow pressure.\n"
+            "3. Use only this vocabulary: Expected Cash, Safety Buffer, Money Above Buffer, Risk of Running Short, Monthly Income, Monthly Spending & Bills, Money Left Each Month, Possible Cash Range, Update My Plan. State whether Expected Cash stays above the Safety Buffer, and suggest installments if there is pressure.\n"
             "4. Tone: Empathetic, concise, clear, and professional."
         )
 
@@ -148,7 +148,7 @@ class LocalSLMProvider:
                 "answer": answer_text,
                 "observed": [
                     {"label": "Current Available Balance", "value": f"₹{current_balance:,.0f}"},
-                    {"label": "Projected Monthly Buffer", "value": f"₹{projected_buffer:,.0f}"},
+                    {"label": "Safety Buffer", "value": f"₹{projected_buffer:,.0f}"},
                     {"label": "Target Expense", "value": f"₹{item_cost:,.0f}"},
                 ],
                 "analysis": {
@@ -158,7 +158,7 @@ class LocalSLMProvider:
                 },
                 "recommendation": {
                     "action": "Proceed with purchase" if can_afford else "Defer purchase or split across No-Cost EMI",
-                    "impact": f"Retains safety buffer of ₹{max(0.0, buffer_after):,.0f}",
+                    "impact": f"Keeps Money Above Buffer at ₹{max(0.0, buffer_after):,.0f}",
                 },
                 "confidence": 0.98,
                 "provider": "local_slm/qwen2.5-0.5b-q4_k_m",

@@ -6,14 +6,13 @@ and issues proactive micro-nudges before minimum reserve breaches occur.
 
 from typing import Dict, Any, List
 from datetime import date
-from app.core.config import settings
 
 
 class SpendVelocityEngine:
     """Computes daily burn velocity and behavioral micro-nudges."""
 
     def __init__(self, reserve_floor: float = None):
-        self.reserve_floor = reserve_floor or settings.MINIMUM_RESERVE_FLOOR
+        self.reserve_floor = reserve_floor or 0.0
 
     def analyze_velocity(
         self,
@@ -22,7 +21,7 @@ class SpendVelocityEngine:
         discretionary_spent_so_far: float,
         current_liquid_balance: float,
         upcoming_fixed_bills: float,
-        monthly_discretionary_budget: float = 25000.0,
+        monthly_discretionary_budget: float,
     ) -> Dict[str, Any]:
         """
         Computes the velocity metrics and generates targeted micro-nudges.
@@ -55,19 +54,19 @@ class SpendVelocityEngine:
                     f"Spending Alert: At your current pace of ₹{daily_velocity:,.0f}/day, you will experience an overdraft "
                     f"of ₹{abs(projected_ending_cash):,.0f} before next payday. "
                     f"Recommended Action: Cap discretionary spending to ₹{safe_daily_cap:,.0f}/day for the next {days_remaining} days "
-                    f"to prevent an account shortfall."
+                    f"to lower your Risk of Running Short."
                 )
             else:
                 nudge = (
-                    f"Reserve Alert: At your current pace of ₹{daily_velocity:,.0f}/day, month-end cash drops to ₹{projected_ending_cash:,.0f}, "
-                    f"breaching your ₹{self.reserve_floor:,.0f} safety buffer by ₹{abs(reserve_cushion):,.0f}. "
+                    f"Safety Buffer alert: At your current pace of ₹{daily_velocity:,.0f}/day, Expected Cash drops to ₹{projected_ending_cash:,.0f}, "
+                    f"₹{abs(reserve_cushion):,.0f} below your Safety Buffer of ₹{self.reserve_floor:,.0f}. "
                     f"Recommended Action: Tighten discretionary leisure spend to ₹{safe_daily_cap:,.0f}/day for the remaining {days_remaining} days."
                 )
         else:
             severity = "safe"
             nudge = (
-                f"On Track: Your current spend velocity of ₹{daily_velocity:,.0f}/day keeps your month-end cash comfortable at "
-                f"₹{projected_ending_cash:,.0f}, maintaining an extra ₹{reserve_cushion:,.0f} cushion above your ₹{self.reserve_floor:,.0f} reserve floor."
+                f"On track: At ₹{daily_velocity:,.0f}/day, Expected Cash stays at ₹{projected_ending_cash:,.0f}, "
+                f"with Money Above Buffer of ₹{reserve_cushion:,.0f} over your Safety Buffer of ₹{self.reserve_floor:,.0f}."
             )
 
         return {

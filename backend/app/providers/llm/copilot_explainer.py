@@ -143,12 +143,12 @@ class CopilotExplainer:
                 # High-fidelity grounded template
                 explanation_text = (
                     f"Under deterministic median conditions, {seq_a.get('name', 'Sequence A')} projects an ending "
-                    f"balance of ₹{seq_a.get('ending_balance_expected', 0):,.2f}. However, accounting for cash flow "
-                    f"uncertainty, Sequence A carries an unacceptable {seq_a.get('shortfall_risk_pct', 0)}% risk "
-                    f"of breaching your ₹{r_min:,.0f} minimum reserve threshold. "
-                    f"By contrast, {seq_b.get('name', 'Sequence B')} implements a ₹{seq_b.get('discretionary_budget_monthly', 0):,.2f}/mo "
-                    f"discretionary budget, collapsing your shortfall risk to {seq_b.get('shortfall_risk_pct', 0)}% "
-                    f"while securing ₹{seq_b.get('ending_balance_expected', 0):,.2f} in final reserves. "
+                    f"Expected Cash of ₹{seq_a.get('ending_balance_expected', 0):,.2f}. Accounting for uncertainty, "
+                    f"Sequence A carries a {seq_a.get('shortfall_risk_pct', 0)}% Risk of Running Short "
+                    f"against your Safety Buffer of ₹{r_min:,.0f}. "
+                    f"By contrast, {seq_b.get('name', 'Sequence B')} sets Monthly Spending & Bills to ₹{seq_b.get('discretionary_budget_monthly', 0):,.2f}/mo, "
+                    f"bringing Risk of Running Short to {seq_b.get('shortfall_risk_pct', 0)}% "
+                    f"with Expected Cash of ₹{seq_b.get('ending_balance_expected', 0):,.2f}. "
                     f"Sequence B is mathematically safer."
                 )
 

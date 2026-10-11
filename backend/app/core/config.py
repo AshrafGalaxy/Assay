@@ -44,8 +44,9 @@ class Settings(BaseSettings):
     CONFORMAL_CONFIDENCE_LEVEL: float = 0.80
     MONTE_CARLO_SIMULATION_PATHS: int = 1000
 
-    # Synthetic personal-finance dataset (optional API ledger source; off by default for a clean slate)
-    SYNTHETIC_LEDGER_ENABLED: bool = False
+    # Personal-finance ledger (data/synthetic_finance/transactions.csv) is the API's
+    # base data source. Set false for a clean slate (manual / bank data only).
+    SYNTHETIC_LEDGER_ENABLED: bool = True
     SYNTHETIC_DATA_DIR: str = "data/synthetic_finance"
     SYNTHETIC_USER_ID: str = ""  # empty => auto-pick a stable_income user
     SYNTHETIC_SEED: int = 42

@@ -13,7 +13,7 @@ from app.schemas.account import (
     AccountConsentResponse,
     DemoConnectResponse,
 )
-from app.providers.aa.mock_provider import MockAAProvider
+from app.providers.aa.mock_provider import MockAAProvider, ledger_derived_balance
 from app.api.v1.routes.transactions import get_current_user_id
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -67,6 +67,10 @@ def list_accounts(
 ):
     """Returns list of all accounts for the authenticated user."""
     user_id = get_current_user_id(authorization) if authorization else "usr_demo_01"
+    # Rewrite the primary mock balance from the transaction history before responding,
+    # so a previously stored seed cannot be shown as cash.
+    from app.services.financial_intelligence.unified_data import get_unified_financial_data
+    get_unified_financial_data(db, user_id=None if user_id == "usr_demo_01" else user_id)
     accounts = (
         db.query(Account)
         .filter((Account.user_id == user_id) | (Account.user_id.is_(None)))
@@ -82,7 +86,7 @@ def list_accounts(
             bank_key="hdfc",
             account_type="Savings Account",
             account_number_masked="•••• 4821",
-            balance=42580.0,
+            balance=ledger_derived_balance(),
             currency="INR",
             provider="mock_aa",
             status="connected",
@@ -137,7 +141,7 @@ async def link_account(
             bank_key=bank_info["bank_key"],
             account_type=req.account_type or bank_info.get("account_type", "Savings Account"),
             account_number_masked=req.account_number_masked or bank_info.get("account_number_masked", "•••• 7712"),
-            balance=bank_info.get("balance", 18240.0),
+            balance=bank_info.get("balance", 0.0),
             currency="INR",
             provider="mock_aa",
             status="connected",

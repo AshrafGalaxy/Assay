@@ -202,5 +202,5 @@ class DebtBreakdownResponse(BaseModel):
     total_monthly_emis: float
     avg_blended_apr: float
     loans: List[LoanItemSchema]
-    avalanche_recommendation: AvalancheRecommendation
+    avalanche_recommendation: Optional[AvalancheRecommendation] = None
 

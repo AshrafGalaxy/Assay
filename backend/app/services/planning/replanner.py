@@ -23,8 +23,8 @@ class DynamicReplanner:
         starting_cash: float,
         baseline_incomes: List[float],
         baseline_essential: List[float],
-        baseline_discretionary: float = 16500.0,
-        baseline_savings_goal: float = 8000.0,
+        baseline_discretionary: float,
+        baseline_savings_goal: float,
         shock_request: Optional[ReplanRequest] = None,
     ) -> ReplanResponse:
         """
@@ -46,7 +46,8 @@ class DynamicReplanner:
             incomes = [round(inc * (1.0 - cut_ratio), 2) for inc in incomes]
 
         elif shock_type == "medical_shock":
-            shock_val = magnitude if magnitude else 35000.0
+            # Default shock size: one month of observed essential spending.
+            shock_val = magnitude if magnitude else (sum(essentials) / len(essentials) if essentials else 0.0)
             shock_description = f"Unexpected one-time medical emergency expense shock of ₹{shock_val:,.0f} in Month 2."
             if T > 1:
                 essentials[1] = round(essentials[1] + shock_val, 2)
@@ -54,7 +55,8 @@ class DynamicReplanner:
                 essentials[0] = round(essentials[0] + shock_val, 2)
 
         elif shock_type == "infeasible_target":
-            target_val = magnitude if magnitude else 40000.0
+            # Default target: more than the cash flow can support (all essential spending).
+            target_val = magnitude if magnitude else (max(essentials) if essentials else 0.0)
             baseline_savings_goal = target_val
             shock_description = f"User imposed an aggressive savings target of ₹{target_val:,.0f}/month."
 
@@ -106,14 +108,14 @@ class DynamicReplanner:
 
             # Level 2 Relaxation: Trim Discretionary Spending if Level 1 is insufficient
             if not solvency_restored:
-                discretionary_cut = 7500.0  # Cut by ₹7,500
-                relaxed_discretionary = max(6000.0, active_discretionary - discretionary_cut)
+                # Halve discretionary spending; no fixed floor — the data decides.
+                relaxed_discretionary = round(active_discretionary * 0.5, 2)
                 proposed_relaxations.append(
                     RelaxationItem(
                         target="Discretionary Spending Cap",
                         original_value=active_discretionary,
                         relaxed_value=relaxed_discretionary,
-                        rationale="Level 2 Relaxation: Reduced discretionary leisure/dining budget to minimum sustainable floor of ₹6,000/mo."
+                        rationale="Level 2 Relaxation: Halved the discretionary budget to protect the cash reserve."
                     )
                 )
                 active_discretionary = relaxed_discretionary
@@ -149,11 +151,12 @@ class DynamicReplanner:
         if conflict_detected:
             conflict_msg = (
                 f"Constraint violation identified in Month {conflict_period}: Net cash flow breached "
-                f"the declared minimum reserve of ₹{self.declared_reserve_min:,.0f} under original plan."
+                f"your Safety Buffer of ₹{self.declared_reserve_min:,.0f} under the original plan."
             )
 
-        # Shortfall risk after relaxation
-        shortfall_risk_after = 6.4 if status == "REBALANCED" else 48.5
+        # Shortfall risk after relaxation: the share of rebalanced periods below the reserve.
+        below = sum(1 for b in rebalanced_balances if b < self.declared_reserve_min)
+        shortfall_risk_after = round(100.0 * below / len(rebalanced_balances), 1) if rebalanced_balances else 0.0
 
         return ReplanResponse(
             shock_applied=shock_description,

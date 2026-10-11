@@ -21,7 +21,7 @@ export default function WelcomeScreen() {
       } else {
         setChecking(false);
       }
-    });
+    }).catch(() => setChecking(false));
   }, []);
 
   // Show a blank loader while checking — prevents flash of welcome screen

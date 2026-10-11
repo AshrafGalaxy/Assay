@@ -49,3 +49,44 @@ def test_what_if_income_shock_changes_balances(synthetic_ledger):
         profile=profile,
     )
     assert shocked["baseline"]["ending_balance"] <= base["baseline"]["ending_balance"]
+
+
+def test_typed_amounts_move_only_the_revised_plan(synthetic_ledger):
+    """Expected Cash stays on the ledger. Revised Expected Cash follows typed rupees."""
+    txs = get_ledger_transactions(historical_only=True)
+    profile = get_user_profile()
+    base = simulate_what_if(txs, assumptions={"horizon_months": 6}, profile=profile)
+    rate = base["baseline_run_rate"]
+    assert base["status_quo"]["ending_balance"] == base["user_plan"]["ending_balance"]
+
+    higher = simulate_what_if(
+        txs,
+        assumptions={
+            "horizon_months": 6,
+            "monthly_income": rate["income"],
+            "monthly_spending": rate["essential"] + rate["discretionary"] + 5000,
+            "monthly_debt": rate["emi"] + 500,
+            "monthly_savings": rate["savings"],
+            "one_time_expense": 0,
+        },
+        profile=profile,
+    )
+    assert higher["status_quo"]["ending_balance"] == base["status_quo"]["ending_balance"]
+    assert higher["user_plan"]["ending_balance"] < higher["status_quo"]["ending_balance"]
+
+    lower_spend = max(0.0, rate["essential"] + rate["discretionary"] - 4000)
+    lower_debt = max(0.0, rate["emi"] - 400)
+    lower = simulate_what_if(
+        txs,
+        assumptions={
+            "horizon_months": 6,
+            "monthly_income": rate["income"],
+            "monthly_spending": lower_spend,
+            "monthly_debt": lower_debt,
+            "monthly_savings": rate["savings"],
+            "one_time_expense": 0,
+        },
+        profile=profile,
+    )
+    assert lower["status_quo"]["ending_balance"] == base["status_quo"]["ending_balance"]
+    assert lower["user_plan"]["ending_balance"] > lower["status_quo"]["ending_balance"]

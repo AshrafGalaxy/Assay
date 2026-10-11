@@ -33,7 +33,7 @@ class LLMProvider:
             "answer": answer,
             "observed": [
                 {"label": "Current Available Balance", "value": f"₹{current_balance:,.0f}"},
-                {"label": "Projected Monthly Buffer", "value": f"₹{projected_buffer:,.0f}"},
+                {"label": "Safety Buffer", "value": f"₹{projected_buffer:,.0f}"},
                 {"label": "Target Expense", "value": f"₹{item_cost:,.0f}"},
             ],
             "analysis": {
@@ -43,7 +43,7 @@ class LLMProvider:
             },
             "recommendation": {
                 "action": "Proceed with purchase" if can_afford else "Defer purchase or split across 2 cycles",
-                "impact": f"Retains safety buffer of ₹{max(0.0, projected_buffer - item_cost):,.0f}",
+                "impact": f"Keeps Money Above Buffer at ₹{max(0.0, projected_buffer - item_cost):,.0f}",
             },
             "confidence": 0.92,
             "limitations": [

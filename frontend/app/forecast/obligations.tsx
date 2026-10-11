@@ -11,101 +11,6 @@ import {
 } from '../../services/finance';
 import { ChevronLeft } from 'lucide-react-native';
 
-const OBLIGATIONS_6M: ObligationItem[] = [
-  {
-    id: '1',
-    name: 'Rent Payment',
-    dueDate: '1 Apr 2025',
-    amount: 18000,
-    type: 'rent',
-    recurrence: 'Auto-debit',
-  },
-  {
-    id: '2',
-    name: 'Car EMI',
-    dueDate: '5 Apr 2025',
-    amount: 6000,
-    type: 'emi',
-    recurrence: 'HDFC Auto Loan',
-  },
-  {
-    id: '3',
-    name: 'Credit Card Payment',
-    dueDate: '10 Apr 2025',
-    amount: 2000,
-    type: 'credit_card',
-    recurrence: 'Min Due • Axis Bank',
-  },
-  {
-    id: '4',
-    name: 'Insurance Premium',
-    dueDate: '25 Apr 2025',
-    amount: 12000,
-    type: 'insurance',
-    recurrence: 'Annual • HDFC ERGO',
-  },
-  {
-    id: '5',
-    name: 'Rent Payment',
-    dueDate: '1 May 2025',
-    amount: 18000,
-    type: 'rent',
-    recurrence: 'Auto-debit',
-  },
-  {
-    id: '6',
-    name: 'Loan EMI',
-    dueDate: '5 May 2025',
-    amount: 6000,
-    type: 'emi',
-    recurrence: 'HDFC Auto Loan',
-  },
-  {
-    id: '7',
-    name: 'Credit Card Payment',
-    dueDate: '10 May 2025',
-    amount: 2000,
-    type: 'credit_card',
-    recurrence: 'Min Due • Axis Bank',
-  },
-  {
-    id: '8',
-    name: 'Annual Subscription',
-    dueDate: '20 May 2025',
-    amount: 4000,
-    type: 'subscription',
-    recurrence: 'Annual • Cloud Services',
-  },
-];
-
-const OBLIGATIONS_12M: ObligationItem[] = [
-  ...OBLIGATIONS_6M,
-  {
-    id: '9',
-    name: 'Rent Payment',
-    dueDate: '1 Jun 2025',
-    amount: 18000,
-    type: 'rent',
-    recurrence: 'Auto-debit',
-  },
-  {
-    id: '10',
-    name: 'Loan EMI',
-    dueDate: '5 Jun 2025',
-    amount: 6000,
-    type: 'emi',
-    recurrence: 'HDFC Auto Loan',
-  },
-  {
-    id: '11',
-    name: 'Life Insurance',
-    dueDate: '15 Jul 2025',
-    amount: 15000,
-    type: 'insurance',
-    recurrence: 'Term Plan',
-  },
-];
-
 export default function UpcomingObligationsScreen() {
   const router = useRouter();
   const [filterPeriod, setFilterPeriod] = useState<'6M' | '12M'>('6M');
@@ -144,8 +49,8 @@ export default function UpcomingObligationsScreen() {
         recurrence: ob.recurrence,
       }));
     }
-    return filterPeriod === '6M' ? OBLIGATIONS_6M : OBLIGATIONS_12M;
-  }, [apiData, filterPeriod]);
+    return [];
+  }, [apiData]);
 
   const totalAmount =
     apiData?.total_commitments ?? activeList.reduce((sum, item) => sum + item.amount, 0);
@@ -223,9 +128,15 @@ export default function UpcomingObligationsScreen() {
 
         {/* Obligations List */}
         <View style={styles.listContainer}>
-          {activeList.map((item) => (
-            <ObligationRow key={item.id} item={item} />
-          ))}
+          {loading ? (
+            <ActivityIndicator color={COLORS.primary} style={{ marginTop: 24 }} />
+          ) : activeList.length === 0 ? (
+            <Typography variant="caption" color={COLORS.textSecondary} style={{ textAlign: 'center', marginTop: 24 }}>
+              No recurring obligations found in your transactions yet.
+            </Typography>
+          ) : (
+            activeList.map((item) => <ObligationRow key={item.id} item={item} />)
+          )}
         </View>
 
         <View style={{ height: 40 }} />

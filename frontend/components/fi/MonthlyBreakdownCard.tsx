@@ -71,7 +71,7 @@ export function MonthlyBreakdownCard({ data, initiallyExpanded = false }: Monthl
 
         <View style={styles.dataRow}>
           <Typography variant="caption" color={COLORS.textSecondary} style={styles.label}>
-            Income
+            Monthly Income
           </Typography>
           <Typography variant="bodyMedium" color={COLORS.primary} style={styles.incomeAmount}>
             {formatAmount(data.income, '+')}
@@ -80,7 +80,7 @@ export function MonthlyBreakdownCard({ data, initiallyExpanded = false }: Monthl
 
         <View style={styles.dataRow}>
           <Typography variant="caption" color={COLORS.textSecondary} style={styles.label}>
-            Expenses
+            Monthly Spending & Bills
           </Typography>
           <Typography variant="bodyMedium" color={COLORS.primary} style={styles.expenseAmount}>
             {formatAmount(data.expenses, '-')}
@@ -100,7 +100,7 @@ export function MonthlyBreakdownCard({ data, initiallyExpanded = false }: Monthl
 
         <View style={[styles.dataRow, styles.closingRow]}>
           <Typography variant="bodyBold" color={COLORS.primary} style={styles.closingLabel}>
-            Closing Balance
+            Expected Cash
           </Typography>
           <Typography variant="bodyBold" color={COLORS.primary} style={styles.closingAmount}>
             {formatAmount(data.closingBalance)}

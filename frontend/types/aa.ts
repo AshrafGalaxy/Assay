@@ -1,3 +1,10 @@
+/**
+ * Sandbox bank catalogue entry used by the bank-picker / onboarding UI.
+ *
+ * This describes an institution the user *can* link. It deliberately carries no
+ * balance or sync state: those values only exist on the backend (`GET /accounts`)
+ * and are represented by `LinkedAccount`.
+ */
 export interface SandboxAccount {
   id: string;
   bankName: string;
@@ -5,14 +12,23 @@ export interface SandboxAccount {
   accountType: string;
   accountNumber: string;
   maskedNumber: string;
-  balance: number;
-  formattedBalance: string;
   currency: string;
   fipId: string;
   institutionType: 'Bank' | 'NBFC' | 'Mutual Fund';
   selectedDefault: boolean;
-  status?: 'connected' | 'syncing' | 'disconnected' | 'error';
-  lastSynced?: string;
+}
+
+export type LinkedAccountStatus = 'connected' | 'syncing' | 'disconnected' | 'error';
+
+/**
+ * A bank account as returned by the backend (`GET /accounts`, `POST /accounts/link`).
+ * `balance` is only ever populated from backend data.
+ */
+export interface LinkedAccount extends SandboxAccount {
+  balance: number;
+  formattedBalance: string;
+  status: LinkedAccountStatus;
+  lastSynced: string | null;
 }
 
 export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
@@ -23,14 +39,10 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Savings Account',
     accountNumber: '4821',
     maskedNumber: 'Savings •••• 4821',
-    balance: 42580,
-    formattedBalance: '₹42,580',
     currency: 'INR',
     fipId: 'FIP-HDFC-001',
     institutionType: 'Bank',
     selectedDefault: true,
-    status: 'connected',
-    lastSynced: 'Today, 8:20 PM',
   },
   {
     id: 'acc-icici-7712',
@@ -39,14 +51,10 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Savings Account',
     accountNumber: '7712',
     maskedNumber: 'Savings •••• 7712',
-    balance: 18240,
-    formattedBalance: '₹18,240',
     currency: 'INR',
     fipId: 'FIP-ICICI-002',
     institutionType: 'Bank',
     selectedDefault: false,
-    status: 'connected',
-    lastSynced: 'Today, 7:10 PM',
   },
   {
     id: 'acc-axis-3044',
@@ -55,8 +63,6 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Current Account',
     accountNumber: '3044',
     maskedNumber: 'Current •••• 3044',
-    balance: 65200,
-    formattedBalance: '₹65,200',
     currency: 'INR',
     fipId: 'FIP-AXIS-003',
     institutionType: 'Bank',
@@ -69,8 +75,6 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Savings Account',
     accountNumber: '9812',
     maskedNumber: 'Savings •••• 9812',
-    balance: 18400,
-    formattedBalance: '₹18,400',
     currency: 'INR',
     fipId: 'FIP-SBI-004',
     institutionType: 'Bank',
@@ -83,8 +87,6 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Savings Account',
     accountNumber: '5521',
     maskedNumber: 'ActiveMoney •••• 5521',
-    balance: 89400,
-    formattedBalance: '₹89,400',
     currency: 'INR',
     fipId: 'FIP-KOTAK-005',
     institutionType: 'Bank',
@@ -97,8 +99,6 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Savings Account',
     accountNumber: '1290',
     maskedNumber: 'Savings •••• 1290',
-    balance: 31250,
-    formattedBalance: '₹31,250',
     currency: 'INR',
     fipId: 'FIP-PNB-006',
     institutionType: 'Bank',
@@ -111,8 +111,6 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Savings Account',
     accountNumber: '6310',
     maskedNumber: 'Savings •••• 6310',
-    balance: 24150,
-    formattedBalance: '₹24,150',
     currency: 'INR',
     fipId: 'FIP-INDUSIND-007',
     institutionType: 'Bank',
@@ -125,8 +123,6 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Demat & Trading',
     accountNumber: '8819',
     maskedNumber: 'Kite •••• 8819',
-    balance: 215000,
-    formattedBalance: '₹2,15,000',
     currency: 'INR',
     fipId: 'FIP-ZERODHA-007',
     institutionType: 'Mutual Fund',
@@ -139,8 +135,6 @@ export const SANDBOX_ACCOUNTS: SandboxAccount[] = [
     accountType: 'Mutual Funds Portfolio',
     accountNumber: '3312',
     maskedNumber: 'Folio •••• 3312',
-    balance: 145800,
-    formattedBalance: '₹1,45,800',
     currency: 'INR',
     fipId: 'FIP-GROWW-008',
     institutionType: 'Mutual Fund',

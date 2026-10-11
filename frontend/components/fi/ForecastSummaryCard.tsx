@@ -10,7 +10,7 @@ export interface ForecastSummaryCardProps {
 }
 
 export function ForecastSummaryCard({
-  message = 'Your projected balance stays above your minimum reserve.',
+  message = 'Expected Cash stays above your Safety Buffer.',
   style,
 }: ForecastSummaryCardProps) {
   return (

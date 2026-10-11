@@ -58,8 +58,8 @@ const STORAGE_KEY_ACTIVE_ID = '@assay_copilot_active_id_v1';
 const INITIAL_WELCOME_MESSAGE: ChatMessage = {
   id: 'welcome-1',
   sender: 'assistant',
-  text: `Hi Harshal,\n\nI can help you understand your finances, explain your cash flow forecast, check affordability, compare scenarios, and answer any questions based on your data.\n\nWhat would you like to know?`,
-  timestamp: '9:41 PM',
+  text: `I can help you understand your finances, explain your cash flow forecast, check affordability, compare scenarios, and answer questions from your transactions.\n\nWhat would you like to know?`,
+  timestamp: '',
 };
 
 const SUGGESTED_QUESTIONS = [
@@ -140,8 +140,8 @@ export default function AssayCopilotScreen() {
             ...prev,
           ];
         }
-        void AsyncStorage.setItem(STORAGE_KEY_CONVERSATIONS, JSON.stringify(updated));
-        void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, convId);
+        void AsyncStorage.setItem(STORAGE_KEY_CONVERSATIONS, JSON.stringify(updated)).catch(() => {});
+        void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, convId).catch(() => {});
         return updated;
       });
     } catch {
@@ -188,37 +188,11 @@ export default function AssayCopilotScreen() {
       setMessages(finalMessages);
       void persistConversation(activeConversationId, finalMessages);
     } catch {
-      // Deterministic audited fallback response
       const fallbackMsg: ChatMessage = {
         id: `assist-${Date.now()}`,
         sender: 'assistant',
-        text: `Based on your recent 6-month cash flow forecast and ₹15,000 minimum reserve:`,
+        text: "Couldn't reach Assay just now, so I don't have a figure from your transactions. Try the question again.",
         timestamp: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-        data: {
-          intent: 'cash_flow_inquiry',
-          headline: 'Audited Trajectory Analysis',
-          answer: `Your available balance is projected to remain stable at ₹68,000. Contractual debt commitments of ₹8,000 are scheduled for the 15th, followed by salary deposit on the 28th.`,
-          what_we_know: [
-            { label: 'Current Bank Balance', value: '₹42,850', detail: 'across verified accounts' },
-            { label: 'Scheduled Obligations', value: '₹28,900', detail: 'rent, vehicle EMI, utilities' },
-          ],
-          what_may_happen: 'Liquidity buffer will reach a trough of +₹18,400 prior to payday, safely clearing your ₹15,000 reserve.',
-          what_you_can_do: {
-            action: 'Review What-If scenarios if considering an unplanned expense.',
-            impact: 'Protects reserve against early bill debits.',
-            action_url: '/simulator',
-            action_label: 'Open What-If Simulator →',
-          },
-          why_this_answer: {
-            audit_id: 'AUD-882-DET',
-            insight_id: 'INS-01',
-            model_version: 'deterministic-v1.4',
-            calculation_basis: 'Contractual obligations & verified transaction run-rate',
-            generated_at: new Date().toISOString(),
-            data_freshness: 'Ledger current',
-            limitations: ['Assumes regular monthly salary timing.'],
-          },
-        },
       };
 
       const finalMessages = [...nextMessages, fallbackMsg];
@@ -237,14 +211,14 @@ export default function AssayCopilotScreen() {
     setActiveConversationId(newId);
     setMessages([INITIAL_WELCOME_MESSAGE]);
     setHistoryModalVisible(false);
-    void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, newId);
+    void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, newId).catch(() => {});
   };
 
   const handleSelectPastConversation = (conv: StoredConversation) => {
     setActiveConversationId(conv.id);
     setMessages(conv.messages);
     setHistoryModalVisible(false);
-    void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, conv.id);
+    void AsyncStorage.setItem(STORAGE_KEY_ACTIVE_ID, conv.id).catch(() => {});
   };
 
   const handleConfirmClearChat = () => {
@@ -391,7 +365,7 @@ export default function AssayCopilotScreen() {
                           activeOpacity={0.8}
                         >
                           <Typography variant="caption" color={COLORS.primary} style={{ fontFamily: FONTS.bodyBold }}>
-                            {msg.data.what_you_can_do.action_label || 'Simulate in What-If Simulator →'}
+                            {msg.data.what_you_can_do.action_label || 'Update My Plan →'}
                           </Typography>
                         </TouchableOpacity>
                       )}

@@ -24,6 +24,7 @@ from app.services.financial_intelligence.engine import (
     calculate_affordability,
     detect_obligations,
     get_upcoming_obligations_projection,
+    monthly_spending_by_category,
 )
 from app.services.financial_intelligence.forecasting import (
     build_cash_flow_daily_view,
@@ -291,39 +292,9 @@ def get_cash_flow_daily(
 
 @router.get("/analytics/spending")
 def get_spending_breakdown(user_id: str | None = Query(None), db: Session = Depends(get_db)):
+    """Category totals as a monthly average over the same six months as Monthly Spending."""
     unified = get_unified_financial_data(db, user_id=user_id)
-    all_txs = [t for t in unified["transactions"] if not t.get("is_internal_transfer")]
-
-    if not all_txs:
-        return {"categories": []}
-
-    today = date.today().isoformat()
-    month_candidates = [
-        item["transaction_date"][:7]
-        for item in all_txs
-        if item["transaction_date"][:10] <= today
-    ]
-    target_month = max(month_candidates) if month_candidates else max(item["transaction_date"][:7] for item in all_txs)
-
-    debits = [
-        item
-        for item in all_txs
-        if item["transaction_date"].startswith(target_month) and item["type"] == "debit"
-    ]
-    total = sum(item["amount"] for item in debits)
-    totals: dict[str, float] = {}
-    for item in debits:
-        totals[item["category"]] = totals.get(item["category"], 0) + item["amount"]
-    return {
-        "categories": [
-            {
-                "name": name,
-                "amount": round(amount, 2),
-                "percentage": round((amount / total) * 100, 1) if total else 0,
-            }
-            for name, amount in sorted(totals.items(), key=lambda item: item[1], reverse=True)
-        ]
-    }
+    return {"categories": monthly_spending_by_category(unified["transactions"])}
 
 
 @router.get("/analytics/money-leaks")

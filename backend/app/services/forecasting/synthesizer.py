@@ -33,6 +33,7 @@ class PeriodLedger:
     closing_balance: float
     is_shock: bool
     shock_amount: float
+    savings: float = 0.0
 
 
 class FinancialSynthesizer:

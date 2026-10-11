@@ -9,7 +9,7 @@ SUPPORTED_MOCK_BANKS = {
         "bank_key": "hdfc",
         "account_type": "Savings Account",
         "account_number_masked": "•••• 4821",
-        "balance": 42580.0,
+        "balance": 0.0,
         "currency": "INR",
         "provider": "mock_aa",
         "status": "connected",
@@ -20,7 +20,7 @@ SUPPORTED_MOCK_BANKS = {
         "bank_key": "icici",
         "account_type": "Savings Account",
         "account_number_masked": "•••• 7712",
-        "balance": 18240.0,
+        "balance": 0.0,
         "currency": "INR",
         "provider": "mock_aa",
         "status": "connected",
@@ -31,7 +31,7 @@ SUPPORTED_MOCK_BANKS = {
         "bank_key": "sbi",
         "account_type": "Savings Account",
         "account_number_masked": "•••• 9812",
-        "balance": 18400.0,
+        "balance": 0.0,
         "currency": "INR",
         "provider": "mock_aa",
         "status": "connected",
@@ -42,7 +42,7 @@ SUPPORTED_MOCK_BANKS = {
         "bank_key": "axis",
         "account_type": "Current Account",
         "account_number_masked": "•••• 3044",
-        "balance": 65200.0,
+        "balance": 0.0,
         "currency": "INR",
         "provider": "mock_aa",
         "status": "connected",
@@ -53,7 +53,7 @@ SUPPORTED_MOCK_BANKS = {
         "bank_key": "kotak",
         "account_type": "Savings Account",
         "account_number_masked": "•••• 5521",
-        "balance": 89400.0,
+        "balance": 0.0,
         "currency": "INR",
         "provider": "mock_aa",
         "status": "connected",
@@ -64,12 +64,27 @@ SUPPORTED_MOCK_BANKS = {
         "bank_key": "indusind",
         "account_type": "Savings Account",
         "account_number_masked": "•••• 6310",
-        "balance": 24150.0,
+        "balance": 0.0,
         "currency": "INR",
         "provider": "mock_aa",
         "status": "connected",
     },
 }
+
+
+# The bank that carries the ledger-derived balance. There is one transaction ledger,
+# so exactly one linked account reflects it; the others hold no balance of their own.
+PRIMARY_BANK_KEY = "hdfc"
+
+
+def ledger_derived_balance() -> float:
+    """Closing cash balance implied by the transaction ledger (starting balance + net flow)."""
+    from app.services.financial_intelligence.ledger import get_ledger_transactions, get_user_profile
+    from app.services.financial_intelligence.ledger_metrics import derive_closing_balance
+
+    profile = get_user_profile()
+    transactions = get_ledger_transactions(historical_only=False)
+    return derive_closing_balance(transactions, float(profile.get("starting_balance") or 0.0))
 
 
 class MockAAProvider(AccountAggregatorProvider):
@@ -80,171 +95,36 @@ class MockAAProvider(AccountAggregatorProvider):
             "redirect_url": "https://sandbox.assay.finance/consent",
         }
 
+    def _with_balance(self, bank: Dict[str, Any]) -> Dict[str, Any]:
+        account = dict(bank)
+        account["balance"] = ledger_derived_balance() if account.get("bank_key") == PRIMARY_BANK_KEY else 0.0
+        return account
+
     async def fetch_accounts(self, consent_id: str) -> List[Dict[str, Any]]:
-        return list(SUPPORTED_MOCK_BANKS.values())
+        return [self._with_balance(bank) for bank in SUPPORTED_MOCK_BANKS.values()]
 
     def get_bank_details(self, bank_key: str) -> Dict[str, Any]:
         key = bank_key.lower().strip()
         if key in SUPPORTED_MOCK_BANKS:
-            return SUPPORTED_MOCK_BANKS[key]
+            return self._with_balance(SUPPORTED_MOCK_BANKS[key])
         for b_key, data in SUPPORTED_MOCK_BANKS.items():
             if b_key in key or key in b_key or data["institution_name"].lower() in key:
-                return data
+                return self._with_balance(data)
         return {
             "id": f"acc_{key}_custom",
             "institution_name": bank_key.title(),
             "bank_key": key,
             "account_type": "Savings Account",
             "account_number_masked": "•••• 1024",
-            "balance": 25000.0,
+            "balance": 0.0,
             "currency": "INR",
             "provider": "mock_aa",
             "status": "connected",
         }
 
     async def fetch_transactions(self, account_id: str, date_from: str = "", date_to: str = "") -> List[Dict[str, Any]]:
-        # Return specific transaction sets for accounts
-        if "icici" in account_id.lower():
-            return [
-                {
-                    "id": f"tx_{account_id}_01",
-                    "account_id": account_id,
-                    "amount": 8200.0,
-                    "type": "debit",
-                    "category": "Food & Dining",
-                    "merchant_name": "Social Dining & Cafe",
-                    "description": "Weekend dinner bill",
-                    "transaction_date": "2026-10-09T20:30:00Z",
-                    "is_recurring": False,
-                    "is_fixed": False,
-                    "is_discretionary": True,
-                    "source_type": "aa",
-                    "payment_method": "UPI",
-                },
-                {
-                    "id": f"tx_{account_id}_02",
-                    "account_id": account_id,
-                    "amount": 6450.0,
-                    "type": "debit",
-                    "category": "Shopping",
-                    "merchant_name": "Zara Lifestyle",
-                    "description": "Apparel and footwear",
-                    "transaction_date": "2026-10-07T16:15:00Z",
-                    "is_recurring": False,
-                    "is_fixed": False,
-                    "is_discretionary": True,
-                    "source_type": "aa",
-                    "payment_method": "Card",
-                },
-                {
-                    "id": f"tx_{account_id}_03",
-                    "account_id": account_id,
-                    "amount": 3850.0,
-                    "type": "debit",
-                    "category": "Bills & Utilities",
-                    "merchant_name": "Tata Power",
-                    "description": "Electricity statement",
-                    "transaction_date": "2026-10-04T11:00:00Z",
-                    "is_recurring": True,
-                    "is_fixed": True,
-                    "is_discretionary": False,
-                    "source_type": "aa",
-                    "payment_method": "UPI",
-                },
-                {
-                    "id": f"tx_{account_id}_04",
-                    "account_id": account_id,
-                    "amount": 10000.0,
-                    "type": "credit",
-                    "category": "Transfer",
-                    "merchant_name": "Self Transfer from HDFC",
-                    "description": "Internal transfer between own accounts",
-                    "transaction_date": "2026-10-02T14:00:00Z",
-                    "is_recurring": False,
-                    "is_fixed": False,
-                    "is_discretionary": False,
-                    "source_type": "aa",
-                    "payment_method": "Bank",
-                    "is_internal_transfer": True,
-                },
-            ]
+        """Transactions come from the ledger (merged by the transactions API), not from here.
 
-        # Default / HDFC transactions
-        return [
-            {
-                "id": f"tx_{account_id}_h01",
-                "account_id": account_id,
-                "amount": 45000.0,
-                "type": "credit",
-                "category": "Salary",
-                "merchant_name": "TechCorp Solutions",
-                "description": "Monthly Salary Credit",
-                "transaction_date": "2026-10-01T10:00:00Z",
-                "is_recurring": True,
-                "is_fixed": True,
-                "is_discretionary": False,
-                "source_type": "aa",
-                "payment_method": "Bank",
-            },
-            {
-                "id": f"tx_{account_id}_h02",
-                "account_id": account_id,
-                "amount": 15000.0,
-                "type": "debit",
-                "category": "Housing & Rent",
-                "merchant_name": "Landlord Rent Payment",
-                "description": "Apartment Rent",
-                "transaction_date": "2026-10-03T11:30:00Z",
-                "is_recurring": True,
-                "is_fixed": True,
-                "is_discretionary": False,
-                "source_type": "aa",
-                "payment_method": "Bank",
-            },
-            {
-                "id": f"tx_{account_id}_h03",
-                "account_id": account_id,
-                "amount": 3400.0,
-                "type": "debit",
-                "category": "Food & Dining",
-                "merchant_name": "Swiggy",
-                "description": "Weekend dinner delivery",
-                "transaction_date": "2026-10-05T20:15:00Z",
-                "is_recurring": False,
-                "is_fixed": False,
-                "is_discretionary": True,
-                "source_type": "aa",
-                "payment_method": "UPI",
-            },
-            {
-                "id": f"tx_{account_id}_h04",
-                "account_id": account_id,
-                "amount": 4200.0,
-                "type": "debit",
-                "category": "Groceries",
-                "merchant_name": "Blinkit",
-                "description": "Weekly household essentials",
-                "transaction_date": "2026-10-08T18:45:00Z",
-                "is_recurring": False,
-                "is_fixed": False,
-                "is_discretionary": False,
-                "source_type": "aa",
-                "payment_method": "UPI",
-            },
-            {
-                "id": f"tx_{account_id}_h05",
-                "account_id": account_id,
-                "amount": 999.0,
-                "type": "debit",
-                "category": "Subscriptions",
-                "merchant_name": "Netflix",
-                "description": "Premium 4K plan renewal",
-                "transaction_date": "2026-10-10T09:00:00Z",
-                "is_recurring": True,
-                "is_fixed": True,
-                "is_discretionary": True,
-                "source_type": "aa",
-                "payment_method": "Card",
-            },
-        ]
-
+        Returning an empty list avoids duplicating the ledger with fabricated rows.
+        """
+        return []

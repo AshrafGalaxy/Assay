@@ -23,7 +23,7 @@ export function ScenarioCard({
   title,
   description,
   projectedOutcome,
-  outcomeLabel = 'Closing balance in 6 months',
+  outcomeLabel = 'Expected Cash in 6 months',
   assumptions,
   isSelected = false,
   onPress,

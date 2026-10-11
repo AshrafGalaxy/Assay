@@ -74,7 +74,7 @@ class GroqLLMProvider:
             "CRITICAL SAFETY CONSTRAINTS:\n"
             "1. You must NEVER compute, calculate, or alter financial numbers.\n"
             "2. Every single currency amount and percentage in your reply MUST be copied directly from the VERIFIED FACTS JSON.\n"
-            "3. State clearly whether the user can afford the item, explain the safety buffer impact, and suggest splitting into installments if there is cash-flow pressure.\n"
+            "3. Use only this vocabulary: Expected Cash, Safety Buffer, Money Above Buffer, Risk of Running Short, Monthly Income, Monthly Spending & Bills, Money Left Each Month, Possible Cash Range, Update My Plan. State whether Expected Cash stays above the Safety Buffer, and suggest installments if there is pressure.\n"
             "4. Tone: Empathetic, concise, clear, and professional. Return 2 to 3 sentences max."
         )
 
@@ -109,8 +109,8 @@ class GroqLLMProvider:
                     observed = [
                         {"name": "Current Liquid Balance", "value": f"₹{current_balance:,.0f}"},
                         {"name": "Target Item Cost", "value": f"₹{item_cost:,.0f}"},
-                        {"name": "Safety Buffer After Purchase", "value": f"₹{buffer_after:,.0f}"},
-                        {"name": "Minimum Reserve Floor", "value": f"₹{settings.MINIMUM_RESERVE_FLOOR:,.0f}"},
+                        {"name": "Money Above Buffer", "value": f"₹{buffer_after:,.0f}"},
+                        {"name": "Safety Buffer", "value": f"₹{settings.MINIMUM_RESERVE_FLOOR:,.0f}"},
                     ]
 
                     analysis = {

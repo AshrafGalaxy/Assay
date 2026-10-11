@@ -17,7 +17,7 @@ export default function ForecastSettingsScreen() {
 
   // Settings State
   const [forecastPeriod, setForecastPeriod] = useState<'3M' | '6M' | '12M'>('6M');
-  const [minReserve, setMinReserve] = useState<number>(15000);
+  const [minReserve, setMinReserve] = useState<number>(0);
   const [includeIncome, setIncludeIncome] = useState(true);
   const [includeEssential, setIncludeEssential] = useState(true);
   const [includeDiscretionary, setIncludeDiscretionary] = useState(true);
@@ -91,7 +91,7 @@ export default function ForecastSettingsScreen() {
           <ChevronLeft color={COLORS.primary} size={24} />
         </TouchableOpacity>
         <Typography variant="h2" color={COLORS.primary} style={styles.headerTitle}>
-          Forecast Settings
+          Update My Plan
         </Typography>
         <View style={{ width: 40 }} />
       </View>
@@ -131,7 +131,7 @@ export default function ForecastSettingsScreen() {
         {/* Minimum Cash Reserve Section */}
         <View style={styles.sectionCard}>
           <Typography variant="bodyBold" color={COLORS.primary} style={styles.sectionTitle}>
-            Minimum cash reserve
+            Safety Buffer
           </Typography>
 
           <View style={styles.reserveSettingRow}>
@@ -147,7 +147,7 @@ export default function ForecastSettingsScreen() {
           <Slider
             style={styles.slider}
             minimumValue={5000}
-            maximumValue={50000}
+            maximumValue={Math.max(50000, minReserve)}
             step={1000}
             value={minReserve}
             onValueChange={setMinReserve}
@@ -166,7 +166,7 @@ export default function ForecastSettingsScreen() {
           <View style={styles.recommendationBox}>
             <Info size={14} color={COLORS.gold} style={{ marginRight: 6, marginTop: 2 }} />
             <Typography variant="caption" color={COLORS.textSecondary} style={styles.recommendationText}>
-              Recommended: 3 months of essential expenses (₹54,000) based on your profile.
+              Recommended: about 3 months of Monthly Spending & Bills.
             </Typography>
           </View>
         </View>
@@ -180,7 +180,7 @@ export default function ForecastSettingsScreen() {
           <View style={styles.toggleList}>
             <View style={styles.toggleRow}>
               <Typography variant="body" color={COLORS.primary}>
-                Expected Income
+                Monthly Income
               </Typography>
               <Switch
                 value={includeIncome}

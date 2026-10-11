@@ -14,6 +14,10 @@ from app.services.financial_intelligence.ledger import (
     get_ledger_transactions,
     get_transaction_by_id,
 )
+from app.services.financial_intelligence.unified_data import (
+    DEMO_USER_ID,
+    get_merged_transactions,
+)
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 mock_provider = MockAAProvider()
@@ -156,7 +160,7 @@ def get_all_unified_transactions(
 
 @router.get("", response_model=TransactionListResponse)
 def get_transactions(
-    limit: int = Query(100, ge=1, le=100),
+    limit: int = Query(500, ge=1, le=2000),
     offset: int = Query(0, ge=0),
     category: Optional[str] = None,
     transaction_type: Optional[str] = None,
@@ -166,10 +170,11 @@ def get_transactions(
     db: Session = Depends(get_db),
 ):
     current_user_id = user_id or (get_current_user_id(authorization) if authorization else None)
+    scope_user = current_user_id or DEMO_USER_ID
     if source_type == "manual":
-        query = db.query(Transaction)
-        if current_user_id and current_user_id != "usr_demo_01":
-            query = query.filter((Transaction.user_id == current_user_id) | (Transaction.user_id.is_(None)))
+        query = db.query(Transaction).filter(
+            (Transaction.user_id == scope_user) | (Transaction.user_id.is_(None))
+        )
         if category:
             query = query.filter(Transaction.category == category)
         if transaction_type:
@@ -203,46 +208,18 @@ def get_transactions(
             offset=offset,
         )
 
-    ledger_items = get_ledger_transactions(user_id=current_user_id, historical_only=True)
+    unified = get_merged_transactions(db, user_id=current_user_id)
     if category:
-        ledger_items = [d for d in ledger_items if d.get("category") == category]
+        unified = [d for d in unified if d.get("category") == category]
     if transaction_type:
         norm_type = "credit" if transaction_type in ["credit", "income"] else "debit"
-        ledger_items = [d for d in ledger_items if d.get("type") == norm_type]
-
+        unified = [d for d in unified if d.get("type") == norm_type]
     if source_type == "synthetic":
-        unified = ledger_items
-    else:
-        db_records = db.query(Transaction).all()
-        db_items = [
-            {
-                "id": tx.id,
-                "user_id": tx.user_id,
-                "account_id": tx.account_id,
-                "amount": float(tx.amount),
-                "type": tx.type,
-                "category": tx.category,
-                "merchant_name": tx.merchant_name,
-                "description": tx.description,
-                "transaction_date": tx.transaction_date,
-                "payment_method": tx.payment_method or "UPI",
-                "is_recurring": bool(tx.is_recurring),
-                "is_fixed": bool(tx.is_fixed),
-                "is_discretionary": bool(tx.is_discretionary),
-                "source_type": tx.source_type or "manual",
-                "created_at": str(tx.created_at) if tx.created_at else None,
-            }
-            for tx in db_records
-        ]
-        if category:
-            db_items = [d for d in db_items if d.get("category") == category]
-        if transaction_type:
-            norm_type = "credit" if transaction_type in ["credit", "income"] else "debit"
-            db_items = [d for d in db_items if d.get("type") == norm_type]
+        unified = [d for d in unified if d.get("source_type") == "synthetic"]
+    elif source_type:
+        unified = [d for d in unified if d.get("source_type") == source_type]
 
-        existing_ids = {item["id"] for item in ledger_items}
-        unified = ledger_items + [d for d in db_items if d["id"] not in existing_ids]
-
+    unified.sort(key=lambda item: str(item.get("transaction_date") or ""), reverse=True)
     total = len(unified)
     page_items = unified[offset : offset + limit]
 

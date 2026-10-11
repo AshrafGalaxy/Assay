@@ -28,71 +28,30 @@ import { Typography } from '../../components/Typography';
 import { Button } from '../../components/Button';
 import { MerchantLogo } from '../../components/ui/MerchantLogo';
 import { COLORS, SIZES, SPACING, FONTS } from '../../constants/theme';
-import { SANDBOX_ACCOUNTS, SandboxAccount } from '../../types/aa';
+import { SANDBOX_ACCOUNTS, SandboxAccount, LinkedAccount } from '../../types/aa';
 import { AAService, useAAState } from '../../services/aaState';
-import { TransactionService } from '../../services/transactions';
 
 type Step = 'select_bank' | 'consent' | 'bank_login' | 'success';
 
+/** Bank picker entry: institution identity only. Balances come from the backend after linking. */
 interface BankOption {
   bankKey: string;
   bankName: string;
   defaultType: string;
   defaultMasked: string;
-  defaultBalance: number;
-  formattedBalance: string;
 }
 
-const POPULAR_BANKS: BankOption[] = [
-  {
-    bankKey: 'hdfc',
-    bankName: 'HDFC Bank',
-    defaultType: 'Savings Account',
-    defaultMasked: 'Savings •••• 4821',
-    defaultBalance: 42580,
-    formattedBalance: '₹42,580',
-  },
-  {
-    bankKey: 'icici',
-    bankName: 'ICICI Bank',
-    defaultType: 'Savings Account',
-    defaultMasked: 'Savings •••• 7712',
-    defaultBalance: 18240,
-    formattedBalance: '₹18,240',
-  },
-  {
-    bankKey: 'sbi',
-    bankName: 'State Bank of India',
-    defaultType: 'Savings Account',
-    defaultMasked: 'Savings •••• 9812',
-    defaultBalance: 18400,
-    formattedBalance: '₹18,400',
-  },
-  {
-    bankKey: 'axis',
-    bankName: 'Axis Bank',
-    defaultType: 'Current Account',
-    defaultMasked: 'Current •••• 3044',
-    defaultBalance: 65200,
-    formattedBalance: '₹65,200',
-  },
-  {
-    bankKey: 'kotak',
-    bankName: 'Kotak Mahindra Bank',
-    defaultType: 'Savings Account',
-    defaultMasked: 'ActiveMoney •••• 5521',
-    defaultBalance: 89400,
-    formattedBalance: '₹89,400',
-  },
-  {
-    bankKey: 'indusind',
-    bankName: 'IndusInd Bank',
-    defaultType: 'Savings Account',
-    defaultMasked: 'Savings •••• 6310',
-    defaultBalance: 24150,
-    formattedBalance: '₹24,150',
-  },
-];
+const POPULAR_BANK_KEYS = ['hdfc', 'icici', 'sbi', 'axis', 'kotak', 'indusind'];
+
+const POPULAR_BANKS: BankOption[] = POPULAR_BANK_KEYS.map((key) => {
+  const catalogue = SANDBOX_ACCOUNTS.find((a) => a.bankKey === key);
+  return {
+    bankKey: key,
+    bankName: catalogue?.bankName ?? key.toUpperCase(),
+    defaultType: catalogue?.accountType ?? 'Savings Account',
+    defaultMasked: catalogue?.maskedNumber ?? '',
+  };
+});
 
 export default function AddBankAccountScreen() {
   const router = useRouter();
@@ -128,21 +87,16 @@ export default function AddBankAccountScreen() {
         bankName: selectedBank.bankName,
         bankKey: selectedBank.bankKey,
         accountType: selectedBank.defaultType,
-        accountNumber: selectedBank.defaultMasked.replace(/[^0-9]/g, '') || '7712',
+        accountNumber: selectedBank.defaultMasked.replace(/[^0-9]/g, '') || '0000',
         maskedNumber: selectedBank.defaultMasked,
-        balance: selectedBank.defaultBalance,
-        formattedBalance: selectedBank.formattedBalance,
         currency: 'INR',
         fipId: `FIP-${selectedBank.bankKey.toUpperCase()}-001`,
         institutionType: 'Bank',
         selectedDefault: false,
-        status: 'connected',
-        lastSynced: `Today, ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
       };
 
+      // The backend imports the account's transactions and returns its real balance.
       const linked = await AAService.addAccount(newAcc);
-      // Import associated transactions
-      TransactionService.importAccountTransactions(linked.id, linked.bankKey, linked.bankName);
       setConnectedAccount(linked);
       setCurrentStep('success');
     } finally {

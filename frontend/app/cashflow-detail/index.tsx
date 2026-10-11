@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   ScrollView,
@@ -23,7 +23,6 @@ import Svg, {
 import { Typography } from '../../components/Typography';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { ForecastSummaryCard } from '../../components/fi/ForecastSummaryCard';
-import { FinancialMetric } from '../../components/fi/FinancialMetric';
 import { FeatureCard } from '../../components/fi/FeatureCard';
 import {
   fetchCashFlowForecast,
@@ -60,17 +59,19 @@ export default function CashFlowForecastMainScreen() {
 
   const [forecastData, setForecastData] = useState<CashFlowForecast | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const horizonMonths = selectedHorizon === '1M' ? 1 : selectedHorizon === '3M' ? 3 : selectedHorizon === '6M' ? 6 : 12;
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const data = await fetchCashFlowForecast(horizonMonths);
       setForecastData(data);
     } catch {
-      // In case backend is offline or loading, preview defaults will ensure UI stability
       setForecastData(null);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -82,49 +83,32 @@ export default function CashFlowForecastMainScreen() {
     }, [loadData])
   );
 
-  // Fallback / Preview Chart Points matching Mockup Screen 3
-  // Mockup shows: Now, Apr, May, Jun, Jul, Aug, Sep with smooth curve and reserve at 15k
-  const previewPoints = useMemo(() => {
+  type ChartPoint = { label: string; balance: number; low: number; high: number; isTrough: boolean };
+
+  // Chart points are derived exclusively from the forecast response; no preview data.
+  const chartPoints = useMemo<ChartPoint[]>(() => {
+    if (!forecastData || !forecastData.periods || forecastData.periods.length === 0) return [];
     return [
-      { label: 'Now', balance: 50000, low: 46000, high: 54000 },
-      { label: 'Apr', balance: 48000, low: 42000, high: 55000 },
-      { label: 'May', balance: 28500, low: 22000, high: 36000, isTrough: true },
-      { label: 'Jun', balance: 45000, low: 37000, high: 54000 },
-      { label: 'Jul', balance: 65000, low: 55000, high: 78000 },
-      { label: 'Aug', balance: 85000, low: 72000, high: 99000 },
-      { label: 'Sep', balance: 110000, low: 95000, high: 128000 },
+      {
+        label: 'Now',
+        balance: forecastData.opening_balance,
+        low: forecastData.opening_balance,
+        high: forecastData.opening_balance,
+        isTrough: false,
+      },
+      ...forecastData.periods.map((p) => ({
+        label: p.period_label.slice(0, 3),
+        balance: p.closing_balance,
+        low: p.balance_low,
+        high: p.balance_high,
+        isTrough: p.reserve_violated,
+      })),
     ];
-  }, []);
-
-  const chartPoints = useMemo(() => {
-    if (forecastData?.periods && forecastData.periods.length > 0) {
-      const pts = [
-        {
-          label: 'Now',
-          balance: forecastData.opening_balance || 50000,
-          low: (forecastData.opening_balance || 50000) * 0.95,
-          high: (forecastData.opening_balance || 50000) * 1.05,
-          isTrough: false,
-        },
-        ...forecastData.periods.map((p) => ({
-          label: p.period_label.slice(0, 3),
-          balance: p.closing_balance,
-          low: p.balance_low ?? p.closing_balance * 0.85,
-          high: p.balance_high ?? p.closing_balance * 1.15,
-          isTrough: p.reserve_violated || false,
-        })),
-      ];
-      return pts;
-    }
-    return previewPoints;
-  }, [forecastData, previewPoints]);
-
-  // Lowest projected balance & Minimum reserve
-  const minReserve = forecastData?.minimum_reserve ?? 15000;
-  const lowestBalance = useMemo(() => {
-    if (forecastData?.minimum_balance != null) return forecastData.minimum_balance;
-    return 28500;
   }, [forecastData]);
+
+  // Lowest projected balance & Minimum reserve (null until API data arrives)
+  const minReserve: number | null = forecastData?.minimum_reserve ?? null;
+  const lowestBalance: number | null = forecastData?.minimum_balance ?? null;
 
   const troughPeriod = useMemo(() => {
     if (!forecastData?.periods || forecastData.periods.length === 0) return null;
@@ -134,10 +118,19 @@ export default function CashFlowForecastMainScreen() {
     );
   }, [forecastData]);
 
-  // Expected income, expenses, and surplus
-  const expectedIncome = forecastData?.projected_income ?? 270000;
-  const expectedExpenses = forecastData?.projected_expenses ?? 198000;
-  const projectedSurplus = Math.max(0, expectedIncome - expectedExpenses);
+  // Monthly rates from the forecast. The horizon totals stay on the chart, not under these labels.
+  const expectedIncome: number | null = forecastData?.monthly_income ?? null;
+  const expectedExpenses: number | null =
+    forecastData != null
+      ? forecastData.monthly_essential +
+        forecastData.monthly_discretionary +
+        forecastData.monthly_debt +
+        forecastData.monthly_savings
+      : null;
+  const projectedSurplus: number | null =
+    expectedIncome != null && expectedExpenses != null ? expectedIncome - expectedExpenses : null;
+
+  const hasChartData = chartPoints.length > 0;
 
   // Chart rendering geometry
   const screenWidth = Dimensions.get('window').width;
@@ -151,13 +144,17 @@ export default function CashFlowForecastMainScreen() {
   const plotH = chartH - padTop - padBottom;
   const baseY = padTop + plotH;
 
+  // Y-axis scale derived purely from the plotted data (chart geometry, not finance data).
   const maxVal = useMemo(() => {
     const highestVal = Math.max(
+      0,
       ...chartPoints.map((p) => Math.max(p.balance, p.high)),
-      minReserve,
-      120000
+      minReserve ?? 0,
     );
-    return Math.ceil(highestVal / 25000) * 25000;
+    if (highestVal <= 0) return 1;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(highestVal)));
+    const step = magnitude / 4;
+    return Math.ceil(highestVal / step) * step;
   }, [chartPoints, minReserve]);
 
   const getY = (val: number) =>
@@ -284,12 +281,40 @@ export default function CashFlowForecastMainScreen() {
           )}
         </View>
 
+        {/* Loading / error states — never show fabricated numbers */}
+        {loading && (
+          <View style={styles.stateCard}>
+            <ActivityIndicator color={COLORS.primary} />
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+              Loading your forecast…
+            </Typography>
+          </View>
+        )}
+
+        {!loading && loadError && (
+          <View style={styles.stateCard}>
+            <Typography variant="bodyBold" color={COLORS.primary} style={styles.stateTitle}>
+              Forecast unavailable
+            </Typography>
+            <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+              We couldn't load your cash flow forecast. Check your connection and try again.
+            </Typography>
+            <TouchableOpacity style={styles.retryBtn} onPress={() => void loadData()} activeOpacity={0.8}>
+              <Typography variant="bodyBold" color={COLORS.white}>Retry</Typography>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!loading && !loadError && forecastData && (
+          <>
         {/* 3. Compact Financial Outlook Summary Card */}
         <ForecastSummaryCard
           message={
-            lowestBalance >= minReserve
-              ? 'Your projected balance stays above your minimum reserve.'
-              : 'Projected balance breaches minimum reserve in upcoming month.'
+            lowestBalance != null && minReserve != null
+              ? lowestBalance >= minReserve
+                ? 'Expected Cash stays above your Safety Buffer.'
+                : 'Expected Cash falls below your Safety Buffer in an upcoming month.'
+              : 'Not enough transaction history to assess your Safety Buffer.'
           }
         />
 
@@ -297,13 +322,13 @@ export default function CashFlowForecastMainScreen() {
         <View style={styles.twoMetricsCard}>
           <View style={styles.metricColumn}>
             <Typography variant="caption" color={COLORS.textSecondary} style={styles.metricLabel}>
-              Lowest projected balance
+              Expected Cash
             </Typography>
             <Typography variant="bodyBold" color={COLORS.primary} style={styles.metricBigAmount}>
-              ₹{lowestBalance.toLocaleString('en-IN')}
+              {lowestBalance != null ? formatINR(lowestBalance) : '—'}
             </Typography>
             <Typography variant="caption" color={COLORS.textSecondary} style={styles.metricSub}>
-              {troughPeriod ? `in ${troughPeriod.period_label}` : 'in May 2025'}
+              {troughPeriod ? `Lowest, in ${troughPeriod.period_label}` : 'No projection available'}
             </Typography>
           </View>
 
@@ -311,13 +336,15 @@ export default function CashFlowForecastMainScreen() {
 
           <View style={styles.metricColumn}>
             <Typography variant="caption" color={COLORS.textSecondary} style={styles.metricLabel}>
-              Minimum reserve
+              Safety Buffer
             </Typography>
             <Typography variant="bodyBold" color={COLORS.primary} style={styles.metricBigAmount}>
-              ₹{minReserve.toLocaleString('en-IN')}
+              {minReserve != null ? formatINR(minReserve) : '—'}
             </Typography>
             <Typography variant="caption" color={COLORS.textSecondary} style={styles.metricSub}>
-              Your setting
+              {lowestBalance != null && minReserve != null
+                ? `Money Above Buffer ${lowestBalance - minReserve < 0 ? '−' : ''}${formatINR(lowestBalance - minReserve)}`
+                : 'From your transactions'}
             </Typography>
           </View>
         </View>
@@ -325,9 +352,17 @@ export default function CashFlowForecastMainScreen() {
         {/* 5. Projected Cash Balance Chart */}
         <View style={styles.chartCard}>
           <Typography variant="cardHeading" color={COLORS.primary} style={styles.chartTitle}>
-            Projected Cash Balance
+            Expected Cash
           </Typography>
 
+          {!hasChartData ? (
+            <View style={styles.chartEmpty}>
+              <Typography variant="caption" color={COLORS.textSecondary} style={styles.stateText}>
+                No forecast periods returned for this horizon. Add transactions to build a projection.
+              </Typography>
+            </View>
+          ) : (
+          <>
           {/* SVG Chart */}
           <View style={styles.svgWrapper}>
             <Svg height={chartH} width={cardW - 32}>
@@ -372,15 +407,17 @@ export default function CashFlowForecastMainScreen() {
               })}
 
               {/* Minimum Reserve Dashed Horizontal Line */}
-              <Line
-                x1={padL}
-                y1={getY(minReserve)}
-                x2={cardW - 32 - padR}
-                y2={getY(minReserve)}
-                stroke={COLORS.gold}
-                strokeDasharray="4 4"
-                strokeWidth={1.5}
-              />
+              {minReserve != null && (
+                <Line
+                  x1={padL}
+                  y1={getY(minReserve)}
+                  x2={cardW - 32 - padR}
+                  y2={getY(minReserve)}
+                  stroke={COLORS.gold}
+                  strokeDasharray="4 4"
+                  strokeWidth={1.5}
+                />
+              )}
 
               {/* Range Shaded Envelope */}
               {rangePath ? <Path d={rangePath} fill="url(#rangeGrad)" /> : null}
@@ -433,10 +470,10 @@ export default function CashFlowForecastMainScreen() {
           {activePoint && (
             <View style={styles.tooltipBox}>
               <Typography variant="caption" color={COLORS.primary} style={{ fontWeight: 'bold' }}>
-                {activePoint.label}: ₹{activePoint.balance.toLocaleString('en-IN')}
+                {activePoint.label}: {formatINR(activePoint.balance)}
               </Typography>
               <Typography variant="caption" color={COLORS.textSecondary}>
-                Range: ₹{Math.round(activePoint.low).toLocaleString('en-IN')} – ₹{Math.round(activePoint.high).toLocaleString('en-IN')}
+                Possible Cash Range: {formatINR(Math.round(activePoint.low))} – {formatINR(Math.round(activePoint.high))}
               </Typography>
             </View>
           )}
@@ -446,24 +483,26 @@ export default function CashFlowForecastMainScreen() {
             <View style={styles.legendItem}>
               <View style={[styles.legendIndicator, { backgroundColor: COLORS.primary }]} />
               <Typography variant="caption" color={COLORS.textSecondary} style={styles.legendText}>
-                Expected balance
+                Expected Cash
               </Typography>
             </View>
 
             <View style={styles.legendItem}>
               <View style={[styles.legendIndicator, { backgroundColor: '#EADBB4' }]} />
               <Typography variant="caption" color={COLORS.textSecondary} style={styles.legendText}>
-                Expected range
+                Possible Cash Range
               </Typography>
             </View>
 
             <View style={styles.legendItem}>
               <View style={[styles.legendDash, { borderColor: COLORS.gold }]} />
               <Typography variant="caption" color={COLORS.textSecondary} style={styles.legendText}>
-                Minimum reserve
+                Safety Buffer
               </Typography>
             </View>
           </View>
+          </>
+          )}
         </View>
 
         {/* 6. Expected Income, Expected Expenses, and Projected Surplus Summary */}
@@ -472,11 +511,11 @@ export default function CashFlowForecastMainScreen() {
             <View style={styles.summaryLabelRow}>
               <ArrowUp size={14} color={COLORS.primary} />
               <Typography variant="caption" color={COLORS.textSecondary} style={styles.summaryLabel}>
-                Expected Income
+                Monthly Income
               </Typography>
             </View>
             <Typography variant="bodyBold" color={COLORS.primary} style={styles.summaryAmount}>
-              ₹{expectedIncome.toLocaleString('en-IN')}
+              {expectedIncome != null ? formatINR(expectedIncome) : '—'}
             </Typography>
           </View>
 
@@ -486,11 +525,11 @@ export default function CashFlowForecastMainScreen() {
             <View style={styles.summaryLabelRow}>
               <ArrowDown size={14} color={COLORS.primary} />
               <Typography variant="caption" color={COLORS.textSecondary} style={styles.summaryLabel}>
-                Expected Expenses
+                Monthly Spending & Bills
               </Typography>
             </View>
             <Typography variant="bodyBold" color={COLORS.primary} style={styles.summaryAmount}>
-              ₹{expectedExpenses.toLocaleString('en-IN')}
+              {expectedExpenses != null ? formatINR(expectedExpenses) : '—'}
             </Typography>
           </View>
 
@@ -500,11 +539,13 @@ export default function CashFlowForecastMainScreen() {
             <View style={styles.summaryLabelRow}>
               <BarChart3 size={14} color={COLORS.gold} />
               <Typography variant="caption" color={COLORS.textSecondary} style={styles.summaryLabel}>
-                Projected Surplus
+                Money Left Each Month
               </Typography>
             </View>
             <Typography variant="bodyBold" color={COLORS.primary} style={styles.summaryAmount}>
-              ₹{projectedSurplus.toLocaleString('en-IN')}
+              {projectedSurplus != null
+                ? `${projectedSurplus < 0 ? '−' : ''}${formatINR(projectedSurplus)}`
+                : '—'}
             </Typography>
           </View>
         </View>
@@ -512,10 +553,12 @@ export default function CashFlowForecastMainScreen() {
         {/* 7. Clear Forecast Safety or Uncertainty Explanation */}
         <View style={styles.safetyNoteCard}>
           <Typography variant="caption" color={COLORS.textSecondary} style={styles.safetyNoteText}>
-            {forecastData?.limitations?.[0] ||
-              `Projection based on confirmed income, regular expenses, and known obligations over ${horizonMonths} months.`}
+            {forecastData.limitations?.[0] ||
+              `Projection based on your transaction ledger over ${horizonMonths} months.`}
           </Typography>
         </View>
+          </>
+        )}
 
         {/* 8. Separate Forecast Details Section containing EXACTLY four options */}
         <View style={styles.detailsSection}>
@@ -545,8 +588,8 @@ export default function CashFlowForecastMainScreen() {
           />
 
           <FeatureCard
-            title="Forecast Settings"
-            description="Adjust inputs and preferences"
+            title="Update My Plan"
+            description="Change income, spending, and your Safety Buffer"
             icon={<Settings size={20} color={COLORS.gold} />}
             onPress={() => router.push('/forecast/settings')}
           />
@@ -572,7 +615,7 @@ export default function CashFlowForecastMainScreen() {
               Cash Flow Forecast
             </Typography>
             <Typography variant="body" color={COLORS.textSecondary} style={styles.modalBody}>
-              This model calculates period-by-period balances using historical recurring transactions, contractual debt obligations, and seasonal patterns to project future liquidity and safety buffer headroom.
+              Expected Cash is projected from your transactions. The shaded band is the Possible Cash Range. The Safety Buffer is the cash you keep aside, and Money Above Buffer is what remains after that.
             </Typography>
             <TouchableOpacity
               style={styles.modalCloseBtn}
@@ -712,6 +755,37 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 14.5,
     marginBottom: 8,
+  },
+  chartEmpty: {
+    minHeight: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  stateCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: SIZES.radius,
+    padding: 24,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginBottom: 16,
+    alignItems: 'center',
+    gap: 10,
+  },
+  stateTitle: {
+    fontSize: 15,
+  },
+  stateText: {
+    fontSize: 12.5,
+    lineHeight: 18,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    marginTop: 4,
   },
   svgWrapper: {
     alignItems: 'center',

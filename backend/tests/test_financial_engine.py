@@ -5,6 +5,7 @@ from app.services.financial_intelligence.engine import (
     build_financial_health,
     build_recommendations,
     detect_obligations,
+    get_upcoming_obligations_projection,
     simulate_reduction,
 )
 from app.services.financial_intelligence.ledger import get_ledger_transactions
@@ -30,6 +31,38 @@ def test_cash_flow_has_chronological_months(synthetic_ledger):
     months = [item["month"] for item in result["monthly_summary"]]
     assert months
     assert months == sorted(months, key=lambda label: datetime.strptime(label, "%b %Y"))
+
+
+def test_lapsed_rent_is_not_listed_as_upcoming():
+    today = date.today().isoformat()
+    result = get_upcoming_obligations_projection(
+        [
+            {
+                "id": "rent-old",
+                "type": "debit",
+                "amount": 24750,
+                "merchant_name": "Rent",
+                "category": "Housing & Rent",
+                "is_recurring": True,
+                "transaction_date": "2025-06-03",
+            },
+            {
+                "id": "power-now",
+                "type": "debit",
+                "amount": 3850,
+                "merchant_name": "Tata Power",
+                "category": "Bills & Utilities",
+                "is_recurring": True,
+                "transaction_date": today,
+            },
+        ],
+        horizon_months=3,
+    )
+    names = {item["name"] for item in result["obligations"]}
+    assert "Rent" not in names
+    assert "Tata Power" in names
+    assert all(item["due_date_iso"] >= today for item in result["obligations"])
+    assert all(item["name"] != "Tata Power" or item["amount"] == 3850 for item in result["obligations"])
 
 
 def test_obligations_are_recurring_debits_only(synthetic_ledger):

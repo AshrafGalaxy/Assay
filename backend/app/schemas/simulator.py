@@ -11,6 +11,13 @@ class WhatIfAssumptions(BaseModel):
     essential_expense_shock: float = 0.0
     minimum_reserve: Optional[float] = None
     savings_target: Optional[float] = None
+    # Absolute monthly amounts from Update My Plan. When set, user_plan uses these
+    # rupee figures instead of a percent change that can leave the cash figures unchanged.
+    monthly_income: Optional[float] = None
+    monthly_spending: Optional[float] = None
+    monthly_debt: Optional[float] = None
+    monthly_savings: Optional[float] = None
+    one_time_expense: Optional[float] = None
 
 
 class WhatIfRequest(BaseModel):
@@ -78,6 +85,8 @@ class WhatIfResponse(BaseModel):
     baseline_run_rate: Dict[str, Any]
     assumptions: Dict[str, Any]
     baseline: WhatIfPlan
+    status_quo: WhatIfPlan
+    user_plan: WhatIfPlan
     plans: List[WhatIfPlan]
     recommended_plan_id: str
     preference_reason: str
